@@ -40,7 +40,7 @@ private:
     if (csv_file_.is_open()) {
       double x = msg->point.x;
       double y = msg->point.y;
-      double z = msg->point.z;
+      double z = 0.0;
 
       csv_file_ << point_count_ << "," << x << "," << y << "," << z << "\n";
       ROS_INFO("Point %d written to CSV: [x: %.3f, y: %.3f, z: %.3f]",
