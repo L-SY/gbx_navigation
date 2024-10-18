@@ -230,7 +230,7 @@ namespace four_wheel_steering_controller{
 
   void FourWheelSteeringController::update(const ros::Time& time, const ros::Duration& period)
   {
-    updateOdometry(time);
+//    updateOdometry(time);
     updateCommand(time, period);
   }
 
