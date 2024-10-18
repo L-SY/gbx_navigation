@@ -222,7 +222,7 @@ namespace four_wheel_steering_controller{
       rear_steering_joints_[i] = pos_joint_hw->getHandle(rear_steering_names[i]);  // throws on failure
     }
 
-    sub_command_ = controller_nh.subscribe("cmd_vel", 1, &FourWheelSteeringController::cmdVelCallback, this);
+    sub_command_ = controller_nh.subscribe("/cmd_vel", 1, &FourWheelSteeringController::cmdVelCallback, this);
     sub_command_four_wheel_steering_ = controller_nh.subscribe("cmd_four_wheel_steering", 1, &FourWheelSteeringController::cmdFourWheelSteeringCallback, this);
 
     return true;
