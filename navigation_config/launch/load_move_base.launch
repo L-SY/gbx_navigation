@@ -3,7 +3,10 @@
     <node name="map_server" pkg="map_server" type="map_server" args="$(find navigation_config)/map/map.yaml"/>
 
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom"
-          args="0 0 0 0 0 0 odom map 100" />
+          args="0 0 0 0 0 0 map odom 100" />
+
+    <node pkg="tf" type="static_transform_publisher" name="camera_to_odom"
+          args="0 0 0 0 0 0 odom camera_init 100" />
 
     <include file="$(find navigation_config)/launch/lio/mid360_mapping.launch"/>
     <include file="$(find navigation_config)/launch/lio/mid360_loc_qn.launch"/>
@@ -18,5 +21,4 @@
         <rosparam file="$(find navigation_config)/config/teb_planner_params/costmap_global.yaml" command="load" ns="global_costmap"/>
         <rosparam file="$(find navigation_config)/config/teb_planner_params/costmap_local.yaml" command="load" ns="local_costmap"/>
     </node>
-
 </launch>

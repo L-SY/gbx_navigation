@@ -4,7 +4,7 @@ basic:
   vis_hz: 1.0                                 # visualize Hz
 
 keyframe:
-  keyframe_threshold: 1.5                     # unit [meter] every this distance, generate keyframe
+  keyframe_threshold: 0.5                     # unit [meter] every this distance, generate keyframe
   subkeyframes_number: 1                      # how many subkeyframes are merged to ICP with current keyframe (closest-this ~ closest+this, if exists)
 
 loop:

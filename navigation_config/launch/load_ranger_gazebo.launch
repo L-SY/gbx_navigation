@@ -1,7 +1,8 @@
 <launch>
 <!-- Add gazebo world   -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find navigation_config)/worlds/robocup_home.world"/>
+<!--        <arg name="world_name" value="$(find navigation_config)/worlds/robocup_home.world"/>-->
+        <arg name="world_name" value="$(find navigation_config)/worlds/E3_121.world"/>
         <arg name="paused" value="false"/>
         <arg name="use_sim_time" value="true"/>
         <arg name="gui" value="true"/>
