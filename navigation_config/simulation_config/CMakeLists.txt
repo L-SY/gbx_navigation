@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(gazebo_test_config)
+project(simulation_config)
 
 find_package(catkin REQUIRED)
 
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES gazebo_test_config
+#  LIBRARIES simulation_config
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
