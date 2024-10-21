@@ -1,6 +1,6 @@
-image: E3_121.png
+image: E3_121.pgm
 resolution: 0.050000
-origin: [-13.940863, -4.824998, 0.000000]
+origin: [-6.267892, -8.927386, 0.000000]
 negate: 0
 occupied_thresh: 0.65
 free_thresh: 0.196
