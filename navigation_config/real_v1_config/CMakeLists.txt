@@ -5,7 +5,7 @@ find_package(catkin REQUIRED)
 
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES navigation_config
+#  LIBRARIES real_v1_config
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )

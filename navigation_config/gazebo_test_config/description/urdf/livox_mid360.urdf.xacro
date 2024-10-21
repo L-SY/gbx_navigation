@@ -39,7 +39,7 @@
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0"/>
                 <geometry>
-                    <mesh filename="package://navigation_config/description/meshes/lidar/livox_mid360.stl" scale="1 1 1"/>
+                    <mesh filename="package://gazebo_test_config/description/meshes/lidar/livox_mid360.stl" scale="1 1 1"/>
                 </geometry>
             </visual>
             <collision>

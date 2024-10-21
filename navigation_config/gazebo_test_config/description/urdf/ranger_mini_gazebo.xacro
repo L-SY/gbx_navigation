@@ -12,7 +12,7 @@
         <visual>
 <!--            <origin xyz="0 0 0" rpy="1.57 0 3.14 " />-->
 <!--            <geometry>-->
-<!--                <mesh filename="package://navigation_config/description/meshes/ranger_mini_v2/ranger_base/ranger_base.dae" />-->
+<!--                <mesh filename="package://gazebo_test_config/description/meshes/ranger_mini_v2/ranger_base/ranger_base.dae" />-->
 <!--            </geometry>-->
             <origin xyz="0 0 -0.1" rpy="0 0 0" />
             <geometry>
@@ -37,7 +37,7 @@
         <visual>
 <!--            <origin xyz="-0.23 -0.194 0.1" rpy="1.57 0 3.14 " />-->
 <!--            <geometry>-->
-<!--                    <mesh filename="package://navigation_config/description/meshes/ranger_mini_v2/fl.dae" />-->
+<!--                    <mesh filename="package://gazebo_test_config/description/meshes/ranger_mini_v2/fl.dae" />-->
 <!--            </geometry>-->
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
@@ -115,7 +115,7 @@
             </geometry>
 <!--            <origin xyz="-0.23 0.194 0.1" rpy="1.57 0 3.14 " />-->
 <!--            <geometry>-->
-<!--                <mesh filename="package://navigation_config/description/meshes/ranger_mini_v2/fr.dae" />-->
+<!--                <mesh filename="package://gazebo_test_config/description/meshes/ranger_mini_v2/fr.dae" />-->
 <!--            </geometry>-->
         </visual>
         <collision>
@@ -183,7 +183,7 @@
             </geometry>
 <!--            <origin xyz="-0.23 -0.194 0.1" rpy="1.57 0 3.14 " />-->
 <!--            <geometry>-->
-<!--                    <mesh filename="package://navigation_config/description/meshes/ranger_mini_v2/fl.dae" />-->
+<!--                    <mesh filename="package://gazebo_test_config/description/meshes/ranger_mini_v2/fl.dae" />-->
 <!--            </geometry>-->
         </visual>
         <collision>
@@ -251,7 +251,7 @@
             </geometry>
 <!--            <origin xyz="-0.23 0.194 0.1" rpy="1.57 0 3.14 " />-->
 <!--            <geometry>-->
-<!--                    <mesh filename="package://navigation_config/description/meshes/ranger_mini_v2/fr.dae" />-->
+<!--                    <mesh filename="package://gazebo_test_config/description/meshes/ranger_mini_v2/fr.dae" />-->
 <!--            </geometry>-->
         </visual>
         <collision>

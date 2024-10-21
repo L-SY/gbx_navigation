@@ -1,7 +1,7 @@
 <launch>
 <!-- Launch file for ouster OS2-64 LiDAR -->
     <arg name="rviz" default="false" />
-    <rosparam command="load" file="$(find navigation_config)/config/lio/ouster_os1_fast_lio.yaml" />
+    <rosparam command="load" file="$(find real_v1_config)/config/lio/ouster_os1_fast_lio.yaml" />
 
     <param name="feature_extract_enable" type="bool" value="0"/>
     <param name="point_filter_num" type="int" value="2"/>
