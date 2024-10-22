@@ -278,60 +278,60 @@ void RangerROSMessenger::PublishStateToROS() {
 void RangerROSMessenger::UpdateOdometry(double linear, double angular,
                                         double steering_angle, double dt) {
   // publish odometry and tf messages
-  nav_msgs::Odometry odom_msg;
-  odom_msg.header.stamp = current_time_;
-  odom_msg.header.frame_id = odom_frame_;
-  odom_msg.child_frame_id = base_frame_;
-
-  odom_msg.pose.pose.position.x = position_x_;
-  odom_msg.pose.pose.position.y = position_y_;
-  odom_msg.pose.pose.position.z = 0.0;
-  odom_msg.pose.pose.orientation = odom_quat;
-
-  if (motion_mode_ == MotionState::MOTION_MODE_DUAL_ACKERMAN) {
-    odom_msg.twist.twist.linear.x = linear;
-    odom_msg.twist.twist.linear.y = 0.0;
-    if (steering_angle == 0) {
-      odom_msg.twist.twist.angular.z = 0;
-    } else {
-      odom_msg.twist.twist.angular.z =
-          (steering_angle / std::abs(steering_angle)) * 2 * linear /
-          (robot_params_.wheelbase / std::abs(std::tan(steering_angle)) +
-           robot_params_.track);
-    }
-  } else if (motion_mode_ == MotionState::MOTION_MODE_PARALLEL ||
-             motion_mode_ == MotionState::MOTION_MODE_SIDE_SLIP) {
-    double phi = steering_angle;
-
-    if (motion_mode_ == MotionState::MOTION_MODE_SIDE_SLIP) {
-      phi = M_PI / 2.0;
-    }
-    odom_msg.twist.twist.linear.x = linear * std::cos(phi);
-    odom_msg.twist.twist.linear.y = linear * std::sin(phi);
-
-    odom_msg.twist.twist.angular.z = 0;
-  } else if (motion_mode_ == MotionState::MOTION_MODE_SPINNING) {
-    odom_msg.twist.twist.linear.x = 0;
-    odom_msg.twist.twist.linear.y = 0;
-    odom_msg.twist.twist.angular.z = angular;
-  }
-
-  odom_pub_.publish(odom_msg);
-
-  // // publish tf transformation
-  if (publish_odom_tf_) {
-    geometry_msgs::TransformStamped tf_msg;
-    tf_msg.header.stamp = current_time_;
-    tf_msg.header.frame_id = odom_frame_;
-    tf_msg.child_frame_id = base_frame_;
-
-    tf_msg.transform.translation.x = position_x_;
-    tf_msg.transform.translation.y = position_y_;
-    tf_msg.transform.translation.z = 0.0;
-    tf_msg.transform.rotation = odom_quat;
-
-    tf_broadcaster_.sendTransform(tf_msg);
-  }
+//  nav_msgs::Odometry odom_msg;
+//  odom_msg.header.stamp = current_time_;
+//  odom_msg.header.frame_id = odom_frame_;
+//  odom_msg.child_frame_id = base_frame_;
+//
+//  odom_msg.pose.pose.position.x = position_x_;
+//  odom_msg.pose.pose.position.y = position_y_;
+//  odom_msg.pose.pose.position.z = 0.0;
+//  odom_msg.pose.pose.orientation = odom_quat;
+//
+//  if (motion_mode_ == MotionState::MOTION_MODE_DUAL_ACKERMAN) {
+//    odom_msg.twist.twist.linear.x = linear;
+//    odom_msg.twist.twist.linear.y = 0.0;
+//    if (steering_angle == 0) {
+//      odom_msg.twist.twist.angular.z = 0;
+//    } else {
+//      odom_msg.twist.twist.angular.z =
+//          (steering_angle / std::abs(steering_angle)) * 2 * linear /
+//          (robot_params_.wheelbase / std::abs(std::tan(steering_angle)) +
+//           robot_params_.track);
+//    }
+//  } else if (motion_mode_ == MotionState::MOTION_MODE_PARALLEL ||
+//             motion_mode_ == MotionState::MOTION_MODE_SIDE_SLIP) {
+//    double phi = steering_angle;
+//
+//    if (motion_mode_ == MotionState::MOTION_MODE_SIDE_SLIP) {
+//      phi = M_PI / 2.0;
+//    }
+//    odom_msg.twist.twist.linear.x = linear * std::cos(phi);
+//    odom_msg.twist.twist.linear.y = linear * std::sin(phi);
+//
+//    odom_msg.twist.twist.angular.z = 0;
+//  } else if (motion_mode_ == MotionState::MOTION_MODE_SPINNING) {
+//    odom_msg.twist.twist.linear.x = 0;
+//    odom_msg.twist.twist.linear.y = 0;
+//    odom_msg.twist.twist.angular.z = angular;
+//  }
+//
+//  odom_pub_.publish(odom_msg);
+//
+//  // // publish tf transformation
+//  if (publish_odom_tf_) {
+//    geometry_msgs::TransformStamped tf_msg;
+//    tf_msg.header.stamp = current_time_;
+//    tf_msg.header.frame_id = odom_frame_;
+//    tf_msg.child_frame_id = base_frame_;
+//
+//    tf_msg.transform.translation.x = position_x_;
+//    tf_msg.transform.translation.y = position_y_;
+//    tf_msg.transform.translation.z = 0.0;
+//    tf_msg.transform.rotation = odom_quat;
+//
+//    tf_broadcaster_.sendTransform(tf_msg);
+//  }
 }
 
 void RangerROSMessenger::TwistCmdCallback(
