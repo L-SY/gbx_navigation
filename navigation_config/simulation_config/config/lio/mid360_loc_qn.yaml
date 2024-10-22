@@ -1,7 +1,7 @@
 basic:
   map_frame: "odom"                            # publish frame
   map_match_hz: 2.0                           # Map match Hz
-  saved_map: "/home/lsy/navigation_ws/src/gbx_navigation/simulation_config/bag/result.bag"        # directory should be in absolute path
+  saved_map: "/home/lsy/navigation_ws/src/gbx_navigation/navigation_config/simulation_config/bag/simulation.bag"        # directory should be in absolute path
 
 keyframe:
   keyframe_threshold: 0.5                     # unit [meter] every this distance, generate keyframe
