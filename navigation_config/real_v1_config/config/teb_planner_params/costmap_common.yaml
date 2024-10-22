@@ -11,7 +11,7 @@ static:
 
 inflation_global:
   cost_scaling_factor: 3.0
-  inflation_radius: 0.5
+  inflation_radius: 1.0
 
 obstacles_livox:
   track_unknown_space: true
@@ -21,4 +21,4 @@ obstacles_livox:
 
 inflation:
   cost_scaling_factor: 5.0
-  inflation_radius: 0.7
+  inflation_radius: 1.5

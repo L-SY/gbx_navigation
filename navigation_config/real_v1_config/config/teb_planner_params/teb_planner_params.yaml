@@ -29,14 +29,14 @@ TebLocalPlannerROS:
   publish_feedback: False
 
   # Robot
-  max_vel_x: 3.0
-  max_vel_x_backwards: 2.0
+  max_vel_x: 1.0
+  max_vel_x_backwards: 0.3
   max_vel_y: 0.0
-  max_vel_theta: 1.0
-  acc_lim_x: 2.5
+  max_vel_theta: 0.2
+  acc_lim_x: 0.5
   acc_lim_y: 0.0
-  acc_lim_theta: 1.5
-  min_turning_radius: 0.5 # omni-drive robot (can turn on place!)
+  acc_lim_theta: 0.1
+  min_turning_radius: 0.2 # omni-drive robot (can turn on place!)
 
   footprint_model:
     type: "polygon"
