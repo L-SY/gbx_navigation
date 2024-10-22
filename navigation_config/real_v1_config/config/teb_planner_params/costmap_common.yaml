@@ -13,11 +13,12 @@ inflation_global:
   cost_scaling_factor: 3.0
   inflation_radius: 1.0
 
-obstacles_livox:
+# TODO（4yang): find /voxel_grid/output id published by who?
+obstacles_ouster:
   track_unknown_space: true
   observation_sources: point_cloud
-  point_cloud: { data_type: PointCloud2, clearing: true, marking: true, topic: /voxel_grid/output, inf_is_valid: true, min_obstacle_height: 0.0 , max_obstacle_height: 2.0, obstacle_range: 3.5,
-                 raytrace_range: 3.5 }
+  point_cloud: { data_type: PointCloud2, clearing: true, marking: true, topic: /cloud_registered, inf_is_valid: true, min_obstacle_height: 0.0 , max_obstacle_height: 2.0, obstacle_range: 3,
+                 raytrace_range: 3 }
 
 inflation:
   cost_scaling_factor: 5.0
