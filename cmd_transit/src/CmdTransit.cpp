@@ -11,7 +11,7 @@ public:
   {
     ros::NodeHandle private_nh("~");
     private_nh.param("input_topic", input_topic_, std::string("/cmd_vel"));
-    private_nh.param("output_topic", output_topic_, std::string("/cmd_vel_repeated"));
+    private_nh.param("output_topic", output_topic_, std::string("/ranger/cmd_vel"));
     private_nh.param("frequency", frequency_, 10.0);
 
     cmd_vel_sub_ = nh_.subscribe(input_topic_, 10, &CmdTransit::cmdVelCallback, this);
