@@ -71,34 +71,20 @@ Visualization Manager:
         All Enabled: false
         base_link:
           Value: true
-        body:
-          Value: true
         camera_init:
-          Value: true
-        fl_steering_wheel_link:
-          Value: false
-        fl_wheel_link:
-          Value: false
-        fr_steering_wheel_link:
-          Value: false
-        fr_wheel_link:
-          Value: false
-        livox_imu:
-          Value: true
-        livox_lidar:
           Value: true
         map:
           Value: true
         odom:
           Value: false
-        rl_steering_wheel_link:
-          Value: false
-        rl_wheel_link:
-          Value: false
-        rr_steering_wheel_link:
-          Value: false
-        rr_wheel_link:
-          Value: false
+        os_imu:
+          Value: true
+        os_lidar:
+          Value: true
+        os_sensor:
+          Value: true
+        vehicle:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -106,27 +92,18 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        odom:
-          base_link:
+        map:
+          odom:
+            base_link:
+              {}
             camera_init:
-              body:
-                {}
-            fl_steering_wheel_link:
-              fl_wheel_link:
-                {}
-            fr_steering_wheel_link:
-              fr_wheel_link:
-                {}
-            livox_lidar:
-              livox_imu:
-                {}
-            rl_steering_wheel_link:
-              rl_wheel_link:
-                {}
-            rr_steering_wheel_link:
-              rr_wheel_link:
-                {}
-          map:
+              {}
+          vehicle:
+            {}
+        os_sensor:
+          os_imu:
+            {}
+          os_lidar:
             {}
       Update Interval: 0
       Value: true
@@ -140,61 +117,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fl_steering_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fl_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fr_steering_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        fr_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        livox_imu:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        livox_lidar:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        rl_steering_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        rl_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        rr_steering_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        rr_wheel_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
@@ -310,7 +232,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: odom
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:
@@ -334,7 +256,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 27.532913208007812
+      Distance: 12.315291404724121
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -370,5 +292,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1048
-  X: 1920
-  Y: 0
+  X: 872
+  Y: 27

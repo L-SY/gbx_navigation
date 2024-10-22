@@ -1,7 +1,7 @@
 base_global_planner: "global_planner/GlobalPlanner"
 base_local_planner: "teb_local_planner/TebLocalPlannerROS"
 
-planner_frequency: 10
+planner_frequency: 20
 planner_patience: 3.0
 planner_max_retries: 10
 
