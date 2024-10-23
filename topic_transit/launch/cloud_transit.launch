@@ -5,6 +5,7 @@
     <arg name="input_topic" value="/cloud_registered" />
     <arg name="output_topic" value="cloud_registered_filter" />
     <arg name="frequency" value="10.0" />
+    <arg name="leaf_size" value="0.1" />
 
     <node name="cloud_transit" pkg="topic_transit" type="cloud_transit" output="screen">
         <param name="min_z" value="$(arg min_z)" />
