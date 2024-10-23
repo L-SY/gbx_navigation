@@ -119,6 +119,10 @@ FastLioSamQnClass::FastLioSamQnClass(const ros::NodeHandle& n_private) : m_nh(n_
 
 FastLioSamQnClass::~FastLioSamQnClass()
 {
+}
+
+void FastLioSamQnClass::saveResult()
+{
   // save map
   if (m_save_map_bag)
   {

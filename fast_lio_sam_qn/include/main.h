@@ -127,6 +127,7 @@ class FastLioSamQnClass
     ///// functions
   public:
     FastLioSamQnClass(const ros::NodeHandle& n_private);
+    void saveResult();
     ~FastLioSamQnClass();
   private:
     //methods
