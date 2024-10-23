@@ -16,8 +16,17 @@ inflation_global:
 obstacles_ouster:
   track_unknown_space: true
   observation_sources: point_cloud
-  point_cloud: { data_type: PointCloud2, clearing: true, marking: true, topic: /cloud_registered, inf_is_valid: true, min_obstacle_height: 0.0 , max_obstacle_height: 2.0, obstacle_range: 3.5,
-                 raytrace_range: 3.5 }
+  point_cloud: {
+    data_type: PointCloud2,
+    clearing: true,
+    marking: true,
+    topic: /cloud_registered,
+    inf_is_valid: true,
+    min_obstacle_height: 0.0,
+    max_obstacle_height: 2.0,
+    obstacle_range: 3.5,
+    raytrace_range: 3.5
+  }
 
 inflation:
   cost_scaling_factor: 5.0
