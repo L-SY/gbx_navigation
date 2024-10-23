@@ -11,6 +11,22 @@
     <include file="$(find real_v1_config)/launch/lio/ouster_os1_mapping.launch"/>
     <include file="$(find real_v1_config)/launch/lio/ouster_os1_loc_qn.launch"/>
 
+    <arg name="model" default="$(find real_v1_config)/urdf/ranger_ouster.xacro"/>
+
+    <!-- Load the URDF into the ROS Parameter Server -->
+    <param name="robot_description" command="$(find xacro)/xacro '$(arg model)'" />
+
+    <!-- load the controllers -->
+    <node name="controller_spawner" pkg="controller_manager"
+          type="spawner" output="screen"
+          args="joint_state_controller">
+    </node>
+
+    <!-- convert joint states to TF transforms for rviz, etc -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher"
+          type="robot_state_publisher" respawn="false" output="screen">
+    </node>
+
     <!--- Run Move_Base -->
     <node pkg="move_base" type="move_base" respawn="false" name="move_base"  output="screen">
         <rosparam file="$(find real_v1_config)/config/teb_planner_params/teb_planner_params.yaml" command="load"/>

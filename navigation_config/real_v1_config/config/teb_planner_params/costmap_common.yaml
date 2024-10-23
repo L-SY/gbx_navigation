@@ -14,18 +14,21 @@ inflation_global:
   inflation_radius: 1.0
 
 obstacles_ouster:
+  enable: true
+  combination_method: 1
   track_unknown_space: true
+  obstacle_range: 4
+  raytrace_range: 4
   observation_sources: point_cloud
   point_cloud: {
+    sensor_frame: os_lidar,
     data_type: PointCloud2,
     clearing: true,
-    marking: false,
-    topic: /cloud_registered,
+    marking: true,
+    topic: /ouster/points,
     inf_is_valid: true,
-    min_obstacle_height: 0.0,
+    min_obstacle_height: -1.0,
     max_obstacle_height: 2.0,
-    obstacle_range: 4,
-    raytrace_range: 4
   }
 
 inflation:
