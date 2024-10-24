@@ -153,7 +153,7 @@ protected:
   double max_obstacle_height_;  ///< @brief Max Obstacle Height
 
   laser_geometry::LaserProjection projector_;  ///< @brief Used to project laser scans into point clouds
-
+  std::shared_ptr<ros::Subscriber> sub_normal_;
   std::vector<boost::shared_ptr<message_filters::SubscriberBase> > observation_subscribers_;  ///< @brief Used for the observation message filters
   std::vector<boost::shared_ptr<tf2_ros::MessageFilterBase> > observation_notifiers_;  ///< @brief Used to make sure that transforms are available for each sensor
   std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > observation_buffers_;  ///< @brief Used to store observations from various sensors
