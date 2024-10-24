@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="ranger_ouster">
     <xacro:arg name="use_simulation" default="false"/>
-    <xacro:include filename="$(find simulation_config)/description/urdf/ranger_mini_gazebo.xacro"/>
+    <xacro:include filename="$(find real_v1_config)/urdf/ranger_mini_real.xacro"/>
 
     <link name="os_sensor">
         <inertial>
