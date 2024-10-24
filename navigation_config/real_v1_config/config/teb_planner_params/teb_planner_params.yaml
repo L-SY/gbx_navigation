@@ -17,11 +17,11 @@ TebLocalPlannerROS:
   teb_autosize: True
   dt_ref: 0.25
   dt_hysteresis: 0.1
-  min_samples: 20
+  min_samples: 5
   max_samples: 500
   global_plan_overwrite_orientation: True
   allow_init_with_backwards_motion: True
-  max_global_plan_lookahead_dist: 5.0
+  max_global_plan_lookahead_dist: 3.0
   global_plan_viapoint_sep: 0.5
   global_plan_prune_distance: 5
   exact_arc_length: False
