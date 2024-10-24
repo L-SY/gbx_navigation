@@ -56,7 +56,9 @@ public:
     // 将处理后的点云转换回ROS消息格式并发布
     sensor_msgs::PointCloud2 output;
     pcl::toROSMsg(*cloud, output);
-    output.header = input->header;  // 保持原始消息的时间戳和坐标系
+    output.header = input->header;
+    output.header.frame_id = "camera_init";
+    output.header.stamp = ros::Time::now();
     point_cloud_pub_.publish(output);
 
     rate_->sleep();  // 控制发布频率

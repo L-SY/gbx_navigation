@@ -189,10 +189,10 @@ void ObstacleLayer::onInitialize()
     }
     else
     {
-      sub_normal_ = std::make_shared<ros::Subscriber>(g_nh.subscribe<sensor_msgs::PointCloud2>(
-          topic, 50, [this, buffer = observation_buffers_.back()](const sensor_msgs::PointCloud2::ConstPtr& msg) {
-            pointCloud2Callback(msg, buffer);
-          }));
+      // sub_normal_ = std::make_shared<ros::Subscriber>(g_nh.subscribe<sensor_msgs::PointCloud2>(
+      //     topic, 50, [this, buffer = observation_buffers_.back()](const sensor_msgs::PointCloud2::ConstPtr& msg) {
+      //       pointCloud2Callback(msg, buffer);
+      //     }));
 
       boost::shared_ptr < message_filters::Subscriber<sensor_msgs::PointCloud2>
           > sub(new message_filters::Subscriber<sensor_msgs::PointCloud2>(g_nh, topic, 50));
@@ -204,8 +204,8 @@ void ObstacleLayer::onInitialize()
 
       boost::shared_ptr < tf2_ros::MessageFilter<sensor_msgs::PointCloud2>
       > filter(new tf2_ros::MessageFilter<sensor_msgs::PointCloud2>(*sub, *tf_, global_frame_, 50, g_nh));
-      filter->registerCallback([this,buffer=observation_buffers_.back()](auto& msg){});
 
+      filter->registerCallback([this,buffer=observation_buffers_.back()](auto& msg){ pointCloud2Callback(msg, buffer); });
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
     }
