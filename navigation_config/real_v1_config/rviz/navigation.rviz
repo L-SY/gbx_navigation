@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /TF1/Frames1
         - /local_costmap1
+        - /PointCloud22
       Splitter Ratio: 0.5
     Tree Height: 363
   - Class: rviz/Selection
@@ -75,6 +76,14 @@ Visualization Manager:
           Value: true
         camera_init:
           Value: true
+        fl_steering_wheel_link:
+          Value: true
+        fl_wheel_link:
+          Value: true
+        fr_steering_wheel_link:
+          Value: true
+        fr_wheel_link:
+          Value: true
         map:
           Value: true
         odom:
@@ -84,6 +93,14 @@ Visualization Manager:
         os_lidar:
           Value: true
         os_sensor:
+          Value: true
+        rl_steering_wheel_link:
+          Value: true
+        rl_wheel_link:
+          Value: true
+        rr_steering_wheel_link:
+          Value: true
+        rr_wheel_link:
           Value: true
       Marker Alpha: 1
       Marker Scale: 1
@@ -95,10 +112,22 @@ Visualization Manager:
         map:
           odom:
             base_link:
+              fl_steering_wheel_link:
+                fl_wheel_link:
+                  {}
+              fr_steering_wheel_link:
+                fr_wheel_link:
+                  {}
               os_sensor:
                 os_imu:
                   {}
                 os_lidar:
+                  {}
+              rl_steering_wheel_link:
+                rl_wheel_link:
+                  {}
+              rr_steering_wheel_link:
+                rr_wheel_link:
                   {}
             camera_init:
               body:
@@ -192,7 +221,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -207,7 +236,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 0.30000001192092896
       Class: rviz/Map
       Color Scheme: costmap
@@ -297,7 +326,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.05000000074505806
       Style: Flat Squares
       Topic: /cloud_registered_filter
       Unreliable: false
@@ -332,7 +361,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 18.032724380493164
+      Distance: 23.71312713623047
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -340,17 +369,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.7962244749069214
-        Y: 0.11624760180711746
-        Z: 0.2966969311237335
+        X: 1.602836012840271
+        Y: 0.40674442052841187
+        Z: 0.9533283710479736
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.47479650378227234
+      Pitch: 1.4247959852218628
       Target Frame: <Fixed Frame>
-      Yaw: 4.673598766326904
+      Yaw: 4.693594455718994
     Saved: ~
 Window Geometry:
   Displays:
