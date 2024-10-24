@@ -15,7 +15,7 @@ quatro_nano_gicp_voxel_resolution: 0.5        # voxel resolution to use Quatro a
 
 nano_gicp:                                    # all values are from Nano-GICP official github (Direct LiDAR Odometry)
   thread_number: 0                            # if 0, max number of core
-  icp_score_threshold: 0.4                      # lower is more accurate, for loop detection
+  icp_score_threshold: 0.2                      # lower is more accurate, for loop detection
   correspondences_number: 60
   max_iter: 128
   transformation_epsilon: 0.05
