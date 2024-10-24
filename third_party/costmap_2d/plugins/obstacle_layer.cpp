@@ -338,7 +338,6 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
 {
   // buffer the point cloud
   buffer->lock();
-  ROS_INFO_STREAM("cloud callback");
   buffer->bufferCloud(*message);
   buffer->unlock();
 }
