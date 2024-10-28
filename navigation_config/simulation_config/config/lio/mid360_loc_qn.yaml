@@ -1,7 +1,7 @@
 basic:
-  map_frame: "odom"                            # publish frame
-  map_match_hz: 2.0                           # Map match Hz
-  saved_map: "/home/lsy/navigation_ws/src/gbx_navigation/navigation_config/simulation_config/bag/simulation.bag"        # directory should be in absolute path
+  map_frame: "map"                            # publish frame
+  map_match_hz: 10.0                           # Map match Hz
+  saved_map: "/home/lsy/navigation_ws/src/gbx_navigation/navigation_config/simulation_config/bag/simulation_map.bag"        # directory should be in absolute path
 
 keyframe:
   keyframe_threshold: 0.5                     # unit [meter] every this distance, generate keyframe
@@ -13,7 +13,7 @@ match:
 
 nano_gicp:                                    # all values are from Nano-GICP official github (Direct LiDAR Odometry)
   thread_number: 0                            # if 0, max number of core
-  icp_score_threshold: 0.5                    # lower is more accurate, for map-scan matching
+  icp_score_threshold: 2.0                    # lower is more accurate, for map-scan matching
   correspondences_number: 15
   max_iter: 32
   transformation_epsilon: 0.01

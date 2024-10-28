@@ -18,11 +18,11 @@
     <param name="robot_description" command="$(find xacro)/xacro '$(arg model)'" />
 
     <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
-    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-          args="-urdf -model ranger_livox -param robot_description"/>
-
 <!--    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"-->
-<!--          args="-urdf -x -6.0 -y -0.5 -model ranger_livox -param robot_description"/>-->
+<!--          args="-urdf -model ranger_livox -param robot_description"/>-->
+
+    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+          args="-urdf -x -1.0 -y -1.0 -model ranger_livox -param robot_description"/>
 
     <!-- ros_control motoman launch file -->
     <include file="$(find ranger_mini_control)/launch/robot_control_v2.launch"/>

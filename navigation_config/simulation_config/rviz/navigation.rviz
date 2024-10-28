@@ -106,7 +106,7 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        odom:
+        map:
           base_link:
             camera_init:
               body:
@@ -126,7 +126,7 @@ Visualization Manager:
             rr_steering_wheel_link:
               rr_wheel_link:
                 {}
-          map:
+          odom:
             {}
       Update Interval: 0
       Value: true
@@ -233,7 +233,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.029999999329447746
       Style: Flat Squares
-      Topic: /cloud_registered
+      Topic: /corrected_current_pcd
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -334,7 +334,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 27.532913208007812
+      Distance: 17.963966369628906
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -342,17 +342,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.47522610425949097
-        Y: 1.103495478630066
-        Z: 0.250752717256546
+        X: 0.6479964256286621
+        Y: 0.6940755844116211
+        Z: 0.27903807163238525
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.499796748161316
+      Pitch: 1.524796724319458
       Target Frame: <Fixed Frame>
-      Yaw: 1.5603994131088257
+      Yaw: 1.5903993844985962
     Saved: ~
 Window Geometry:
   Displays:
