@@ -53,4 +53,20 @@ catkin build quatro -DCMAKE_BUILD_TYPE=Release -DQUATRO_TBB=ON -DQUATRO_DEBUG=OF
 catkin build -DCMAKE_BUILD_TYPE=Release
 ```
 
+### How to use in real car
+
+- open `roscore` , and `ouster os1` in `supervise.html`
+- open a terminal and run:
+
+```
+roslaunch real_v1_config ranger_mini_v2.launch
+```
+
+- open a terminal and run:
+
+```
+roslaunch real_v1_config load_move_base.launch
+```
+
+and then operate in Rviz, like pub a destination.
 ​    
