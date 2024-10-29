@@ -54,6 +54,8 @@ FastLioLocalizationQnClass::FastLioLocalizationQnClass(const ros::NodeHandle& n_
   m_nh.param<double>("/keyframe/keyframe_threshold", m_keyframe_thr, 1.0);
   m_nh.param<int>("/keyframe/subkeyframes_number", m_sub_key_num, 5);
   /* match */
+  m_nh.param<double>("/match/icp_lowest_score", m_icp_lowest_score, 0.05);
+  m_nh.param<double>("/match/score_decay_rate", m_score_decay_rate, -0.6);
   m_nh.param<double>("/match/match_detection_radius", m_match_det_radi, 15.0);
   /* nano */
   m_nh.param<int>("/nano_gicp/thread_number", nano_thread_number_, 0);

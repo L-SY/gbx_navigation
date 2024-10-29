@@ -102,6 +102,7 @@ Eigen::Matrix4d FastLioLocalizationQnClass::icpKeyToSubkeys(const PosePcd& curre
     output_tf_ = m_nano_gicp.getFinalTransformation().cast<double>();
     ROS_INFO_STREAM("converged!!");
     ROS_INFO_STREAM("The socre :=" << score);
+    ROS_INFO_STREAM("Global_localization count: " << m_global_localization_count);
   }
   return output_tf_;
 }
@@ -144,6 +145,19 @@ Eigen::Matrix4d FastLioLocalizationQnClass::coarseToFineKeyToKey(const PosePcd& 
       output_tf_ = icp_tf_ * quatro_tf_; // IMPORTANT: take care of the order
       ROS_INFO_STREAM("converged!!");
       ROS_INFO_STREAM("The socre :=" << score);
+      if (m_global_localization_count <= 5) {
+        m_global_localization_count++;
+        m_icp_score_thr *= exp( m_score_decay_rate * m_global_localization_count );
+        if (m_icp_score_thr<m_icp_lowest_score)
+          m_icp_score_thr = m_icp_lowest_score;
+        ROS_INFO_STREAM("m_icp_score_thr ="<< m_icp_score_thr);
+        ROS_INFO_STREAM("Global_localization count: " << m_global_localization_count);
+      }
+      else
+      {
+        m_enable_quatro = false;
+        ROS_INFO_STREAM("change mode to only nano_gicp!");
+      }
     }
     else if_converged = false;
     // vis for debug

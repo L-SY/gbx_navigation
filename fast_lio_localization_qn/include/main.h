@@ -91,6 +91,10 @@ class FastLioLocalizationQnClass
     double m_icp_score_thr;
     double m_match_det_radi;
     int m_sub_key_num;
+    double m_icp_lowest_score;
+    double m_score_decay_rate;
+    int m_global_localization_count = 0;
+
     std::vector<std::pair<pcl::PointXYZ, pcl::PointXYZ>> m_match_xyz_pairs; //for vis
     ///// visualize
     tf::TransformBroadcaster m_broadcaster;
