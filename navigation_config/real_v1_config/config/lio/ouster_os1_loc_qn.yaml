@@ -1,22 +1,22 @@
 basic:
   map_frame: "map"                            # publish frame
   map_match_hz: 2.0                           # Map match Hz
-#  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F.bag"        # directory should be in absolute path
-  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/E3_121_map.bag"
+  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F.bag"        # directory should be in absolute path
+#  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/E3_121_map.bag"
 
 keyframe:
   keyframe_threshold: 0.5                     # unit [meter] every this distance, generate keyframe
   subkeyframes_number: 3                      # how many subkeyframes are merged to ICP with current keyframe (closest-this ~ closest+this, if exists)
 
 match:
-  match_detection_radius: 30.0                # unit [meter] within this radius, check if matched or not
+  match_detection_radius: 150.0                # unit [meter] within this radius, check if matched or not
   quatro_nano_gicp_voxel_resolution: 1      # voxel resolution to use Quatro and Nano-GI2f_3CP matching
   icp_lowest_score: 0.05
   score_decay_rate: -0.3
 
 nano_gicp:                                    # all values are from Nano-GICP official github (Direct LiDAR Odometry)
   thread_number: 0                            # if 0, max number of core
-  icp_score_threshold: 1.5                  # lower is more accurate, for map-scan matching
+  icp_score_threshold: 3.5                  # lower is more accurate, for map-scan matching
   correspondences_number: 15
   max_iter: 32
   transformation_epsilon: 0.01
