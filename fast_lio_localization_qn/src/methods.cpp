@@ -100,6 +100,8 @@ Eigen::Matrix4d FastLioLocalizationQnClass::icpKeyToSubkeys(const PosePcd& curre
   {
     if_converged = true;
     output_tf_ = m_nano_gicp.getFinalTransformation().cast<double>();
+    ROS_INFO_STREAM("converged!!");
+    ROS_INFO_STREAM("The socre :=" << score);
   }
   return output_tf_;
 }
@@ -140,6 +142,8 @@ Eigen::Matrix4d FastLioLocalizationQnClass::coarseToFineKeyToKey(const PosePcd& 
       if_converged = true;
       Eigen::Matrix4d icp_tf_ = m_nano_gicp.getFinalTransformation().cast<double>();
       output_tf_ = icp_tf_ * quatro_tf_; // IMPORTANT: take care of the order
+      ROS_INFO_STREAM("converged!!");
+      ROS_INFO_STREAM("The socre :=" << score);
     }
     else if_converged = false;
     // vis for debug

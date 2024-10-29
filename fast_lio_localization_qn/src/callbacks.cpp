@@ -86,7 +86,7 @@ void FastLioLocalizationQnClass::matchingTimerFunc(const ros::TimerEvent& event)
 
   if (not_proc_key_copy_.idx==0 || not_proc_key_copy_.processed)
   {
-    ROS_INFO("Already processed or initial keyframe");
+//    ROS_INFO("Already processed or initial keyframe");
     return; //already processed or initial keyframe
   } 
 
