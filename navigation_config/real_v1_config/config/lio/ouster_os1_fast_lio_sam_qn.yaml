@@ -1,5 +1,5 @@
 basic:
-  map_frame: "odom"                            # publish frame
+  map_frame: "map"                            # publish frame
   loop_update_hz: 2.0                         # Loop detection Hz
   vis_hz: 1.0                                 # visualize Hz
 
