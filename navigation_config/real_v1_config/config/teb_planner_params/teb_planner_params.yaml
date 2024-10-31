@@ -20,9 +20,9 @@ TebLocalPlannerROS:
   min_samples: 5
   max_samples: 500
   global_plan_overwrite_orientation: True
-  allow_init_with_backwards_motion: True
+  allow_init_with_backwards_motion: False
   max_global_plan_lookahead_dist: 3.0
-  global_plan_viapoint_sep: 0.5
+  global_plan_viapoint_sep: 1.5
   global_plan_prune_distance: 5
   exact_arc_length: False
   feasibility_check_no_poses: 1
@@ -45,29 +45,35 @@ TebLocalPlannerROS:
   # GoalTolerance
   xy_goal_tolerance: 0.5
   yaw_goal_tolerance: 0.2
-  free_goal_vel: False
-  complete_global_plan: True
+  free_goal_vel: True
+  complete_global_plan: False
 
   # Obstacles
   min_obstacle_dist: 0.3 # This value must also include our robot radius, since footprint_model is set to "point".
   inflation_dist: 0.4
   include_costmap_obstacles: True
-  costmap_obstacles_behind_robot_dist: 2.0
+  costmap_obstacles_behind_robot_dist: 0.0
   obstacle_poses_affected: 25
-  costmap_converter_plugin: "costmap_converter::CostmapToLinesDBSRANSAC"
+  costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
   costmap_converter_spin_thread: True
   costmap_converter_rate: 25
 
-  costmap_converter/CostmapToLinesDBSRANSAC:
+  costmap_converter/CostmapToPolygonsDBSMCCH:
     cluster_max_distance: 0.4
     cluster_min_pts: 2
-    ransac_inlier_distance: 0.15
-    ransac_min_inliers: 2
-    ransac_no_iterations: 2000
-    ransac_remainig_outliers: 3
-    ransac_convert_outlier_pts: True
-    ransac_filter_remaining_outlier_pts: False
+    cluster_max_pts: 30
     convex_hull_min_pt_separation: 0.1
+
+#  costmap_converter/CostmapToLinesDBSRANSAC:
+#    cluster_max_distance: 0.4
+#    cluster_min_pts: 2
+#    ransac_inlier_distance: 0.15
+#    ransac_min_inliers: 2
+#    ransac_no_iterations: 2000
+#    ransac_remainig_outliers: 3
+#    ransac_convert_outlier_pts: True
+#    ransac_filter_remaining_outlier_pts: False
+#    convex_hull_min_pt_separation: 0.1
 
   # Optimization
   no_inner_iterations: 3
