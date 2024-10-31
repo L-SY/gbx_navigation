@@ -31,3 +31,9 @@ target_link_libraries(cmd_transit ${catkin_LIBRARIES})
 
 add_executable(cloud_transit src/CloudTransit.cpp)
 target_link_libraries(cloud_transit ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(topic_gen_trajectory src/TopicGenTrajectory.cpp)
+target_link_libraries(topic_gen_trajectory ${catkin_LIBRARIES} )
+
+add_executable(point_transit src/PointTransit.cpp)
+target_link_libraries(point_transit ${catkin_LIBRARIES})

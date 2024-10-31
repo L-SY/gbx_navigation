@@ -1,0 +1,5 @@
+<launch>
+    <node name="point_transit" pkg="topic_transit" type="point_transit" output="screen">
+        <param name="csv_file_path" value="/home/lsy/navigation_ws/src/gbx_navigation/topic_transit/record_trajectory/simulation.csv" />
+    </node>
+</launch>
