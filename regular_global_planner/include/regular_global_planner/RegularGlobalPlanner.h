@@ -56,6 +56,7 @@ public:
    */
   void interpolatePath(nav_msgs::Path& path);
 
+  std::vector<geometry_msgs::PoseStamped> interpolateWaypoints(const std::vector<geometry_msgs::PoseStamped>& waypoints);
 private:
   bool initialized_;  //!< flag indicating the planner has been initialized
   costmap_2d::Costmap2DROS* costmap_ros_;  //!< costmap ros wrapper
@@ -74,7 +75,7 @@ private:
   int waypoints_per_meter_;  //!< number of waypoints per meter of generated path used for interpolation
 
   // containers
-  std::vector<geometry_msgs::PoseStamped> waypoints_;  //!< container for the manually inserted waypoints
+  std::vector<geometry_msgs::PoseStamped> waypoints_, interpolated_waypoints_;  //!< container for the manually inserted waypoints
   nav_msgs::Path path_;  //!< container for the generated interpolated path
 
   //flags

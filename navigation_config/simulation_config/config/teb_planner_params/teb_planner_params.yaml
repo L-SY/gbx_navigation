@@ -14,8 +14,8 @@
 #  orientation_window_size: 1 #默认1，根据orientation_mode指定的位置积分确定窗口方向
 
 RegularGlobalPlanner:
-  epsilon: 1e-1  # distance threshold for final waypoint
-  waypoints_per_meter: 50  # number of waypoints per meter for the interpolation of the path
+  epsilon: 1e0  # distance threshold for final waypoint
+  waypoints_per_meter: 10  # number of waypoints per meter for the interpolation of the path
 
 TebLocalPlannerROS:
   odom_topic: odom

@@ -6,6 +6,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <tf/LinearMath/Quaternion.h>
 #include <tf/transform_datatypes.h>
+#include <tf/transform_listener.h>
 
 namespace regular_global_planner {
 
@@ -53,12 +54,35 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
 }
 
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
+  path_.poses.clear();
+  path_.poses.push_back(start);
+  tf::TransformListener listener;
+  int nearest_index = -1;
+  double min_dist = std::numeric_limits<double>::max();
 
-  path_.poses.insert(path_.poses.begin(), start);
-  interpolatePath(path_);
+  for (size_t i = 0; i < interpolated_waypoints_.size(); ++i) {
+    const auto& waypoint = interpolated_waypoints_[i];
+    double dist = hypot(start.pose.position.x - waypoint.pose.position.x, start.pose.position.y - waypoint.pose.position.y);
+
+    if (dist < min_dist) {
+      min_dist = dist;
+      nearest_index = i;
+    }
+  }
+
+  if (nearest_index == -1) {
+    ROS_WARN("No suitable waypoint found in the forward direction of base_link.");
+    return false;
+  }
+
+  for (size_t i = nearest_index; i < interpolated_waypoints_.size()-1; ++i) {
+    path_.poses.push_back(interpolated_waypoints_[i]);
+  }
+
+//  interpolatePath(path_);
   plan_pub_.publish(path_);
   plan = path_.poses;
-  ROS_INFO("Published global plan");
+  ROS_INFO("Published global plan with forward waypoints in base_link frame.");
   return true;
 }
 
@@ -67,6 +91,7 @@ void RegularGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::C
   if (clear_waypoints_)
   {
     waypoints_.clear();
+    interpolated_waypoints_.clear();
     clear_waypoints_ = false;
   }
 
@@ -77,6 +102,7 @@ void RegularGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::C
   waypoints_.back().pose.orientation.w = 1.0;
   // make sure z position is zero
   waypoints_.back().pose.position.z = 0.0;
+  waypoints_.back().header.frame_id = "map";
   // create and publish markers
   createAndPublishMarkersFromPath(waypoints_);
 
@@ -100,9 +126,40 @@ void RegularGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::C
     path_.poses.insert(path_.poses.end(), waypoints_.begin(), waypoints_.end());
     goal_pub_.publish(waypoints_.back());
     clear_waypoints_ = true;
+    interpolated_waypoints_ = interpolateWaypoints(waypoints_);
     ROS_INFO("Published goal pose");
   }
 }
+
+std::vector<geometry_msgs::PoseStamped> RegularGlobalPlanner::interpolateWaypoints(const std::vector<geometry_msgs::PoseStamped>& waypoints) {
+  std::vector<geometry_msgs::PoseStamped> interpolated_waypoints;
+
+  for (size_t i = 0; i < waypoints.size() - 1; ++i) {
+    const auto& p1 = waypoints[i];
+    const auto& p2 = waypoints[i + 1];
+
+    double dist = hypot(p2.pose.position.x - p1.pose.position.x, p2.pose.position.y - p1.pose.position.y);
+    int num_points = static_cast<int>(dist * waypoints_per_meter_);
+
+    interpolated_waypoints.push_back(p1);
+    geometry_msgs::PoseStamped interpolated_point = p1;
+
+    for (int j = 1; j < num_points; ++j) {
+      double t = static_cast<double>(j) / num_points;
+
+      interpolated_point.pose.position.x = p1.pose.position.x + t * (p2.pose.position.x - p1.pose.position.x);
+      interpolated_point.pose.position.y = p1.pose.position.y + t * (p2.pose.position.y - p1.pose.position.y);
+
+      interpolated_point.pose.orientation = p1.pose.orientation;
+
+      interpolated_waypoints.push_back(interpolated_point);
+    }
+  }
+
+  interpolated_waypoints.push_back(waypoints.back());
+  return interpolated_waypoints;
+}
+
 
 void RegularGlobalPlanner::interpolatePath(nav_msgs::Path& path)
 {
