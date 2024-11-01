@@ -75,7 +75,8 @@ void RegularGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::C
   waypoints_.back().header = waypoint->header;
   waypoints_.back().pose.position = waypoint->point;
   waypoints_.back().pose.orientation.w = 1.0;
-
+  // make sure z position is zero
+  waypoints_.back().pose.position.z = 0.0;
   // create and publish markers
   createAndPublishMarkersFromPath(waypoints_);
 

@@ -13,7 +13,7 @@ controller_patience: 3.0
 controller_max_retries: 10
 
 recovery_patience: 3.0
-recovery_behaviour_enabled: true
+recovery_behaviour_enabled: false
 
 recovery_behaviors:
   - name: 'conservative_reset'
