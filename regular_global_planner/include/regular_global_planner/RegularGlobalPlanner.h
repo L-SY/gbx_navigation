@@ -3,6 +3,7 @@
 //
 
 #include <ros/ros.h>
+#include <cmath>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_core/base_global_planner.h>
@@ -57,6 +58,18 @@ public:
   void interpolatePath(nav_msgs::Path& path);
 
   std::vector<geometry_msgs::PoseStamped> interpolateWaypoints(const std::vector<geometry_msgs::PoseStamped>& waypoints);
+
+  std::vector<geometry_msgs::PoseStamped> removeSharpTurns(const std::vector<geometry_msgs::PoseStamped>& waypoints, double angle_threshold);
+
+  std::vector<geometry_msgs::PoseStamped> arcInterpolateThreePoints(
+    const geometry_msgs::PoseStamped& p0,
+    const geometry_msgs::PoseStamped& p1,
+    const geometry_msgs::PoseStamped& p2,
+    int num_points);
+
+  std::vector<geometry_msgs::PoseStamped> smoothPathWithArcs(
+      const std::vector<geometry_msgs::PoseStamped>& waypoints, int num_points_per_arc);
+
 private:
   bool initialized_;  //!< flag indicating the planner has been initialized
   costmap_2d::Costmap2DROS* costmap_ros_;  //!< costmap ros wrapper
@@ -75,7 +88,7 @@ private:
   int waypoints_per_meter_;  //!< number of waypoints per meter of generated path used for interpolation
 
   // containers
-  std::vector<geometry_msgs::PoseStamped> waypoints_, interpolated_waypoints_;  //!< container for the manually inserted waypoints
+  std::vector<geometry_msgs::PoseStamped> waypoints_, interpolated_waypoints_, smoothed_path_;  //!< container for the manually inserted waypoints
   nav_msgs::Path path_;  //!< container for the generated interpolated path
 
   //flags
