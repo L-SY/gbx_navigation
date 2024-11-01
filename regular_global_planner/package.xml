@@ -22,6 +22,6 @@
   <exec_depend>move_base</exec_depend>
 
   <export>
-    <nav_core plugin="${prefix}/regular_global_planner.xml" />
+    <nav_core plugin="${prefix}/regular_global_planner_plugin.xml" />
   </export>
 </package>

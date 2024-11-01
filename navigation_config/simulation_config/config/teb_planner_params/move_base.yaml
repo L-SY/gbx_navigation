@@ -4,7 +4,7 @@
 #planner_max_retries: 10
 
 base_local_planner: "teb_local_planner/TebLocalPlannerROS"
-base_global_planner: "waypoint_global_planner/WaypointGlobalPlanner"
+base_global_planner: "regular_global_planner/RegularGlobalPlanner"
 planner_frequency: 0.0
 planner_patience: 1.0
 
