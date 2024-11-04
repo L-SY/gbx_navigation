@@ -56,15 +56,15 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
   path_.poses.clear();
 
-  if (!init_trajectory_ && clear_waypoints_)
-  {
-    auto waypoint = waypoints_;
-    ROS_INFO_STREAM("waypoints_: =" << waypoint.size());
-    int num_points_per_arc = 4;
-    smoothed_path_ = smoothPathWithArcs(waypoint, num_points_per_arc);
-    ROS_INFO_STREAM("smoothed_path: =" << smoothed_path_.size());
-    init_trajectory_ = true;
-  }
+  // if (!init_trajectory_ && clear_waypoints_)
+  // {
+  //   auto waypoint = waypoints_;
+  //   ROS_INFO_STREAM("waypoints_: =" << waypoint.size());
+  //   int num_points_per_arc = 4;
+  //   smoothed_path_ = smoothPathWithArcs(waypoint, num_points_per_arc);
+  //   ROS_INFO_STREAM("smoothed_path: =" << smoothed_path_.size());
+  //   init_trajectory_ = true;
+  // }
 
   size_t first_false_index = 0;
   auto it = std::find(checkWaypointArrive_.begin(), checkWaypointArrive_.end(),
@@ -85,30 +85,19 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
   
 //  TODO:(4yang): maybe miss some point for local planner
   double distance_to_first_false = hypot(
-      start.pose.position.x - smoothed_path_[first_false_index].pose.position.x,
+      start.pose.position.x - waypoints_[first_false_index].pose.position.x,
       start.pose.position.y -
-          smoothed_path_[first_false_index].pose.position.y);
+          waypoints_[first_false_index].pose.position.y);
 
   if (distance_to_first_false < threshold_distance) {
     checkWaypointArrive_[first_false_index] = true;
     first_false_index++;
   }
 
-  // double distance_to_second_false = hypot(
-  //     start.pose.position.x - smoothed_path_[first_false_index+1].pose.position.x,
-  //     start.pose.position.y -
-  //         smoothed_path_[first_false_index+1].pose.position.y);
-  //
-  // if (distance_to_second_false < threshold_distance) {
-  //   checkWaypointArrive_[first_false_index] = true;
-  //   first_false_index++;
-  //   checkWaypointArrive_[first_false_index] = true;
-  // }
-
-  auto smoothed_path = std::vector<geometry_msgs::PoseStamped>(
-      smoothed_path_.begin() + first_false_index, smoothed_path_.end());
-  smoothed_path.insert(smoothed_path.begin(), start);
-  auto interpolated_waypoints = interpolateWaypoints(smoothed_path);
+  auto waypoints = std::vector<geometry_msgs::PoseStamped>(
+      waypoints_.begin() + first_false_index, waypoints_.end());
+  waypoints.insert(waypoints.begin(), start);
+  auto interpolated_waypoints = interpolateWaypoints(waypoints);
 
   for (size_t i = 0; i < interpolated_waypoints.size()-1; ++i) {
     path_.poses.push_back(interpolated_waypoints[i]);

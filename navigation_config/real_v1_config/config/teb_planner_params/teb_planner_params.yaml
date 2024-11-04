@@ -10,7 +10,7 @@
 #  publish_potential: True
 
 RegularGlobalPlanner:
-  epsilon: 1  # distance threshold for final waypoint
+  epsilon: 0.3  # distance threshold for final waypoint
   waypoints_per_meter: 10  # number of waypoints per meter for the interpolation of the path
 
 TebLocalPlannerROS:
