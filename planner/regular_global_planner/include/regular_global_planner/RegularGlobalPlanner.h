@@ -89,6 +89,7 @@ private:
 
   // containers
   std::vector<geometry_msgs::PoseStamped> waypoints_, interpolated_waypoints_, smoothed_path_;  //!< container for the manually inserted waypoints
+  std::vector<bool> checkWaypointArrive_;
   nav_msgs::Path path_;  //!< container for the generated interpolated path
 
   //flags
