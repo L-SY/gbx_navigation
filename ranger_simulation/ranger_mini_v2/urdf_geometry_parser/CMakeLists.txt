@@ -10,7 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
 # Declare a catkin package
 catkin_package(
   INCLUDE_DIRS
-    include
+        include
   LIBRARIES
     ${PROJECT_NAME}
   CATKIN_DEPENDS
@@ -42,7 +42,7 @@ if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
 
   add_rostest_gtest(urdf_geometry_parser_test
-                    test/urdf_geometry_parser.test
+          test/urdf_geometry_parser.test
                     test/src/urdf_geometry_parser_test.cpp)
   target_link_libraries(urdf_geometry_parser_test ${catkin_LIBRARIES} ${PROJECT_NAME})
 endif()
