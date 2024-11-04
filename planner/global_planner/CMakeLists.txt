@@ -17,7 +17,7 @@ find_package(catkin REQUIRED
 )
 
 generate_dynamic_reconfigure_options(
-  cfg/GlobalPlanner.cfg
+        cfg/GlobalPlanner.cfg
 )
 
 catkin_package(
@@ -36,7 +36,7 @@ catkin_package(
 )
 
 include_directories(
-  include
+        include
   ${catkin_INCLUDE_DIRS}
 )
 
