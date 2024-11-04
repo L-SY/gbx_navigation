@@ -95,7 +95,7 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
 
   auto smoothed_path = std::vector<geometry_msgs::PoseStamped>(
       smoothed_path_.begin() + first_false_index, smoothed_path_.end());
-  smoothed_path.push_back(start);
+  smoothed_path.insert(smoothed_path.begin(), start);
   auto interpolated_waypoints = interpolateWaypoints(smoothed_path);
 
   for (size_t i = 0; i < interpolated_waypoints.size()-1; ++i) {
