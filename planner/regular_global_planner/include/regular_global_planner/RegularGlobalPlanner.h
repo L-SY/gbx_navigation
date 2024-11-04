@@ -93,7 +93,7 @@ private:
   nav_msgs::Path path_;  //!< container for the generated interpolated path
 
   //flags
-  bool clear_waypoints_;  //!< flag indicating that the waypoint container must be cleared to start anew
+  bool clear_waypoints_ = false, init_trajectory_ = false;  //!< flag indicating that the waypoint container must be cleared to start anew
 };
 
 } //namespace regular_global_planner
