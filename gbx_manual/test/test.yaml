@@ -1,6 +1,9 @@
-point_cloud_topic: "/point_cloud"
-imu_topic: "/imu/data"
-global_path_topic: "/global_path"
-local_path_topic: "/local_path"
+point_cloud_topic: "/corrected_current_pcd"
+imu_topic: "/livox/imu"
+global_path_topic: "/move_base/RegularGlobalPlanner/global_plan"
+local_path_topic: "/move_base/TebLocalPlannerROS/local_plan"
 velocity_cmd_topic: "/cmd_vel"
 
+story_trajectories:
+  - A_B: "/home/lsy/navigation_ws/src/gbx_navigation/topic_transit/record_trajectory/simulation.csv"
+  - b_C: "/home/lsy/navigation_ws/src/gbx_navigation/topic_transit/record_trajectory/simulation_1.csv"

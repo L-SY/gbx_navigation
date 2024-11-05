@@ -28,6 +28,39 @@ void GBXManual::initialize()
   globalPathSub_ = nh_.subscribe(globalPathTopic_, 1, &GBXManual::globalPathCallback, this);
   localPathSub_ = nh_.subscribe(localPathTopic_, 1, &GBXManual::localPathCallback, this);
   velocityCmdSub_ = nh_.subscribe(velocityCmdTopic_, 1, &GBXManual::velocityCmdCallback, this);
+
+  std::map<std::string, std::string> csv_paths;
+  if (loadStoryTrajectories(nh_, csv_paths)) {
+    for (const auto& pair : csv_paths) {
+      ROS_INFO("Trajectory name: %s, Path: %s", pair.first.c_str(), pair.second.c_str());
+    }
+  } else {
+    ROS_ERROR("Failed to load trajectories.");
+  }
+}
+
+bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string, std::string>& csv_paths) {
+  XmlRpc::XmlRpcValue trajectory_list;
+
+  if (!nh.getParam("story_trajectories", trajectory_list)) {
+    ROS_ERROR("Failed to get story_trajectories from parameter server.");
+    return false;
+  }
+
+  if (trajectory_list.getType() == XmlRpc::XmlRpcValue::TypeArray) {
+    for (int i = 0; i < trajectory_list.size(); ++i) {
+      if (trajectory_list[i].getType() == XmlRpc::XmlRpcValue::TypeStruct && trajectory_list[i].size() == 1) {
+        auto it = trajectory_list[i].begin();
+        csv_paths[static_cast<std::string>(it->first)] = static_cast<std::string>(it->second);
+      } else {
+        ROS_WARN("Each entry in story_trajectories should be a single key-value pair.");
+      }
+    }
+    return true;
+  } else {
+    ROS_ERROR("story_trajectories should be a list of dictionaries.");
+    return false;
+  }
 }
 
 void GBXManual::update()
