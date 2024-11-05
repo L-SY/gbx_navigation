@@ -38,7 +38,7 @@ private:
         point_msg.point.z = std::stof(z_str);
 
         pub_.publish(point_msg);
-        ros::Duration(1.0).sleep();  // 控制发布频率
+        ros::Duration(0.25).sleep();  // 控制发布频率
       }
     }
   }
