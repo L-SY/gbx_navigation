@@ -7,7 +7,7 @@
 namespace gbx_manual
 {
 GBXManual::GBXManual()
-    : is_paused_(false), current_cloud_(new pcl::PointCloud<pcl::PointXYZ>), current_state_(NavigationState::STOP)
+    : is_paused_(false), current_state_(NavigationState::STOP)
 {
 }
 
@@ -17,14 +17,21 @@ GBXManual::~GBXManual()
 
 void GBXManual::initialize()
 {
-  point_cloud_sub_ = nh_.subscribe("/point_cloud_topic", 1, &GBXManual::checkForObstaclesAndHandle, this);
-  global_path_sub_ = nh_.subscribe("/move_base/NavfnROS/plan", 1, &GBXManual::getGlobalPath, this);
-  pause_client_ = nh_.serviceClient<move_base_msgs::MoveBaseActionGoal>("/move_base/goal");
+  nh_.param<std::string>("point_cloud_topic", pointCloudTopic_, "/point_cloud");
+  nh_.param<std::string>("imu_topic", imuTopic_, "/imu/data");
+  nh_.param<std::string>("global_path_topic", globalPathTopic_, "/global_path");
+  nh_.param<std::string>("local_path_topic", localPathTopic_, "/local_path");
+  nh_.param<std::string>("velocity_cmd_topic", velocityCmdTopic_, "/cmd_vel");
+
+  pointCloudSub_ = nh_.subscribe(pointCloudTopic_, 1, &GBXManual::pointCloudCallback, this);
+  imuSub_ = nh_.subscribe(imuTopic_, 1, &GBXManual::imuCallback, this);
+  globalPathSub_ = nh_.subscribe(globalPathTopic_, 1, &GBXManual::globalPathCallback, this);
+  localPathSub_ = nh_.subscribe(localPathTopic_, 1, &GBXManual::localPathCallback, this);
+  velocityCmdSub_ = nh_.subscribe(velocityCmdTopic_, 1, &GBXManual::velocityCmdCallback, this);
 }
 
 void GBXManual::update()
 {
-  // 定期更新，可以做一些控制操作等
   switch (current_state_)
   {
   case NavigationState::STOP:
@@ -126,34 +133,30 @@ void GBXManual::pauseMoveBase()
 
 void GBXManual::checkForObstaclesAndHandle()
 {
-  // 处理点云，检查全局路径上的障碍物
-
-  // 获取全局路径
-  if (global_path_.poses.empty()) {
+  if (globalPath_.poses.empty()) {
     ROS_WARN("No global path available.");
     return;
   }
 
-  // 判断当前点云和全局路径上的障碍物
-  for (const auto& pose : global_path_.poses) {
-    for (const auto& point : current_cloud_->points) {
-      double distance = std::sqrt(std::pow(pose.pose.position.x - point.x, 2) +
-                                  std::pow(pose.pose.position.y - point.y, 2));
-      if (distance < 0.5) { // 如果点云点离路径点很近
-        ROS_INFO("Obstacle detected near global path at (%f, %f)", point.x, point.y);
-
-        // 判断是动态的还是静态的障碍物
-        // 这里你可以实现动态/静态障碍物的判断
-        if (isDynamicObstacle(point)) {
-          ROS_WARN("Dynamic obstacle detected.");
-          // 做出相应的行动，比如重新规划路径等
-        } else {
-          ROS_INFO("Static obstacle detected.");
-          // 做出相应的行动
-        }
-      }
-    }
-  }
+//  for (const auto& pose : globalPath_.poses) {
+//    for (const auto& point : pointCloudData_.data) {
+//      double distance = std::sqrt(std::pow(pose.pose.position.x - point.x, 2) +
+//                                  std::pow(pose.pose.position.y - point.y, 2));
+//      if (distance < 0.5) { // 如果点云点离路径点很近
+//        ROS_INFO("Obstacle detected near global path at (%f, %f)", point.x, point.y);
+//
+//        // 判断是动态的还是静态的障碍物
+//        // 这里你可以实现动态/静态障碍物的判断
+//        if (isDynamicObstacle(point)) {
+//          ROS_WARN("Dynamic obstacle detected.");
+//          // 做出相应的行动，比如重新规划路径等
+//        } else {
+//          ROS_INFO("Static obstacle detected.");
+//          // 做出相应的行动
+//        }
+//      }
+//    }
+//  }
 }
 
 bool GBXManual::isDynamicObstacle(const pcl::PointXYZ& point)
@@ -163,8 +166,37 @@ bool GBXManual::isDynamicObstacle(const pcl::PointXYZ& point)
   return false;  // 这里仅为示例，实际判断逻辑需要根据需求来实现
 }
 
-void GBXManual::getGlobalPath(const nav_msgs::Path& global_path)
+void GBXManual::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-  global_path_ = global_path;
+  pointCloudData_ = *msg;
+  ROS_INFO("Received point cloud data with %lu points", msg->data.size());
 }
+
+void GBXManual::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
+{
+  imuData_ = *msg;
+  ROS_INFO("Received IMU data: Orientation: (%f, %f, %f, %f)",
+           msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
+}
+
+void GBXManual::globalPathCallback(const nav_msgs::Path::ConstPtr& msg)
+{
+  globalPath_ = *msg;
+  ROS_INFO("Received global path with %lu waypoints", msg->poses.size());
+}
+
+void GBXManual::localPathCallback(const nav_msgs::Path::ConstPtr& msg)
+{
+  localPath_ = *msg;
+  ROS_INFO("Received local path with %lu waypoints", msg->poses.size());
+}
+
+void GBXManual::velocityCmdCallback(const geometry_msgs::Twist::ConstPtr& msg)
+{
+  velocityCmd_ = *msg;
+  ROS_INFO("Received velocity command: Linear(%f, %f, %f), Angular(%f, %f, %f)",
+           msg->linear.x, msg->linear.y, msg->linear.z,
+           msg->angular.x, msg->angular.y, msg->angular.z);
+}
+
 } //namespace gbx_manual

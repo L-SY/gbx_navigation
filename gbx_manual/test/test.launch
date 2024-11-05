@@ -1,0 +1,18 @@
+<launch>
+<!--    <param name="robot_description" command="cat /etc/robot_description" />-->
+
+    <arg name="point_cloud_topic" default="/corrected_current_pcd" />
+    <arg name="imu_topic" default="/livox/imu" />
+    <arg name="global_path_topic" default="/move_base/RegularGlobalPlanner/global_plan" />
+    <arg name="local_path_topic" default="/move_base/TebLocalPlannerROS/local_plan" />
+    <arg name="velocity_cmd_topic" default="/cmd_vel" />
+
+    <node name="gbx_manual_node" pkg="gbx_manual" type="gbx_manual_node" output="screen">
+<!--        <rosparam file="$(find simulation_config)/config/teb_planner_params/teb_planner_params.yaml" command="load"/>-->
+        <param name="point_cloud_topic" value="$(arg point_cloud_topic)" />
+        <param name="imu_topic" value="$(arg imu_topic)" />
+        <param name="global_path_topic" value="$(arg global_path_topic)" />
+        <param name="local_path_topic" value="$(arg local_path_topic)" />
+        <param name="velocity_cmd_topic" value="$(arg velocity_cmd_topic)" />
+    </node>
+</launch>

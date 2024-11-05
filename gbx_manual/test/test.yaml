@@ -1,0 +1,6 @@
+point_cloud_topic: "/point_cloud"
+imu_topic: "/imu/data"
+global_path_topic: "/global_path"
+local_path_topic: "/local_path"
+velocity_cmd_topic: "/cmd_vel"
+

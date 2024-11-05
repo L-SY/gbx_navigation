@@ -14,6 +14,8 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include "sensor_msgs/Imu.h"
+#include "geometry_msgs/Twist.h"
 
 namespace gbx_manual
 {
@@ -55,18 +57,28 @@ public:
   void getGlobalPath(const nav_msgs::Path& global_path);
 
   bool isDynamicObstacle(const pcl::PointXYZ& point);
+//  Callback
+  void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
+  void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
+  void globalPathCallback(const nav_msgs::Path::ConstPtr& msg);
+  void localPathCallback(const nav_msgs::Path::ConstPtr& msg);
+  void velocityCmdCallback(const geometry_msgs::Twist::ConstPtr& msg);
+
 private:
   ros::NodeHandle nh_;
-  ros::Subscriber point_cloud_sub_;
-  ros::Subscriber global_path_sub_;
-  ros::ServiceClient pause_client_;
+  std::string pointCloudTopic_, imuTopic_, globalPathTopic_, localPathTopic_, velocityCmdTopic_;
+  ros::Subscriber pointCloudSub_, imuSub_, globalPathSub_, localPathSub_, velocityCmdSub_;
+
+  sensor_msgs::PointCloud2 pointCloudData_;
+  sensor_msgs::Imu imuData_;
+  nav_msgs::Path globalPath_, localPath_;
+  geometry_msgs::Twist velocityCmd_;
+
+
+  ros::ServiceClient pauseClient_;
 
   std::string csv_file_path_;
   std::vector<std::string> csv_data_;
-
-  pcl::PointCloud<pcl::PointXYZ>::Ptr current_cloud_;
-
-  nav_msgs::Path global_path_;
 
   bool is_paused_;
 
