@@ -31,7 +31,7 @@ enum class NavigationState
 class GBXManual
 {
 public:
-  GBXManual();
+  GBXManual(ros::NodeHandle nh);
 
   ~GBXManual();
 

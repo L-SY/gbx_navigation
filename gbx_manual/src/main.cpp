@@ -7,9 +7,10 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "gbx_manual_node");
+  ros::init(argc, argv, "gbx_manual");
 
-  gbx_manual::GBXManual manual_control;
+  ros::NodeHandle nh("gbx_manual");
+  gbx_manual::GBXManual manual_control(nh);
 
   manual_control.initialize();
 

@@ -6,8 +6,8 @@
 
 namespace gbx_manual
 {
-GBXManual::GBXManual()
-    : is_paused_(false), current_state_(NavigationState::STOP)
+GBXManual::GBXManual(ros::NodeHandle nh)
+    : nh_(nh), is_paused_(false), current_state_(NavigationState::STOP)
 {
 }
 
@@ -69,7 +69,7 @@ void GBXManual::transitionToState(NavigationState new_state)
 void GBXManual::handleStop()
 {
   // 停止状态下的操作
-  ROS_INFO("In STOP state. Robot is stopped.");
+//  ROS_INFO("In STOP state. Robot is stopped.");
   // 可在此处添加具体停止操作的实现，例如停止运动等
 }
 
@@ -169,34 +169,34 @@ bool GBXManual::isDynamicObstacle(const pcl::PointXYZ& point)
 void GBXManual::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
   pointCloudData_ = *msg;
-  ROS_INFO("Received point cloud data with %lu points", msg->data.size());
+//  ROS_INFO("Received point cloud data with %lu points", msg->data.size());
 }
 
 void GBXManual::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 {
   imuData_ = *msg;
-  ROS_INFO("Received IMU data: Orientation: (%f, %f, %f, %f)",
-           msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
+//  ROS_INFO("Received IMU data: Orientation: (%f, %f, %f, %f)",
+//           msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
 }
 
 void GBXManual::globalPathCallback(const nav_msgs::Path::ConstPtr& msg)
 {
   globalPath_ = *msg;
-  ROS_INFO("Received global path with %lu waypoints", msg->poses.size());
+//  ROS_INFO("Received global path with %lu waypoints", msg->poses.size());
 }
 
 void GBXManual::localPathCallback(const nav_msgs::Path::ConstPtr& msg)
 {
   localPath_ = *msg;
-  ROS_INFO("Received local path with %lu waypoints", msg->poses.size());
+//  ROS_INFO("Received local path with %lu waypoints", msg->poses.size());
 }
 
 void GBXManual::velocityCmdCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
   velocityCmd_ = *msg;
-  ROS_INFO("Received velocity command: Linear(%f, %f, %f), Angular(%f, %f, %f)",
-           msg->linear.x, msg->linear.y, msg->linear.z,
-           msg->angular.x, msg->angular.y, msg->angular.z);
+//  ROS_INFO("Received velocity command: Linear(%f, %f, %f), Angular(%f, %f, %f)",
+//           msg->linear.x, msg->linear.y, msg->linear.z,
+//           msg->angular.x, msg->angular.y, msg->angular.z);
 }
 
 } //namespace gbx_manual

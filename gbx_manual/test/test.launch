@@ -7,7 +7,7 @@
     <arg name="local_path_topic" default="/move_base/TebLocalPlannerROS/local_plan" />
     <arg name="velocity_cmd_topic" default="/cmd_vel" />
 
-    <node name="gbx_manual_node" pkg="gbx_manual" type="gbx_manual_node" output="screen">
+    <node name="gbx_manual" pkg="gbx_manual" type="gbx_manual_node" output="screen">
 <!--        <rosparam file="$(find simulation_config)/config/teb_planner_params/teb_planner_params.yaml" command="load"/>-->
         <param name="point_cloud_topic" value="$(arg point_cloud_topic)" />
         <param name="imu_topic" value="$(arg imu_topic)" />
