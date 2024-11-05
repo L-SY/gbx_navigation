@@ -1,8 +1,8 @@
 basic:
   map_frame: "map"                            # publish frame
   map_match_hz: 2.0                           # Map match Hz
-#  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F.bag"        # directory should be in absolute path
-  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/E3_121_map.bag"
+  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F.bag"        # directory should be in absolute path
+#  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/E3_121_map.bag"
 
 keyframe:
   keyframe_threshold: 0.5                     # unit [meter] every this distance, generate keyframe
