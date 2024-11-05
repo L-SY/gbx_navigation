@@ -53,6 +53,11 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
   }
 }
 
+double RegularGlobalPlanner::pointToLineDistance(double px, double py, double A, double B, double C) {
+  // dis = |Ax + By + C| / sqrt(A^2 + B^2)
+  return fabs(A * px + B * py + C) / sqrt(A * A + B * B);
+}
+
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
   path_.poses.clear();
 
@@ -81,15 +86,38 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
     return true;
   }
   
-  double threshold_distance = 0.5; // example threshold
-  
-//  TODO:(4yang): maybe miss some point for local planner
-  double distance_to_first_false = hypot(
-      start.pose.position.x - waypoints_[first_false_index].pose.position.x,
-      start.pose.position.y -
-          waypoints_[first_false_index].pose.position.y);
+  double threshold_distance = 0.5;
 
-  if (distance_to_first_false < threshold_distance) {
+  auto& first_point = waypoints_[first_false_index];
+  auto& second_point = waypoints_[first_false_index + 1];
+
+  double dx = second_point.pose.position.x - first_point.pose.position.x;
+  double dy = second_point.pose.position.y - first_point.pose.position.y;
+
+  double perp_dx = -dy;
+  double perp_dy = dx;
+
+  double C1 = -(perp_dx * first_point.pose.position.x + perp_dy * first_point.pose.position.y);
+  double C2 = -(perp_dx * second_point.pose.position.x + perp_dy * second_point.pose.position.y);
+
+  double A = dy;
+  double B = -dx;
+  double C_line = dx * first_point.pose.position.y - dy * first_point.pose.position.x;
+
+  double distance_to_first_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, perp_dx, perp_dy, C1);
+  double distance_to_second_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, perp_dx, perp_dy, C2);
+
+  double line_distance = hypot(dx, dy);
+
+  double distance_to_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, A, B, C_line);
+
+//  double distance_to_first_point = hypot(start.pose.position.x - first_point.pose.position.x,
+//                                         start.pose.position.y - first_point.pose.position.y);
+//
+//  double distance_to_second_point = hypot(start.pose.position.x - second_point.pose.position.x,
+//                                          start.pose.position.y - second_point.pose.position.y);
+
+  if (distance_to_line < threshold_distance && distance_to_first_line < line_distance && distance_to_second_line < line_distance) {
     checkWaypointArrive_[first_false_index] = true;
     first_false_index++;
   }

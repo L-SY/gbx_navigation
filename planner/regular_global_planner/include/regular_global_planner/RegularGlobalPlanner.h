@@ -55,6 +55,8 @@ public:
      * @brief Interpolates a path (position and orientation) using a fixed number of points per meter
      * @param path The input path to be interpolated
    */
+  double pointToLineDistance(double px, double py, double A, double B, double C);
+
   void interpolatePath(nav_msgs::Path& path);
 
   std::vector<geometry_msgs::PoseStamped> interpolateWaypoints(const std::vector<geometry_msgs::PoseStamped>& waypoints);
