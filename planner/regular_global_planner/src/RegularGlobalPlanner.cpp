@@ -43,6 +43,7 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
     waypoint_marker_pub_ = pnh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
     goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
     plan_pub_ = pnh.advertise<nav_msgs::Path>("global_plan", 1);
+    arrival_area_pub_ = nh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea", 1);
 
     initialized_ = true;
     ROS_INFO("Planner has been initialized");
@@ -55,7 +56,42 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
 
 double RegularGlobalPlanner::pointToLineDistance(double px, double py, double A, double B, double C) {
   // dis = |Ax + By + C| / sqrt(A^2 + B^2)
-  return fabs(A * px + B * py + C) / sqrt(A * A + B * B);
+  return (fabs(A * px + B * py + C) / sqrt(A * A + B * B));
+}
+
+void RegularGlobalPlanner::publishArrivalArea(const geometry_msgs::Pose& first_point, const geometry_msgs::Pose& second_point, double threshold_distance) {
+  geometry_msgs::PolygonStamped area_msg;
+  area_msg.header.stamp = ros::Time::now();
+  area_msg.header.frame_id = "map";
+
+  std::vector<geometry_msgs::Point32> points(4);
+
+  double dx = second_point.position.x - first_point.position.x;
+  double dy = second_point.position.y - first_point.position.y;
+
+  double perp_dx = -dy;
+  double perp_dy = dx;
+
+  double length = std::sqrt(perp_dx * perp_dx + perp_dy * perp_dy);
+  if (length != 0) {
+    perp_dx /= length;
+    perp_dy /= length;
+  }
+
+  points[0].x = first_point.position.x + perp_dx * threshold_distance;
+  points[0].y = first_point.position.y + perp_dy * threshold_distance;
+
+  points[1].x = second_point.position.x + perp_dx * threshold_distance;
+  points[1].y = second_point.position.y + perp_dy * threshold_distance;
+
+  points[2].x = second_point.position.x - perp_dx * threshold_distance;
+  points[2].y = second_point.position.y - perp_dy * threshold_distance;
+
+  points[3].x = first_point.position.x - perp_dx * threshold_distance;
+  points[3].y = first_point.position.y - perp_dy * threshold_distance;
+  area_msg.polygon.points = points;
+
+  arrival_area_pub_.publish(area_msg);
 }
 
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
@@ -85,43 +121,38 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
     plan = path_.poses;
     return true;
   }
-  
+
   double threshold_distance = 0.5;
 
   auto& first_point = waypoints_[first_false_index];
   auto& second_point = waypoints_[first_false_index + 1];
 
+  publishArrivalArea(waypoints_[first_false_index].pose, waypoints_[first_false_index + 1].pose, threshold_distance);
+//  publishArrivalArea(waypoints_[first_false_index + 1].pose, waypoints_[first_false_index + 2].pose, threshold_distance);
   double dx = second_point.pose.position.x - first_point.pose.position.x;
   double dy = second_point.pose.position.y - first_point.pose.position.y;
 
-  double perp_dx = -dy;
-  double perp_dy = dx;
+  double perp_A = dx;
+  double perp_B = dy;
 
-  double C1 = -(perp_dx * first_point.pose.position.x + perp_dy * first_point.pose.position.y);
-  double C2 = -(perp_dx * second_point.pose.position.x + perp_dy * second_point.pose.position.y);
+  double C1 = -(perp_A * first_point.pose.position.x + perp_B * first_point.pose.position.y);
+  double C2 = -(perp_A * second_point.pose.position.x + perp_B * second_point.pose.position.y);
 
   double A = dy;
   double B = -dx;
   double C_line = dx * first_point.pose.position.y - dy * first_point.pose.position.x;
 
-  double distance_to_first_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, perp_dx, perp_dy, C1);
-  double distance_to_second_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, perp_dx, perp_dy, C2);
+  double distance_to_first_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, perp_A, perp_B, C1);
+  double distance_to_second_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, perp_A, perp_B, C2);
 
   double line_distance = hypot(dx, dy);
 
   double distance_to_line = pointToLineDistance(start.pose.position.x, start.pose.position.y, A, B, C_line);
 
-//  double distance_to_first_point = hypot(start.pose.position.x - first_point.pose.position.x,
-//                                         start.pose.position.y - first_point.pose.position.y);
-//
-//  double distance_to_second_point = hypot(start.pose.position.x - second_point.pose.position.x,
-//                                          start.pose.position.y - second_point.pose.position.y);
-
   if (distance_to_line < threshold_distance && distance_to_first_line < line_distance && distance_to_second_line < line_distance) {
     checkWaypointArrive_[first_false_index] = true;
     first_false_index++;
   }
-
   auto waypoints = std::vector<geometry_msgs::PoseStamped>(
       waypoints_.begin() + first_false_index, waypoints_.end());
   waypoints.insert(waypoints.begin(), start);

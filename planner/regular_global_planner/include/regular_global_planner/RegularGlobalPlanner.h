@@ -15,7 +15,9 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
 #include <visualization_msgs/MarkerArray.h>
-
+#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/Point32.h>
+#include <geometry_msgs/Pose.h>
 
 namespace regular_global_planner {
 
@@ -55,6 +57,8 @@ public:
      * @brief Interpolates a path (position and orientation) using a fixed number of points per meter
      * @param path The input path to be interpolated
    */
+  void publishArrivalArea(const geometry_msgs::Pose& first_point, const geometry_msgs::Pose& second_point, double threshold_distance);
+
   double pointToLineDistance(double px, double py, double A, double B, double C);
 
   void interpolatePath(nav_msgs::Path& path);
@@ -84,6 +88,7 @@ private:
   ros::Publisher waypoint_marker_pub_;  //!< publisher of waypoint visualization markers
   ros::Publisher goal_pub_;  //!< publisher of goal corresponding to the final waypoint
   ros::Publisher plan_pub_;  //!< publisher of the global plan
+  ros::Publisher arrival_area_pub_;
 
   // configuration parameters
   double epsilon_;  //!< distance threshold between two waypoints that signifies the last waypoint
