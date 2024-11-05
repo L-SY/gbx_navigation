@@ -43,7 +43,9 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
     waypoint_marker_pub_ = pnh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
     goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
     plan_pub_ = pnh.advertise<nav_msgs::Path>("global_plan", 1);
-    arrival_area_pub_ = nh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea", 1);
+    arrival_area_pub_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea", 1);
+    arrival_area_pub2_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea2", 1);
+    arrival_area_pub3_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea3", 1);
 
     initialized_ = true;
     ROS_INFO("Planner has been initialized");
@@ -59,7 +61,7 @@ double RegularGlobalPlanner::pointToLineDistance(double px, double py, double A,
   return (fabs(A * px + B * py + C) / sqrt(A * A + B * B));
 }
 
-void RegularGlobalPlanner::publishArrivalArea(const geometry_msgs::Pose& first_point, const geometry_msgs::Pose& second_point, double threshold_distance) {
+void RegularGlobalPlanner::publishArrivalArea(ros::Publisher pub, const geometry_msgs::Pose& first_point, const geometry_msgs::Pose& second_point, double threshold_distance) {
   geometry_msgs::PolygonStamped area_msg;
   area_msg.header.stamp = ros::Time::now();
   area_msg.header.frame_id = "map";
@@ -91,7 +93,7 @@ void RegularGlobalPlanner::publishArrivalArea(const geometry_msgs::Pose& first_p
   points[3].y = first_point.position.y - perp_dy * threshold_distance;
   area_msg.polygon.points = points;
 
-  arrival_area_pub_.publish(area_msg);
+  pub.publish(area_msg);
 }
 
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
@@ -127,8 +129,14 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
   auto& first_point = waypoints_[first_false_index];
   auto& second_point = waypoints_[first_false_index + 1];
 
-  publishArrivalArea(waypoints_[first_false_index].pose, waypoints_[first_false_index + 1].pose, threshold_distance);
-//  publishArrivalArea(waypoints_[first_false_index + 1].pose, waypoints_[first_false_index + 2].pose, threshold_distance);
+  if (first_false_index + 1 < waypoints_.size())
+    publishArrivalArea(arrival_area_pub_,waypoints_[first_false_index].pose, waypoints_[first_false_index + 1].pose, threshold_distance);
+  if (first_false_index + 2 < waypoints_.size())
+    publishArrivalArea(arrival_area_pub2_, waypoints_[first_false_index + 1].pose, waypoints_[first_false_index + 2].pose, threshold_distance);
+
+  if (first_false_index + 3 < waypoints_.size())
+    publishArrivalArea(arrival_area_pub3_, waypoints_[first_false_index + 2].pose, waypoints_[first_false_index + 3].pose, threshold_distance);
+
   double dx = second_point.pose.position.x - first_point.pose.position.x;
   double dy = second_point.pose.position.y - first_point.pose.position.y;
 
