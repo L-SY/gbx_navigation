@@ -97,22 +97,33 @@ void RegularGlobalPlanner::publishArrivalArea(ros::Publisher pub, const geometry
 }
 
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
-  path_.poses.clear();
+   path_.poses.clear();
 
-  // if (!init_trajectory_ && clear_waypoints_)
-  // {
-  //   auto waypoint = waypoints_;
-  //   ROS_INFO_STREAM("waypoints_: =" << waypoint.size());
-  //   int num_points_per_arc = 4;
-  //   smoothed_path_ = smoothPathWithArcs(waypoint, num_points_per_arc);
-  //   ROS_INFO_STREAM("smoothed_path: =" << smoothed_path_.size());
-  //   init_trajectory_ = true;
-  // }
+   if (!init_trajectory_ )
+   {
+     double min_distance = std::numeric_limits<double>::max();
+     size_t nearest_waypoint_index = 0;
+
+     for (size_t i = 0; i < waypoints_.size(); ++i) {
+       double dx = waypoints_[i].pose.position.x - start.pose.position.x;
+       double dy = waypoints_[i].pose.position.y - start.pose.position.y;
+       double distance = std::sqrt(dx * dx + dy * dy);
+
+       if (distance < min_distance) {
+         min_distance = distance;
+         nearest_waypoint_index = i;
+       }
+     }
+
+     for (size_t i = 0; i <= nearest_waypoint_index; ++i) {
+       checkWaypointArrive_[i] = true;
+     }
+     init_trajectory_ = true;
+   }
 
   size_t first_false_index = 0;
-  auto it = std::find(checkWaypointArrive_.begin(), checkWaypointArrive_.end(),
-                      false);
-  
+  auto it = std::find(checkWaypointArrive_.begin(), checkWaypointArrive_.end(),false);
+
   if (it != checkWaypointArrive_.end())
   {
     first_false_index = std::distance(checkWaypointArrive_.begin(), it);
@@ -125,15 +136,12 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
   }
 
   double threshold_distance = 0.5;
-
   auto& first_point = waypoints_[first_false_index];
   auto& second_point = waypoints_[first_false_index + 1];
-
   if (first_false_index + 1 < waypoints_.size())
     publishArrivalArea(arrival_area_pub_,waypoints_[first_false_index].pose, waypoints_[first_false_index + 1].pose, threshold_distance);
   if (first_false_index + 2 < waypoints_.size())
     publishArrivalArea(arrival_area_pub2_, waypoints_[first_false_index + 1].pose, waypoints_[first_false_index + 2].pose, threshold_distance);
-
   if (first_false_index + 3 < waypoints_.size())
     publishArrivalArea(arrival_area_pub3_, waypoints_[first_false_index + 2].pose, waypoints_[first_false_index + 3].pose, threshold_distance);
 
