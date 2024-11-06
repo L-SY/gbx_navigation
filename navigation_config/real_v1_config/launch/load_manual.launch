@@ -1,4 +1,7 @@
 <launch>
+    <include file="$(find real_v1_config)/launch/load_move_base.launch"/>
+    <include file="$(find real_v1_config)/launch/ranger_mini_v2.launch"/>
+
     <node name="gbx_manual" pkg="gbx_manual" type="gbx_manual_node" output="screen">
         <rosparam file="$(find real_v1_config)/config/manual.yaml" command="load"/>
     </node>
