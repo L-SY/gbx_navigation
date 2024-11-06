@@ -43,6 +43,7 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
     waypoint_marker_pub_ = pnh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
     goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
     plan_pub_ = pnh.advertise<nav_msgs::Path>("global_plan", 1);
+    waypoint_pub_ = pnh.advertise<nav_msgs::Path>("global_waypoint_plan", 1);
     arrival_area_pub_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea", 1);
     arrival_area_pub2_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea2", 1);
     arrival_area_pub3_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea3", 1);
@@ -98,6 +99,7 @@ void RegularGlobalPlanner::publishArrivalArea(ros::Publisher pub, const geometry
 
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,  std::vector<geometry_msgs::PoseStamped>& plan ){
    path_.poses.clear();
+   global_waypoints_path_.poses.clear();
 
    if (!init_trajectory_ )
    {
@@ -172,6 +174,11 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
   auto waypoints = std::vector<geometry_msgs::PoseStamped>(
       waypoints_.begin() + first_false_index, waypoints_.end());
   waypoints.insert(waypoints.begin(), start);
+  for (size_t i = 0; i < waypoints.size() - 1; ++i) {
+    global_waypoints_path_.poses.push_back(waypoints[i]);
+  }
+  waypoint_pub_.publish(global_waypoints_path_);
+
   auto interpolated_waypoints = interpolateWaypoints(waypoints);
 
   for (size_t i = 0; i < interpolated_waypoints.size()-1; ++i) {
@@ -223,8 +230,7 @@ void RegularGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::C
     p2->orientation = p1->orientation;
     waypoints_.pop_back();
     path_.header = waypoint->header;
-    path_.poses.clear();
-    path_.poses.insert(path_.poses.end(), waypoints_.begin(), waypoints_.end());
+    global_waypoints_path_.header = waypoint->header;
     goal_pub_.publish(waypoints_.back());
     clear_waypoints_ = true;
     checkWaypointArrive_.resize(waypoints_.size(), false);

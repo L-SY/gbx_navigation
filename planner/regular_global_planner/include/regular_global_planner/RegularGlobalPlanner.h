@@ -87,7 +87,7 @@ private:
   ros::Subscriber external_path_sub_;  //!< subscriber of external input path
   ros::Publisher waypoint_marker_pub_;  //!< publisher of waypoint visualization markers
   ros::Publisher goal_pub_;  //!< publisher of goal corresponding to the final waypoint
-  ros::Publisher plan_pub_;  //!< publisher of the global plan
+  ros::Publisher plan_pub_, waypoint_pub_;  //!< publisher of the global plan
   ros::Publisher arrival_area_pub_, arrival_area_pub2_, arrival_area_pub3_;
 
   // configuration parameters
@@ -97,7 +97,7 @@ private:
   // containers
   std::vector<geometry_msgs::PoseStamped> waypoints_, interpolated_waypoints_, smoothed_path_;  //!< container for the manually inserted waypoints
   std::vector<bool> checkWaypointArrive_;
-  nav_msgs::Path path_;  //!< container for the generated interpolated path
+  nav_msgs::Path path_, global_waypoints_path_;  //!< container for the generated interpolated path
 
   //flags
   bool clear_waypoints_ = false, init_trajectory_ = false;  //!< flag indicating that the waypoint container must be cleared to start anew
