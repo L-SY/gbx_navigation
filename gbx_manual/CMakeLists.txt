@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         std_srvs
         actionlib_msgs
+        costmap_2d
 )
 
 catkin_package(
@@ -23,6 +24,7 @@ catkin_package(
             pcl_ros
             std_srvs
             actionlib_msgs
+            costmap_2d
           DEPENDS
 )
 

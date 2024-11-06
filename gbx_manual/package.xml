@@ -15,6 +15,7 @@
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
   <depend>actionlib_msgs</depend>
+  <depend>costmap_2d</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

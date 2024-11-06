@@ -25,6 +25,13 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <std_srvs/Empty.h>
 #include <actionlib_msgs/GoalID.h>
+// for costmap
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <costmap_2d/costmap_2d_ros.h>
+#include <base_local_planner/costmap_model.h>
+#include <base_local_planner/footprint_helper.h>
 
 namespace gbx_manual
 {
@@ -101,7 +108,7 @@ private:
 class GBXManual
 {
 public:
-  GBXManual(ros::NodeHandle nh);
+  GBXManual(ros::NodeHandle nh, tf2_ros::Buffer& tfBuffer);
 
   ~GBXManual();
 
@@ -159,6 +166,11 @@ private:
 
 // For cloud
   double cloudMinZ_, cloudMaxZ_, cloudRadius_, cloudLeafSize_;
+// For costmap
+  tf2_ros::Buffer& tfBuffer_;
+  tf2_ros::TransformListener tfListener_;
+  costmap_2d::Costmap2DROS *globalCostmapRos_, *localCostmapRos_;
+  costmap_2d::Costmap2D *globalCostmap_, *localCostmap_;
 };
 
 } // namespace gbx_manual

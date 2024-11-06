@@ -6,8 +6,8 @@
 
 namespace gbx_manual
 {
-GBXManual::GBXManual(ros::NodeHandle nh)
-    : nh_(nh), is_paused_(false), current_state_(NavigationState::STOP)
+GBXManual::GBXManual(ros::NodeHandle nh, tf2_ros::Buffer& tfBuffer)
+    : nh_(nh), is_paused_(false), current_state_(NavigationState::STOP), tfBuffer_(tfBuffer), tfListener_(tfBuffer)
 {
   std::map<std::string, std::string> csv_paths;
   if (loadStoryTrajectories(nh_, csv_paths)) {
@@ -18,10 +18,17 @@ GBXManual::GBXManual(ros::NodeHandle nh)
     ROS_ERROR("Failed to load trajectories.");
   }
   TrajectoryPublisher_ = std::make_unique<TrajectoryPublisher>(nh_,csv_paths);
-  TrajectoryPublisher_.get()->publishTrajectory("A_B");
   cancelNavigationClient_ = nh_.serviceClient<std_srvs::Empty>("/cancel_navigation");
-  ros::Duration(1).sleep();
-  cancelNavigation();
+//  TrajectoryPublisher_.get()->publishTrajectory("A_B");
+//  ros::Duration(1).sleep();
+//  cancelNavigation();
+  globalCostmapRos_ = new costmap_2d::Costmap2DROS("global_costmap", tfBuffer_);
+  localCostmapRos_ = new costmap_2d::Costmap2DROS("local_costmap", tfBuffer_);
+  globalCostmapRos_->start();
+  localCostmapRos_->start();
+  globalCostmap_ = globalCostmapRos_->getCostmap();
+  localCostmap_ = localCostmapRos_->getCostmap();
+
 }
 
 GBXManual::~GBXManual()
@@ -77,6 +84,7 @@ bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string,
 
 void GBXManual::update()
 {
+  ROS_INFO_STREAM(localCostmap_->getOriginX());
   switch (current_state_)
   {
   case NavigationState::STOP:
