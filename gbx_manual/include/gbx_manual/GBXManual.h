@@ -132,6 +132,9 @@ public:
   bool loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string, std::string>& csv_paths);
 
   bool isDynamicObstacle(const pcl::PointXYZ& point);
+
+  bool checkForObstaclesOnPath(int points_to_check);
+
 //  Serve Action
   bool cancelNavigation();
 //  Topic Callback
@@ -160,7 +163,7 @@ private:
 
   bool is_paused_;
 
-  NavigationState current_state_;
+  NavigationState currentState_;
 
   std::unique_ptr<TrajectoryPublisher> TrajectoryPublisher_;
 

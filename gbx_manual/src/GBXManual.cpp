@@ -7,7 +7,7 @@
 namespace gbx_manual
 {
 GBXManual::GBXManual(ros::NodeHandle nh, tf2_ros::Buffer& tfBuffer)
-    : nh_(nh), is_paused_(false), current_state_(NavigationState::STOP), tfBuffer_(tfBuffer), tfListener_(tfBuffer)
+    : nh_(nh), is_paused_(false), currentState_(NavigationState::STOP), tfBuffer_(tfBuffer), tfListener_(tfBuffer)
 {
   std::map<std::string, std::string> csv_paths;
   if (loadStoryTrajectories(nh_, csv_paths)) {
@@ -19,16 +19,12 @@ GBXManual::GBXManual(ros::NodeHandle nh, tf2_ros::Buffer& tfBuffer)
   }
   TrajectoryPublisher_ = std::make_unique<TrajectoryPublisher>(nh_,csv_paths);
   cancelNavigationClient_ = nh_.serviceClient<std_srvs::Empty>("/cancel_navigation");
-//  TrajectoryPublisher_.get()->publishTrajectory("A_B");
-//  ros::Duration(1).sleep();
-//  cancelNavigation();
   globalCostmapRos_ = new costmap_2d::Costmap2DROS("global_costmap", tfBuffer_);
   localCostmapRos_ = new costmap_2d::Costmap2DROS("local_costmap", tfBuffer_);
   globalCostmapRos_->start();
   localCostmapRos_->start();
   globalCostmap_ = globalCostmapRos_->getCostmap();
   localCostmap_ = localCostmapRos_->getCostmap();
-
 }
 
 GBXManual::~GBXManual()
@@ -84,25 +80,25 @@ bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string,
 
 void GBXManual::update()
 {
-  ROS_INFO_STREAM(localCostmap_->getOriginX());
-  switch (current_state_)
-  {
-  case NavigationState::STOP:
-    handleStop();
-    break;
-  case NavigationState::MOVE:
-    handleMove();
-    break;
-  case NavigationState::WAIT:
-    handleWait();
-    break;
-  case NavigationState::PULL_OVER:
-    handlePullOver();
-    break;
-  case NavigationState::ARRIVE:
-    handleArrive();
-    break;
-  }
+  checkForObstaclesOnPath(20);
+//  switch (currentState_)
+//  {
+//  case NavigationState::STOP:
+//    handleStop();
+//    break;
+//  case NavigationState::MOVE:
+//    handleMove();
+//    break;
+//  case NavigationState::WAIT:
+//    handleWait();
+//    break;
+//  case NavigationState::PULL_OVER:
+//    handlePullOver();
+//    break;
+//  case NavigationState::ARRIVE:
+//    handleArrive();
+//    break;
+//  }
 }
 
 void GBXManual::stop()
@@ -112,18 +108,16 @@ void GBXManual::stop()
 
 void GBXManual::transitionToState(NavigationState new_state)
 {
-  if (current_state_ != new_state)
+  if (currentState_ != new_state)
   {
-    ROS_INFO("Transitioning from state %d to %d", static_cast<int>(current_state_), static_cast<int>(new_state));
-    current_state_ = new_state;
+    ROS_INFO("Transitioning from state %d to %d", static_cast<int>(currentState_), static_cast<int>(new_state));
+    currentState_ = new_state;
   }
 }
 
 void GBXManual::handleStop()
 {
-  // 停止状态下的操作
-//  ROS_INFO("In STOP state. Robot is stopped.");
-  // 可在此处添加具体停止操作的实现，例如停止运动等
+  cancelNavigation();
 }
 
 void GBXManual::handleMove()
@@ -190,6 +184,39 @@ void GBXManual::checkForObstaclesAndHandle()
 //      }
 //    }
 //  }
+}
+
+bool GBXManual::checkForObstaclesOnPath(int points_to_check)
+{
+  int points_checked = 0;
+  int maxPointsToCheck = std::min(points_to_check, static_cast<int>(globalPath_.poses.size()));
+  for (const auto& pose : globalPath_.poses) {
+    double wx = pose.pose.position.x;
+    double wy = pose.pose.position.y;
+    unsigned int mx, my;
+
+    if (localCostmap_->worldToMap(wx, wy, mx, my)) {
+      unsigned char cost = localCostmap_->getCost(mx, my);
+//      ROS_INFO_STREAM("Cost: " << static_cast<int>(cost));
+
+      if (cost == costmap_2d::NO_INFORMATION) {
+//        ROS_WARN("Point (%.2f, %.2f) is in an unknown area (NO_INFORMATION).", wx, wy);
+        continue;
+      }
+//      ROS_INFO_STREAM("INSCRIBED_INFLATED_OBSTACLE: " << static_cast<int>(costmap_2d::INSCRIBED_INFLATED_OBSTACLE));
+
+      if (cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+        ROS_WARN("Obstacle detected on global path at point (%.2f, %.2f)", wx, wy);
+        cancelNavigation();
+        return true;
+      }
+    } else {
+      ROS_WARN("Point (%.2f, %.2f) is outside the local costmap bounds.", wx, wy);
+    }
+
+    points_checked++;
+  }
+  return false;
 }
 
 bool GBXManual::isDynamicObstacle(const pcl::PointXYZ& point)
