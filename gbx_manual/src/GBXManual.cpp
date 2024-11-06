@@ -18,7 +18,10 @@ GBXManual::GBXManual(ros::NodeHandle nh)
     ROS_ERROR("Failed to load trajectories.");
   }
   TrajectoryPublisher_ = std::make_unique<TrajectoryPublisher>(nh_,csv_paths);
-  //  TrajectoryPublisher_.get()->publishTrajectory("A_B");
+  TrajectoryPublisher_.get()->publishTrajectory("A_B");
+  cancelNavigationClient_ = nh_.serviceClient<std_srvs::Empty>("/cancel_navigation");
+  ros::Duration(1).sleep();
+  cancelNavigation();
 }
 
 GBXManual::~GBXManual()
@@ -212,6 +215,28 @@ void GBXManual::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
 
   sensor_msgs::PointCloud2 output;
   pcl::toROSMsg(*cloud, pointCloudData_);
+}
+
+// -----------------Server Action---------------------
+bool GBXManual::cancelNavigation()
+{
+  if (!cancelNavigationClient_.exists())
+  {
+    ROS_ERROR("move_base/cancel service is not available.");
+    return false;
+  }
+
+  std_srvs::Empty srv;
+  if (cancelNavigationClient_.call(srv))
+  {
+    ROS_INFO("Navigation goal canceled successfully.");
+    return true;
+  }
+  else
+  {
+    ROS_ERROR("Failed to cancel navigation goal.");
+    return false;
+  }
 }
 
 // -----------------Topic CallBack--------------------

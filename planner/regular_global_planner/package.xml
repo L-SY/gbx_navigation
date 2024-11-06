@@ -17,6 +17,8 @@
   <depend>roscpp</depend>
   <depend>tf</depend>
   <depend>visualization_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>actionlib_msgs</depend>
 
   <exec_depend>global_planner</exec_depend>
   <exec_depend>move_base</exec_depend>

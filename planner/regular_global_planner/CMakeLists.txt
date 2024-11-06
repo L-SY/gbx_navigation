@@ -14,6 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
         roscpp
         tf
         visualization_msgs
+        std_srvs
+        actionlib_msgs
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})
@@ -32,6 +34,8 @@ catkin_package(
         roscpp
         tf
         visualization_msgs
+        std_srvs
+        actionlib_msgs
 )
 
 add_library(regular_global_planner src/RegularGlobalPlanner.cpp)

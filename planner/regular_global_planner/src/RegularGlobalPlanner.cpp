@@ -48,6 +48,8 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
     arrival_area_pub2_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea2", 1);
     arrival_area_pub3_ = pnh.advertise<geometry_msgs::PolygonStamped>("judgeArrivalArea3", 1);
 
+    cancel_navigation_service_ = nh.advertiseService("/cancel_navigation", &RegularGlobalPlanner::cancelNavigationCallback, this);
+    ROS_INFO("cancel_navigation service initialized.");
     initialized_ = true;
     ROS_INFO("Planner has been initialized");
   }
@@ -55,6 +57,22 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
   {
     ROS_WARN("This planner has already been initialized");
   }
+}
+
+bool RegularGlobalPlanner::cancelNavigationCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  ROS_INFO("Cancel navigation requested.");
+  waypoints_.clear();
+  checkWaypointArrive_.clear();
+  smoothed_path_.clear();
+  interpolated_waypoints_.clear();
+  clear_waypoints_ = false;
+  init_trajectory_ = false;
+  path_.poses.clear();
+  global_waypoints_path_.poses.clear();
+  plan_pub_.publish(path_);
+  waypoint_pub_.publish(global_waypoints_path_);
+  return true;
 }
 
 double RegularGlobalPlanner::pointToLineDistance(double px, double py, double A, double B, double C) {

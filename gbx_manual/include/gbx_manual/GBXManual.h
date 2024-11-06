@@ -23,6 +23,8 @@
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <std_srvs/Empty.h>
+#include <actionlib_msgs/GoalID.h>
 
 namespace gbx_manual
 {
@@ -123,7 +125,9 @@ public:
   bool loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string, std::string>& csv_paths);
 
   bool isDynamicObstacle(const pcl::PointXYZ& point);
-//  Callback
+//  Serve Action
+  bool cancelNavigation();
+//  Topic Callback
   void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
   void globalPathCallback(const nav_msgs::Path::ConstPtr& msg);
@@ -136,6 +140,7 @@ private:
   std::string pointCloudTopic_, imuTopic_, globalPathTopic_, globalWaypointsPathTopic_, localPathTopic_, velocityCmdTopic_;
   ros::Subscriber pointCloudSub_, imuSub_, globalPathSub_, globalWaypointsPathSub_, localPathSub_, velocityCmdSub_;
 
+  ros::ServiceClient cancelNavigationClient_;
   sensor_msgs::PointCloud2 pointCloudData_;
   sensor_msgs::Imu imuData_;
   nav_msgs::Path globalPath_, globalWaypointsPath_, localPath_;

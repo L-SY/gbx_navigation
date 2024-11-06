@@ -9,12 +9,20 @@ find_package(catkin REQUIRED COMPONENTS
         std_msgs
         geometry_msgs
         sensor_msgs
+        std_srvs
+        actionlib_msgs
 )
 
 catkin_package(
           INCLUDE_DIRS include
           LIBRARIES gbx_manual
-          CATKIN_DEPENDS nav_msgs roscpp std_msgs pcl_ros
+          CATKIN_DEPENDS
+            nav_msgs
+            roscpp
+            std_msgs
+            pcl_ros
+            std_srvs
+            actionlib_msgs
           DEPENDS
 )
 

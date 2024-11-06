@@ -18,6 +18,7 @@
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/Pose.h>
+#include <std_srvs/Empty.h>
 
 namespace regular_global_planner {
 
@@ -76,6 +77,8 @@ public:
   std::vector<geometry_msgs::PoseStamped> smoothPathWithArcs(
       const std::vector<geometry_msgs::PoseStamped>& waypoints, int num_points_per_arc);
 
+  bool cancelNavigationCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
 private:
   bool initialized_;  //!< flag indicating the planner has been initialized
   costmap_2d::Costmap2DROS* costmap_ros_;  //!< costmap ros wrapper
@@ -90,6 +93,7 @@ private:
   ros::Publisher plan_pub_, waypoint_pub_;  //!< publisher of the global plan
   ros::Publisher arrival_area_pub_, arrival_area_pub2_, arrival_area_pub3_;
 
+  ros::ServiceServer cancel_navigation_service_;;
   // configuration parameters
   double epsilon_;  //!< distance threshold between two waypoints that signifies the last waypoint
   int waypoints_per_meter_;  //!< number of waypoints per meter of generated path used for interpolation
