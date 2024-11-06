@@ -127,17 +127,18 @@ public:
   void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
   void globalPathCallback(const nav_msgs::Path::ConstPtr& msg);
+  void globalWaypointsPathCallback(const nav_msgs::Path::ConstPtr& msg);
   void localPathCallback(const nav_msgs::Path::ConstPtr& msg);
   void velocityCmdCallback(const geometry_msgs::Twist::ConstPtr& msg);
 
 private:
   ros::NodeHandle nh_;
-  std::string pointCloudTopic_, imuTopic_, globalPathTopic_, localPathTopic_, velocityCmdTopic_;
-  ros::Subscriber pointCloudSub_, imuSub_, globalPathSub_, localPathSub_, velocityCmdSub_;
+  std::string pointCloudTopic_, imuTopic_, globalPathTopic_, globalWaypointsPathTopic_, localPathTopic_, velocityCmdTopic_;
+  ros::Subscriber pointCloudSub_, imuSub_, globalPathSub_, globalWaypointsPathSub_, localPathSub_, velocityCmdSub_;
 
   sensor_msgs::PointCloud2 pointCloudData_;
   sensor_msgs::Imu imuData_;
-  nav_msgs::Path globalPath_, localPath_;
+  nav_msgs::Path globalPath_, globalWaypointsPath_, localPath_;
   geometry_msgs::Twist velocityCmd_;
 
   ros::ServiceClient pauseClient_;

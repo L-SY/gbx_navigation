@@ -1,6 +1,7 @@
 point_cloud_topic: "/corrected_current_pcd"
 imu_topic: "/livox/imu"
 global_path_topic: "/move_base/RegularGlobalPlanner/global_plan"
+global_waypoint_path_topic: "/move_base/RegularGlobalPlanner/global_waypoint_plan"
 local_path_topic: "/move_base/TebLocalPlannerROS/local_plan"
 velocity_cmd_topic: "/cmd_vel"
 
@@ -9,7 +10,7 @@ story_trajectories:
   - b_C: "/home/lsy/navigation_ws/src/gbx_navigation/topic_transit/record_trajectory/simulation_1.csv"
 
 cloud_filter:
-  min_z:
-  max_z:
-  max_radius:
-  leaf_size:
+  min_z: -0.1
+  max_z: 0.1
+  max_radius: 3.0
+  leaf_size: 0.1

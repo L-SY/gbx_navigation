@@ -30,12 +30,14 @@ void GBXManual::initialize()
   nh_.param<std::string>("point_cloud_topic", pointCloudTopic_, "/point_cloud");
   nh_.param<std::string>("imu_topic", imuTopic_, "/imu/data");
   nh_.param<std::string>("global_path_topic", globalPathTopic_, "/global_path");
+  nh_.param<std::string>("global_waypoint_path_topic", globalWaypointsPathTopic_, "/global_waypoint_path");
   nh_.param<std::string>("local_path_topic", localPathTopic_, "/local_path");
   nh_.param<std::string>("velocity_cmd_topic", velocityCmdTopic_, "/cmd_vel");
 
   pointCloudSub_ = nh_.subscribe(pointCloudTopic_, 1, &GBXManual::pointCloudCallback, this);
   imuSub_ = nh_.subscribe(imuTopic_, 1, &GBXManual::imuCallback, this);
   globalPathSub_ = nh_.subscribe(globalPathTopic_, 1, &GBXManual::globalPathCallback, this);
+  globalWaypointsPathSub_ = nh_.subscribe(globalWaypointsPathTopic_, 1, &GBXManual::globalWaypointsPathCallback, this);
   localPathSub_ = nh_.subscribe(localPathTopic_, 1, &GBXManual::localPathCallback, this);
   velocityCmdSub_ = nh_.subscribe(velocityCmdTopic_, 1, &GBXManual::velocityCmdCallback, this);
 
@@ -212,31 +214,30 @@ void GBXManual::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg
   pcl::toROSMsg(*cloud, pointCloudData_);
 }
 
+// -----------------Topic CallBack--------------------
 void GBXManual::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 {
   imuData_ = *msg;
-//  ROS_INFO("Received IMU data: Orientation: (%f, %f, %f, %f)",
-//           msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
 }
 
 void GBXManual::globalPathCallback(const nav_msgs::Path::ConstPtr& msg)
 {
   globalPath_ = *msg;
-//  ROS_INFO("Received global path with %lu waypoints", msg->poses.size());
+}
+
+void GBXManual::globalWaypointsPathCallback(const nav_msgs::Path::ConstPtr& msg)
+{
+  globalWaypointsPath_ = *msg;
 }
 
 void GBXManual::localPathCallback(const nav_msgs::Path::ConstPtr& msg)
 {
   localPath_ = *msg;
-//  ROS_INFO("Received local path with %lu waypoints", msg->poses.size());
 }
 
 void GBXManual::velocityCmdCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
   velocityCmd_ = *msg;
-//  ROS_INFO("Received velocity command: Linear(%f, %f, %f), Angular(%f, %f, %f)",
-//           msg->linear.x, msg->linear.y, msg->linear.z,
-//           msg->angular.x, msg->angular.y, msg->angular.z);
 }
 
 } //namespace gbx_manual
