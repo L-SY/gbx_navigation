@@ -164,14 +164,14 @@ private:
   nav_msgs::Path globalPath_, globalWaypointsPath_, localPath_;
   geometry_msgs::Twist velocityCmd_;
 
-  std::string csv_file_path_;
+  std::string csv_file_path_, lastPubTrajectory_;
   std::vector<std::string> csv_data_;
 
   bool is_paused_, isPubTrajectory_ = false, isArrive_ = false;
 
   NavigationState currentState_;
 
-  std::unique_ptr<TrajectoryPublisher> TrajectoryPublisher_;
+  std::unique_ptr<TrajectoryPublisher> trajectoryPublisher_;
 
 // For cloud
   double cloudMinZ_, cloudMaxZ_, cloudRadius_, cloudLeafSize_;

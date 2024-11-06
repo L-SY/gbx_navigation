@@ -17,7 +17,7 @@ GBXManual::GBXManual(ros::NodeHandle nh, tf2_ros::Buffer& tfBuffer)
   } else {
     ROS_ERROR("Failed to load trajectories.");
   }
-  TrajectoryPublisher_ = std::make_unique<TrajectoryPublisher>(nh_,csv_paths);
+  trajectoryPublisher_ = std::make_unique<TrajectoryPublisher>(nh_,csv_paths);
   cancelNavigationClient_ = nh_.serviceClient<std_srvs::Empty>("/cancel_navigation");
   globalCostmapRos_ = new costmap_2d::Costmap2DROS("global_costmap", tfBuffer_);
   localCostmapRos_ = new costmap_2d::Costmap2DROS("local_costmap", tfBuffer_);
@@ -61,15 +61,16 @@ bool GBXManual::pubTrajectory(navigation_msgs::pub_trajectory::Request& req,navi
   const std::string& sender = req.sender;
   const std::string& path_name = req.path_name;
 
-  auto trajectory = TrajectoryPublisher_->getTrajectory();
+  auto trajectory = trajectoryPublisher_->getTrajectory();
   auto it = trajectory.find(path_name);
   if (it != trajectory.end()) {
     ROS_INFO("Sender: %s, Path %s found. Publishing after 1 second delay.", sender.c_str(), path_name.c_str());
     ros::Duration(1.0).sleep();
-    TrajectoryPublisher_->publishTrajectory(path_name);
-
+    trajectoryPublisher_->publishTrajectory(path_name);
+    lastPubTrajectory_ = path_name;
     res.success = true;
     res.message = "Path published successfully by " + sender;
+    transitionToState(NavigationState::MOVE);
   } else {
     ROS_WARN("Sender: %s, Path %s not found in the trajectories map.", sender.c_str(), path_name.c_str());
     res.success = false;
@@ -105,7 +106,6 @@ bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string,
 
 void GBXManual::update()
 {
-//  checkForObstaclesOnPath(20);
   switch (currentState_)
   {
     case NavigationState::STOP:
@@ -147,15 +147,22 @@ void GBXManual::handleStop()
 
 void GBXManual::handleMove()
 {
-  // 移动状态下的操作
-  ROS_INFO("In MOVE state. Robot is moving.");
-  // 实现机器人移动的逻辑
+  checkForObstaclesOnPath(20);
+  if (!isPubTrajectory_)
+  {
+    trajectoryPublisher_->publishTrajectory(lastPubTrajectory_);
+    isPubTrajectory_ = true;
+  }
+
+//  ROS_INFO("In MOVE state. Robot is moving.");
 }
 
 void GBXManual::handleWait()
 {
-  // 等待状态下的操作
-  ROS_INFO("In WAIT state. Robot is waiting.");
+  isPubTrajectory_ = false;
+  ros::Duration(1).sleep();
+  transitionToState(NavigationState::MOVE);
+//  ROS_INFO("In WAIT state. Robot is waiting.");
   // 实现等待逻辑，例如等待信号或超时等
 }
 
@@ -233,6 +240,7 @@ bool GBXManual::checkForObstaclesOnPath(int points_to_check)
       if (cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         ROS_WARN("Obstacle detected on global path at point (%.2f, %.2f)", wx, wy);
         cancelNavigation();
+        transitionToState(NavigationState::WAIT);
         return true;
       }
     } else {
