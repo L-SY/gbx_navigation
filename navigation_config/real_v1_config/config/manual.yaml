@@ -6,8 +6,8 @@ local_path_topic: "/move_base/TebLocalPlannerROS/local_plan"
 velocity_cmd_topic: "/cmd_vel"
 
 story_trajectories:
-  - E3_121: "/home/lsy/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/E3_121.csv"
-  - 2F_E: "/home/lsy/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_E.csv"
+  - E3_121: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/E3_121.csv"
+  - 2F_E: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_E.csv"
 
 cloud_filter:
   min_z: -0.1
