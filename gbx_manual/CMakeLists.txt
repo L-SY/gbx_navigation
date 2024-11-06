@@ -26,7 +26,7 @@ include_directories(
         ${PCL_INCLUDE_DIRS})
 
 add_library(gbx_manual src/GBXManual.cpp)
-target_link_libraries(gbx_manual ${catkin_LIBRARIES})
+target_link_libraries(gbx_manual ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(gbx_manual_node src/GBXManual.cpp src/main.cpp)
-target_link_libraries(gbx_manual_node ${catkin_LIBRARIES})
+target_link_libraries(gbx_manual_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})

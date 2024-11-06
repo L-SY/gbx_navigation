@@ -38,6 +38,12 @@ void GBXManual::initialize()
   globalPathSub_ = nh_.subscribe(globalPathTopic_, 1, &GBXManual::globalPathCallback, this);
   localPathSub_ = nh_.subscribe(localPathTopic_, 1, &GBXManual::localPathCallback, this);
   velocityCmdSub_ = nh_.subscribe(velocityCmdTopic_, 1, &GBXManual::velocityCmdCallback, this);
+
+  ros::NodeHandle cloud_nh(nh_,"cloud_filter");
+  cloud_nh.param<double>("min_z", cloudMinZ_, 0.0);
+  cloud_nh.param<double>("max_z", cloudMaxZ_, 1.0);
+  cloud_nh.param<double>("max_radius", cloudRadius_, 5.0);
+  cloud_nh.param<double>("leaf_size", cloudLeafSize_, 0.1);
 }
 
 bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string, std::string>& csv_paths) {
@@ -182,8 +188,28 @@ bool GBXManual::isDynamicObstacle(const pcl::PointXYZ& point)
 
 void GBXManual::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg)
 {
-  pointCloudData_ = *msg;
-//  ROS_INFO("Received point cloud data with %lu points", msg->data.size());
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::fromROSMsg(*msg, *cloud);
+
+  pcl::PassThrough<pcl::PointXYZ> pass;
+  pass.setInputCloud(cloud);
+  pass.setFilterFieldName("z");
+  pass.setFilterLimits(cloudMinZ_, cloudMaxZ_);
+  pass.filter(*cloud);
+
+  pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
+  voxel_filter.setInputCloud(cloud);
+  voxel_filter.setLeafSize(cloudLeafSize_, cloudLeafSize_, cloudLeafSize_);
+  voxel_filter.filter(*cloud);
+
+  pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
+  radius_filter.setInputCloud(cloud);
+  radius_filter.setRadiusSearch(cloudRadius_);
+  radius_filter.setMinNeighborsInRadius(2);
+  radius_filter.filter(*cloud);
+
+  sensor_msgs::PointCloud2 output;
+  pcl::toROSMsg(*cloud, pointCloudData_);
 }
 
 void GBXManual::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)

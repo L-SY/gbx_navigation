@@ -17,6 +17,12 @@
 #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/PointStamped.h"
+// for cloud filter
+#include <pcl/point_types.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/radius_outlier_removal.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace gbx_manual
 {
@@ -144,6 +150,9 @@ private:
   NavigationState current_state_;
 
   std::unique_ptr<TrajectoryPublisher> TrajectoryPublisher_;
+
+// For cloud
+  double cloudMinZ_, cloudMaxZ_, cloudRadius_, cloudLeafSize_;
 };
 
 } // namespace gbx_manual

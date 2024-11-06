@@ -7,3 +7,9 @@ velocity_cmd_topic: "/cmd_vel"
 story_trajectories:
   - A_B: "/home/lsy/navigation_ws/src/gbx_navigation/topic_transit/record_trajectory/simulation.csv"
   - b_C: "/home/lsy/navigation_ws/src/gbx_navigation/topic_transit/record_trajectory/simulation_1.csv"
+
+cloud_filter:
+  min_z:
+  max_z:
+  max_radius:
+  leaf_size:
