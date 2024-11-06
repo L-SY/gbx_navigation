@@ -110,13 +110,9 @@ public:
   void handlePullOver();
   void handleArrive();
 
-  bool loadConfig(const std::string& config_param);
-
   void pauseMoveBase();
 
   void checkForObstaclesAndHandle();
-
-  void getGlobalPath(const nav_msgs::Path& global_path);
 
   bool loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string, std::string>& csv_paths);
 
@@ -137,7 +133,6 @@ private:
   sensor_msgs::Imu imuData_;
   nav_msgs::Path globalPath_, localPath_;
   geometry_msgs::Twist velocityCmd_;
-
 
   ros::ServiceClient pauseClient_;
 

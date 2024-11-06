@@ -9,6 +9,16 @@ namespace gbx_manual
 GBXManual::GBXManual(ros::NodeHandle nh)
     : nh_(nh), is_paused_(false), current_state_(NavigationState::STOP)
 {
+  std::map<std::string, std::string> csv_paths;
+  if (loadStoryTrajectories(nh_, csv_paths)) {
+    for (const auto& pair : csv_paths) {
+      ROS_INFO("Trajectory name: %s, Path: %s", pair.first.c_str(), pair.second.c_str());
+    }
+  } else {
+    ROS_ERROR("Failed to load trajectories.");
+  }
+  TrajectoryPublisher_ = std::make_unique<TrajectoryPublisher>(nh_,csv_paths);
+  //  TrajectoryPublisher_.get()->publishTrajectory("A_B");
 }
 
 GBXManual::~GBXManual()
@@ -28,15 +38,6 @@ void GBXManual::initialize()
   globalPathSub_ = nh_.subscribe(globalPathTopic_, 1, &GBXManual::globalPathCallback, this);
   localPathSub_ = nh_.subscribe(localPathTopic_, 1, &GBXManual::localPathCallback, this);
   velocityCmdSub_ = nh_.subscribe(velocityCmdTopic_, 1, &GBXManual::velocityCmdCallback, this);
-
-  std::map<std::string, std::string> csv_paths;
-  if (loadStoryTrajectories(nh_, csv_paths)) {
-    for (const auto& pair : csv_paths) {
-      ROS_INFO("Trajectory name: %s, Path: %s", pair.first.c_str(), pair.second.c_str());
-    }
-  } else {
-    ROS_ERROR("Failed to load trajectories.");
-  }
 }
 
 bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string, std::string>& csv_paths) {
@@ -132,26 +133,6 @@ void GBXManual::handleArrive()
   // 到达状态下的操作
   ROS_INFO("In ARRIVE state. Robot has arrived.");
   // 实现到达目标的逻辑
-}
-
-bool GBXManual::loadConfig(const std::string& config_param)
-{
-  // 通过rosparam或直接加载配置文件
-  std::ifstream config_file(config_param);
-  if (!config_file.is_open()) {
-    ROS_ERROR("Could not open config file: %s", config_param.c_str());
-    return false;
-  }
-
-  std::string line;
-  while (std::getline(config_file, line)) {
-    std::stringstream ss(line);
-    std::string value;
-    while (std::getline(ss, value, ',')) {
-      csv_data_.push_back(value);
-    }
-  }
-  return true;
 }
 
 void GBXManual::pauseMoveBase()
