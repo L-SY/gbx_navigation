@@ -52,6 +52,31 @@ void GBXManual::initialize()
   cloud_nh.param<double>("max_z", cloudMaxZ_, 1.0);
   cloud_nh.param<double>("max_radius", cloudRadius_, 5.0);
   cloud_nh.param<double>("leaf_size", cloudLeafSize_, 0.1);
+
+  pubTrajectoryServer_ = nh_.advertiseService("pub_trajectory", &GBXManual::pubTrajectory, this);
+}
+
+bool GBXManual::pubTrajectory(navigation_msgs::pub_trajectory::Request& req,navigation_msgs::pub_trajectory::Response& res)
+{
+  const std::string& sender = req.sender;
+  const std::string& path_name = req.path_name;
+
+  auto trajectory = TrajectoryPublisher_->getTrajectory();
+  auto it = trajectory.find(path_name);
+  if (it != trajectory.end()) {
+    ROS_INFO("Sender: %s, Path %s found. Publishing after 1 second delay.", sender.c_str(), path_name.c_str());
+    ros::Duration(1.0).sleep();
+    TrajectoryPublisher_->publishTrajectory(path_name);
+
+    res.success = true;
+    res.message = "Path published successfully by " + sender;
+  } else {
+    ROS_WARN("Sender: %s, Path %s not found in the trajectories map.", sender.c_str(), path_name.c_str());
+    res.success = false;
+    res.message = "Path not found.";
+  }
+
+  return true;
 }
 
 bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string, std::string>& csv_paths) {
@@ -80,25 +105,25 @@ bool GBXManual::loadStoryTrajectories(ros::NodeHandle& nh, std::map<std::string,
 
 void GBXManual::update()
 {
-  checkForObstaclesOnPath(20);
-//  switch (currentState_)
-//  {
-//  case NavigationState::STOP:
-//    handleStop();
-//    break;
-//  case NavigationState::MOVE:
-//    handleMove();
-//    break;
-//  case NavigationState::WAIT:
-//    handleWait();
-//    break;
-//  case NavigationState::PULL_OVER:
-//    handlePullOver();
-//    break;
-//  case NavigationState::ARRIVE:
-//    handleArrive();
-//    break;
-//  }
+//  checkForObstaclesOnPath(20);
+  switch (currentState_)
+  {
+    case NavigationState::STOP:
+      handleStop();
+      break;
+    case NavigationState::MOVE:
+      handleMove();
+      break;
+    case NavigationState::WAIT:
+      handleWait();
+      break;
+    case NavigationState::PULL_OVER:
+      handlePullOver();
+      break;
+    case NavigationState::ARRIVE:
+      handleArrive();
+      break;
+  }
 }
 
 void GBXManual::stop()
@@ -117,7 +142,7 @@ void GBXManual::transitionToState(NavigationState new_state)
 
 void GBXManual::handleStop()
 {
-  cancelNavigation();
+//  cancelNavigation();
 }
 
 void GBXManual::handleMove()

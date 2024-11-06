@@ -32,6 +32,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <base_local_planner/costmap_model.h>
 #include <base_local_planner/footprint_helper.h>
+#include "navigation_msgs/pub_trajectory.h"
 
 namespace gbx_manual
 {
@@ -50,6 +51,11 @@ public:
       : nh_(nh), csv_paths_(csv_paths) {
     pub_ = nh_.advertise<geometry_msgs::PointStamped>("/clicked_point", 10);
     readAllCSVFiles();
+  }
+
+  std::map<std::string, std::vector<geometry_msgs::Point>> getTrajectory()
+  {
+    return trajectories_;
   }
 
   void publishTrajectory(const std::string& path_name) {
@@ -137,6 +143,7 @@ public:
 
 //  Serve Action
   bool cancelNavigation();
+  bool pubTrajectory(navigation_msgs::pub_trajectory::Request& req,navigation_msgs::pub_trajectory::Response& res);
 //  Topic Callback
   void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
@@ -150,18 +157,17 @@ private:
   std::string pointCloudTopic_, imuTopic_, globalPathTopic_, globalWaypointsPathTopic_, localPathTopic_, velocityCmdTopic_;
   ros::Subscriber pointCloudSub_, imuSub_, globalPathSub_, globalWaypointsPathSub_, localPathSub_, velocityCmdSub_;
 
-  ros::ServiceClient cancelNavigationClient_;
+  ros::ServiceServer pubTrajectoryServer_;
+  ros::ServiceClient cancelNavigationClient_, pauseClient_;
   sensor_msgs::PointCloud2 pointCloudData_;
   sensor_msgs::Imu imuData_;
   nav_msgs::Path globalPath_, globalWaypointsPath_, localPath_;
   geometry_msgs::Twist velocityCmd_;
 
-  ros::ServiceClient pauseClient_;
-
   std::string csv_file_path_;
   std::vector<std::string> csv_data_;
 
-  bool is_paused_;
+  bool is_paused_, isPubTrajectory_ = false, isArrive_ = false;
 
   NavigationState currentState_;
 

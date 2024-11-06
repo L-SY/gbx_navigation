@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
         std_srvs
         actionlib_msgs
         costmap_2d
+        navigation_msgs
 )
 
 catkin_package(
@@ -25,6 +26,7 @@ catkin_package(
             std_srvs
             actionlib_msgs
             costmap_2d
+            navigation_msgs
           DEPENDS
 )
 

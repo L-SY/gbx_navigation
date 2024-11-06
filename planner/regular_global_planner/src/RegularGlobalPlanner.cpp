@@ -70,8 +70,8 @@ bool RegularGlobalPlanner::cancelNavigationCallback(std_srvs::Empty::Request& re
   init_trajectory_ = false;
   path_.poses.clear();
   global_waypoints_path_.poses.clear();
-  plan_pub_.publish(path_);
-  waypoint_pub_.publish(global_waypoints_path_);
+//  plan_pub_.publish(path_);
+//  waypoint_pub_.publish(global_waypoints_path_);
   return true;
 }
 
