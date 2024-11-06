@@ -13,14 +13,14 @@ inflation_global:
   cost_scaling_factor: 3.0
   inflation_radius: 0.5
 
-obstacles_ouster:
+obstacles_livox:
   track_unknown_space: true
   observation_sources: point_cloud
   point_cloud: {
     data_type: PointCloud2,
     clearing: true,
     marking: true,
-    topic: /cloud_registered,
+    topic: /corrected_current_pcd,
     inf_is_valid: true,
     min_obstacle_height: 0.0,
     max_obstacle_height: 2.0,

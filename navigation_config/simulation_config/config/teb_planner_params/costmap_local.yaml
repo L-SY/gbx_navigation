@@ -13,5 +13,9 @@ resolution: 0.05
 
 plugins:
   - { name: static,                    type: "costmap_2d::StaticLayer" }
-  - { name: ouster_cloud,           type: "costmap_2d::ObstacleLayer" }
   - { name: inflation,                 type: "costmap_2d::InflationLayer" }
+
+
+#plugins:
+#  - { name: obstacles_livox,           type: "costmap_2d::ObstacleLayer" }
+#  - { name: inflation,                 type: "costmap_2d::InflationLayer" }
