@@ -33,6 +33,7 @@
 #include <base_local_planner/costmap_model.h>
 #include <base_local_planner/footprint_helper.h>
 #include "navigation_msgs/pub_trajectory.h"
+#include "ranger_msgs/SystemState.h"
 
 namespace gbx_manual
 {
@@ -151,11 +152,12 @@ public:
   void globalWaypointsPathCallback(const nav_msgs::Path::ConstPtr& msg);
   void localPathCallback(const nav_msgs::Path::ConstPtr& msg);
   void velocityCmdCallback(const geometry_msgs::Twist::ConstPtr& msg);
+  void systemStateCallback(const ranger_msgs::SystemState::ConstPtr& msg);
 
 private:
   ros::NodeHandle nh_;
-  std::string pointCloudTopic_, imuTopic_, globalPathTopic_, globalWaypointsPathTopic_, localPathTopic_, velocityCmdTopic_;
-  ros::Subscriber pointCloudSub_, imuSub_, globalPathSub_, globalWaypointsPathSub_, localPathSub_, velocityCmdSub_;
+  std::string pointCloudTopic_, imuTopic_, globalPathTopic_, globalWaypointsPathTopic_, localPathTopic_, velocityCmdTopic_, systemStateTopic_;
+  ros::Subscriber pointCloudSub_, imuSub_, globalPathSub_, globalWaypointsPathSub_, localPathSub_, velocityCmdSub_, systemStateSub_;
 
   ros::ServiceServer pubTrajectoryServer_;
   ros::ServiceClient cancelNavigationClient_, pauseClient_;
@@ -163,6 +165,7 @@ private:
   sensor_msgs::Imu imuData_;
   nav_msgs::Path globalPath_, globalWaypointsPath_, localPath_;
   geometry_msgs::Twist velocityCmd_;
+  ranger_msgs::SystemState systemState_;
 
   std::string csv_file_path_, lastPubTrajectory_;
   std::vector<std::string> csv_data_;

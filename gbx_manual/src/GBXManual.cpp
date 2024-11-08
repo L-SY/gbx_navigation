@@ -39,6 +39,7 @@ void GBXManual::initialize()
   nh_.param<std::string>("global_waypoint_path_topic", globalWaypointsPathTopic_, "/global_waypoint_path");
   nh_.param<std::string>("local_path_topic", localPathTopic_, "/local_path");
   nh_.param<std::string>("velocity_cmd_topic", velocityCmdTopic_, "/cmd_vel");
+  nh_.param<std::string>("system_state_topic", systemStateTopic_, "/system_state");
 
   pointCloudSub_ = nh_.subscribe(pointCloudTopic_, 1, &GBXManual::pointCloudCallback, this);
   imuSub_ = nh_.subscribe(imuTopic_, 1, &GBXManual::imuCallback, this);
@@ -46,6 +47,7 @@ void GBXManual::initialize()
   globalWaypointsPathSub_ = nh_.subscribe(globalWaypointsPathTopic_, 1, &GBXManual::globalWaypointsPathCallback, this);
   localPathSub_ = nh_.subscribe(localPathTopic_, 1, &GBXManual::localPathCallback, this);
   velocityCmdSub_ = nh_.subscribe(velocityCmdTopic_, 1, &GBXManual::velocityCmdCallback, this);
+  systemStateSub_ = nh_.subscribe(systemStateTopic_, 1, &GBXManual::systemStateCallback, this);
 
   ros::NodeHandle cloud_nh(nh_,"cloud_filter");
   cloud_nh.param<double>("min_z", cloudMinZ_, 0.0);
@@ -331,6 +333,11 @@ void GBXManual::localPathCallback(const nav_msgs::Path::ConstPtr& msg)
 void GBXManual::velocityCmdCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
   velocityCmd_ = *msg;
+}
+
+void GBXManual::systemStateCallback(const ranger_msgs::SystemState::ConstPtr& msg)
+{
+  systemState_ = *msg;
 }
 
 } //namespace gbx_manual
