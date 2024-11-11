@@ -5,6 +5,17 @@ void FastLioLocalizationQnClass::odomPcdCallback(const nav_msgs::OdometryConstPt
 {
   m_current_frame = PosePcd(*odom_msg, *pcd_msg, m_current_keyframe_idx); //to be checked if keyframe or not
 
+  {
+    std::lock_guard<std::mutex> initial_lock(m_initial_pose_mutex);
+    if (m_has_new_initial_pose) {
+      m_last_TF = m_initial_pose * m_current_frame.pose_eig.inverse();
+      m_has_new_initial_pose = false;
+      m_init = false;
+      m_global_localization_count = 0;
+      m_enable_quatro = true;
+    }
+  }
+
   if (!m_init) //// init only once
   {
     //// 1. realtime pose = last TF * odom

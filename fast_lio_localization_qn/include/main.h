@@ -29,6 +29,7 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 ///// PCL
 #include <pcl/point_types.h> //pt
 #include <pcl/point_cloud.h> //cloud
@@ -114,6 +115,13 @@ class FastLioLocalizationQnClass
     shared_ptr<message_filters::Synchronizer<odom_pcd_sync_pol>> m_sub_odom_pcd_sync = nullptr;
     shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> m_sub_odom = nullptr;
     shared_ptr<message_filters::Subscriber<sensor_msgs::PointCloud2>> m_sub_pcd = nullptr;
+
+    // InitPose
+    ros::Subscriber m_initial_pose_sub;
+    std::mutex m_initial_pose_mutex;
+    bool m_has_new_initial_pose = false;
+    Eigen::Matrix4d m_initial_pose = Eigen::Matrix4d::Identity();
+    void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
 
     ///// functions
   public:

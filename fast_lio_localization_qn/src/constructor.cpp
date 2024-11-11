@@ -115,6 +115,7 @@ FastLioLocalizationQnClass::FastLioLocalizationQnClass(const ros::NodeHandle& n_
   m_debug_coarse_aligned_pub = m_nh.advertise<sensor_msgs::PointCloud2>("/coarse_aligned_quatro", 10);
   m_debug_fine_aligned_pub = m_nh.advertise<sensor_msgs::PointCloud2>("/fine_aligned_nano_gicp", 10);
   // subscribers
+  m_initial_pose_sub = m_nh.subscribe("/initialpose", 1, &FastLioLocalizationQnClass::initialPoseCallback, this);
   m_sub_odom = std::make_shared<message_filters::Subscriber<nav_msgs::Odometry>>(m_nh, "/Odometry", 10);
   m_sub_pcd = std::make_shared<message_filters::Subscriber<sensor_msgs::PointCloud2>>(m_nh, "/cloud_registered", 10);
   m_sub_odom_pcd_sync = std::make_shared<message_filters::Synchronizer<odom_pcd_sync_pol>>(odom_pcd_sync_pol(10), *m_sub_odom, *m_sub_pcd);
@@ -123,4 +124,20 @@ FastLioLocalizationQnClass::FastLioLocalizationQnClass(const ros::NodeHandle& n_
   m_match_timer = m_nh.createTimer(ros::Duration(1.0/map_match_hz_), &FastLioLocalizationQnClass::matchingTimerFunc, this);
   
   ROS_WARN("Main class, starting node...");
+}
+
+void FastLioLocalizationQnClass::initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) {
+  std::lock_guard<std::mutex> lock(m_initial_pose_mutex);
+
+  m_initial_pose = Eigen::Matrix4d::Identity();
+  Eigen::Vector3d translation(msg->pose.pose.position.x,
+                              msg->pose.pose.position.y,
+                              msg->pose.pose.position.z);
+  Eigen::Quaterniond rotation(msg->pose.pose.orientation.w,
+                              msg->pose.pose.orientation.x,
+                              msg->pose.pose.orientation.y,
+                              msg->pose.pose.orientation.z);
+  m_initial_pose.block<3,3>(0,0) = rotation.toRotationMatrix();
+  m_initial_pose.block<3,1>(0,3) = translation;
+  m_has_new_initial_pose = true;
 }
