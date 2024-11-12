@@ -1,8 +1,8 @@
 basic:
   map_frame: "map"                            # publish frame
   map_match_hz: 2.0                           # Map match Hz
-#  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F.bag"
-  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/E3_121_map.bag"
+  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F_whole.bag"
+#  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/E3_121_map.bag"
 #  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F_E.bag"
 
 keyframe:

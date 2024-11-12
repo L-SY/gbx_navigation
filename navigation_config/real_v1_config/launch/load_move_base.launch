@@ -1,7 +1,7 @@
 <launch>
     <!-- Run the map server -->
 <!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/2F_whole.yaml"/> -->
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/E3_121.yaml"/>
+<!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/E3_121.yaml"/> -->
 <!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/2F_E.yaml"/> -->
 
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom"
