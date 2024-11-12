@@ -24,10 +24,10 @@ obstacles_ouster:
     data_type: PointCloud2,
     clearing: true,
     marking: true,
-    topic: /cloud_registered_filter,
+    topic: /corrected_current_pcd,
     inf_is_valid: true,
-    min_obstacle_height: -0.3,
-    max_obstacle_height: 0.3,
+    min_obstacle_height: -0.5,
+    max_obstacle_height: 1.5,
     obstacle_range: 50.0,
     raytrace_range: 50.0
   }

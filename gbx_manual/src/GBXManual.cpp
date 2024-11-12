@@ -149,7 +149,7 @@ void GBXManual::handleStop()
 
 void GBXManual::handleMove()
 {
-  checkForObstaclesOnPath(20);
+  // checkForObstaclesOnPath(20);
   if (!isPubTrajectory_)
   {
     trajectoryPublisher_->publishTrajectory(lastPubTrajectory_);
