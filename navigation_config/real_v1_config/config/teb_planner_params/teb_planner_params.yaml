@@ -59,18 +59,24 @@ TebLocalPlannerROS:
   include_costmap_obstacles: True
   costmap_obstacles_behind_robot_dist: 3.0
   obstacle_poses_affected: 25
-  costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCHPoints"
   costmap_converter_spin_thread: True
   costmap_converter_rate: 25
 
-  costmap_converter/CostmapToPolygonsDBSMCCHPoints:
-    cluster_max_distance: 0.6
+  costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
+  CostmapToPolygonsDBSMCCH:
+    cluster_max_distance: 0.4
     cluster_min_pts: 2
-    cluster_max_pts: 100
-    convex_hull_min_pt_separation: 0.2
-    merge_clusters: true
-    merge_distance: 0.5
-    point_max_distance: 0.5
+    cluster_max_pts: 50
+    convex_hull_min_pt_separation: 0.5
+
+#  costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSConcaveHull"
+#  costmap_converter/CostmapToPolygonsDBSConcaveHull:
+#    cluster_max_distance: 0.6
+#    cluster_min_pts: 2
+#    cluster_max_pts: 100
+#    concave_hull_alpha: 1.5
+#    init_iterations: 1000
+#    min_keypoint_separation: 0.2
 
   #  costmap_converter/CostmapToLinesDBSRANSAC:
 #    cluster_max_distance: 0.4
