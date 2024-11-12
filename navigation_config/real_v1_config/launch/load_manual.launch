@@ -1,17 +1,16 @@
 <launch>
-    <include file="$(find real_v1_config)/launch/load_move_base.launch"/>
+    <arg name="map_name" default="E3_121"/>  <!-- 可选值: 2F_whole, E3_121, 2F_E -->
+
+    <include file="$(find real_v1_config)/launch/load_move_base.launch">
+        <arg name="map_file" value="$(find real_v1_config)/map/$(arg map_name).yaml"/>
+    </include>
+
+    <param name="basic/saved_map"
+           value="/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/$(arg map_name).bag"/>
+
     <include file="$(find real_v1_config)/launch/ranger_mini_v2.launch"/>
 
     <node name="gbx_manual" pkg="gbx_manual" type="gbx_manual_node" output="screen">
         <rosparam file="$(find real_v1_config)/config/manual.yaml" command="load"/>
     </node>
-
-<!--     <param name="basic/saved_map" value="/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F_whole.bag"/> -->
-    <param name="basic/saved_map" value="/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/E3_121_map.bag"/>
-<!--     <param name="basic/saved_map" value="/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F_E.bag"/> -->
-
-    <!-- Run the map server -->
-    <!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/2F_whole.yaml"/> -->
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/E3_121.yaml"/>
-    <!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/2F_E.yaml"/> -->
 </launch>
