@@ -15,7 +15,7 @@ controller_patience: 3.0
 controller_max_retries: 10
 
 recovery_patience: 3.0
-recovery_behaviour_enabled: false #TODO(4yang): should add some useful recovery_behaviors
+recovery_behaviour_enabled: true #TODO(4yang): should add some useful recovery_behaviors
 
 recovery_behaviors:
   - name: 'conservative_reset'

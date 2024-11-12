@@ -25,8 +25,8 @@ TebLocalPlannerROS:
   max_samples: 500
   global_plan_overwrite_orientation: True
   allow_init_with_backwards_motion: False
-  max_global_plan_lookahead_dist: 3.0
-  global_plan_viapoint_sep: 1.5
+  max_global_plan_lookahead_dist: -0.1
+  global_plan_viapoint_sep: -0.1
   global_plan_prune_distance: 5
   exact_arc_length: False
   feasibility_check_no_poses: 1
@@ -35,10 +35,10 @@ TebLocalPlannerROS:
   # Robot
   max_vel_x: 4
   max_vel_x_backwards: 0.3
-  max_vel_y: 1.0
+  max_vel_y: 0.0
   max_vel_theta: 0.5
   acc_lim_x: 2.5
-  acc_lim_y: 0.5
+  acc_lim_y: 0.0
   acc_lim_theta: 0.5
   min_turning_radius: 0.0 # omni-drive robot (can turn on place!)
 
@@ -57,17 +57,17 @@ TebLocalPlannerROS:
   min_obstacle_dist: 0.3 # This value must also include our robot radius, since footprint_model is set to "point".
   inflation_dist: 0.4
   include_costmap_obstacles: True
-  costmap_obstacles_behind_robot_dist: 0.0
+  costmap_obstacles_behind_robot_dist: 3.0
   obstacle_poses_affected: 25
   costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
   costmap_converter_spin_thread: True
   costmap_converter_rate: 25
 
   costmap_converter/CostmapToPolygonsDBSMCCH:
-    cluster_max_distance: 0.4
+    cluster_max_distance: 0.5
     cluster_min_pts: 2
-    cluster_max_pts: 30
-    convex_hull_min_pt_separation: 0.1
+    cluster_max_pts: 200
+    convex_hull_min_pt_separation: 0.5
 
 #  costmap_converter/CostmapToLinesDBSRANSAC:
 #    cluster_max_distance: 0.4
@@ -88,15 +88,15 @@ TebLocalPlannerROS:
   penalty_epsilon: 0.1
   obstacle_cost_exponent: 4
   weight_max_vel_x: 0.2
-  weight_max_vel_y: 0.2
+  weight_max_vel_y: 0.0
   weight_max_vel_theta: 0.2
   weight_acc_lim_x: 1
-  weight_acc_lim_y: 1
+  weight_acc_lim_y: 0
   weight_acc_lim_theta: 1
   weight_kinematics_nh: 0.0
   weight_kinematics_forward_drive: 0.0
   weight_kinematics_turning_radius: 0.0
-  weight_optimaltime: 10 # must be > 0
+  weight_optimaltime: 0.1 # must be > 0
   weight_shortest_path: 1.5
   weight_obstacle: 50
   weight_inflation: 0.01
@@ -124,8 +124,8 @@ TebLocalPlannerROS:
   viapoints_all_candidates: True
   delete_detours_backwards: False # Could back
   max_ratio_detours_duration_best_duration: 3.0
-  visualize_hc_graph: false # Debug
-  visualize_with_time_as_z_axis_scale: false
+  visualize_hc_graph: true # Debug
+  visualize_with_time_as_z_axis_scale: true
 
   # Recovery
   shrink_horizon_backup: true
