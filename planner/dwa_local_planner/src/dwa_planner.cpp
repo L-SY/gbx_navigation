@@ -155,7 +155,7 @@ DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil* p
   oscillation_costs_.resetOscillationFlags();
 
   bool sum_scores;
-  private_nh.param("sum_scores", sum_scores, false);
+  private_nh.param("sum_scores", sum_scores, true);
   obstacle_costs_.setSumScores(sum_scores);
 
   private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, true);
