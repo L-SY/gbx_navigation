@@ -1,10 +1,9 @@
 <launch>
+    <arg name="planner" default="teb_planner"/>
+
     <!-- Run the map server -->
     <arg name="map_file" default="$(find real_v1_config)/map/2F_E.yaml"/>
     <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)"/>
-<!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/2F_whole.yaml"/> -->
-<!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/E3_121.yaml"/> -->
-<!--     <node name="map_server" pkg="map_server" type="map_server" args="$(find real_v1_config)/map/2F_E.yaml"/>-->
 
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom"
           args="0 0 0 0 0 0 map odom 100" />
@@ -25,6 +24,16 @@
           type="robot_state_publisher" respawn="false" output="screen">
     </node>
 
+    <!--- Run Move_Base -->
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base"  output="screen">
+        <rosparam file="$(find real_v1_config)/config/$(arg planner)_params/$(arg planner)_params.yaml" command="load"/>
+        <rosparam file="$(find real_v1_config)/config/$(arg planner)_params/move_base.yaml" command="load"/>
+        <rosparam file="$(find real_v1_config)/config/$(arg planner)_params/costmap_common.yaml" command="load" ns="global_costmap"/>
+        <rosparam file="$(find real_v1_config)/config/$(arg planner)_params/costmap_common.yaml" command="load" ns="local_costmap"/>
+        <rosparam file="$(find real_v1_config)/config/$(arg planner)_params/costmap_global.yaml" command="load" ns="global_costmap"/>
+        <rosparam file="$(find real_v1_config)/config/$(arg planner)_params/costmap_local.yaml" command="load" ns="local_costmap"/>
+    </node>
+
 <!--     <arg name="min_z" value="-0.5" /> -->
 <!--     <arg name="max_z" value="0.5" /> -->
 <!--     <arg name="max_radius" value="4.0" /> -->
@@ -42,15 +51,4 @@
 <!--         <param name="frequency" value="$(arg frequency)" /> -->
 <!--         <param name="leaf_size" value="$(arg leaf_size)" /> -->
 <!--     </node> -->
-
-    <!--- Run Move_Base -->
-    <node pkg="move_base" type="move_base" respawn="false" name="move_base"  output="screen">
-        <rosparam file="$(find real_v1_config)/config/teb_planner_params/teb_planner_params.yaml" command="load"/>
-<!--        <rosparam file="$(find real_v1_config)/config/teb_planner_params/teb_planner_params_carlike.yaml" command="load"/>-->
-        <rosparam file="$(find real_v1_config)/config/teb_planner_params/move_base.yaml" command="load"/>
-        <rosparam file="$(find real_v1_config)/config/teb_planner_params/costmap_common.yaml" command="load" ns="global_costmap"/>
-        <rosparam file="$(find real_v1_config)/config/teb_planner_params/costmap_common.yaml" command="load" ns="local_costmap"/>
-        <rosparam file="$(find real_v1_config)/config/teb_planner_params/costmap_global.yaml" command="load" ns="global_costmap"/>
-        <rosparam file="$(find real_v1_config)/config/teb_planner_params/costmap_local.yaml" command="load" ns="local_costmap"/>
-    </node>
 </launch>
