@@ -24,7 +24,7 @@ TebLocalPlannerROS:
   min_samples: 5
   max_samples: 500
   global_plan_overwrite_orientation: True
-  allow_init_with_backwards_motion: False
+  allow_init_with_backwards_motion: True
   max_global_plan_lookahead_dist: -0.1
   global_plan_viapoint_sep: -0.1
   global_plan_prune_distance: 5
@@ -66,7 +66,7 @@ TebLocalPlannerROS:
   CostmapToPolygonsDBSMCCH:
     cluster_max_distance: 0.4
     cluster_min_pts: 2
-    cluster_max_pts: 50
+    cluster_max_pts: 500
     convex_hull_min_pt_separation: 0.5
 
 #  costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSConcaveHull"

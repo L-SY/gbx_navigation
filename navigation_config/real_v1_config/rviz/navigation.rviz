@@ -409,6 +409,14 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /move_base/TebLocalPlannerROS/teb_markers
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -453,9 +461,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1647967100143433
+      Pitch: 1.1747967004776
       Target Frame: <Fixed Frame>
-      Yaw: 1.9018113613128662
+      Yaw: 1.6118115186691284
     Saved: ~
 Window Geometry:
   Displays:
