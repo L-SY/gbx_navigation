@@ -155,10 +155,10 @@ DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil* p
   oscillation_costs_.resetOscillationFlags();
 
   bool sum_scores;
-  private_nh.param("sum_scores", sum_scores, true);
+  private_nh.param("sum_scores", sum_scores, false);
   obstacle_costs_.setSumScores(sum_scores);
 
-  private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, true);
+  private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
   map_viz_.initialize(name, planner_util->getGlobalFrame(),
                       [this](int cx, int cy, float& path_cost, float& goal_cost, float& occ_cost, float& total_cost) {
                         return getCellCosts(cx, cy, path_cost, goal_cost, occ_cost, total_cost);

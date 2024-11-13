@@ -147,7 +147,7 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
   if (it != checkWaypointArrive_.end())
   {
     first_false_index = std::distance(checkWaypointArrive_.begin(), it);
-    ROS_INFO_STREAM("First index with false value " << first_false_index);
+    // ROS_INFO_STREAM("First index with false value " << first_false_index);
   } else {
     ROS_INFO("Arrive !!");
     path_.poses.push_back(start);

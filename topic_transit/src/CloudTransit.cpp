@@ -57,7 +57,7 @@ public:
     sensor_msgs::PointCloud2 output;
     pcl::toROSMsg(*cloud, output);
     output.header = input->header;
-    output.header.frame_id = "camera_init";
+    // output.header.frame_id = "camera_init";
     output.header.stamp = ros::Time::now();
     point_cloud_pub_.publish(output);
 
