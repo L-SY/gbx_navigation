@@ -3,6 +3,7 @@
     <arg name="planner" default="dwa_planner"/>  <!-- 可选值: teb_planner, dwa_planner -->
     <include file="$(find real_v1_config)/launch/load_move_base.launch">
         <arg name="map_file" value="$(find real_v1_config)/map/$(arg map_name).yaml"/>
+        <arg name="planner" value="$(arg planner)"/>
     </include>
 
     <param name="basic/saved_map"
