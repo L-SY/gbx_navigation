@@ -356,8 +356,8 @@ void RangerROSMessenger::TwistCmdCallback(
     steer_cmd = CalculateSteeringAngle(*msg, radius);
     // Use minimum turn radius to switch between dual ackerman and spinning mode
     if (radius < robot_params_.min_turn_radius) {
-      motion_mode_ = MotionState::MOTION_MODE_SPINNING;
-      robot_->SetMotionMode(MotionState::MOTION_MODE_SPINNING);
+      // motion_mode_ = MotionState::MOTION_MODE_SPINNING;
+      // robot_->SetMotionMode(MotionState::MOTION_MODE_SPINNING);
     } else {
       motion_mode_ = MotionState::MOTION_MODE_DUAL_ACKERMAN;
       robot_->SetMotionMode(MotionState::MOTION_MODE_DUAL_ACKERMAN);
