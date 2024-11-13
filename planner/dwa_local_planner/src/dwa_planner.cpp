@@ -158,7 +158,7 @@ DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil* p
   private_nh.param("sum_scores", sum_scores, false);
   obstacle_costs_.setSumScores(sum_scores);
 
-  private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
+  private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, true);
   map_viz_.initialize(name, planner_util->getGlobalFrame(),
                       [this](int cx, int cy, float& path_cost, float& goal_cost, float& occ_cost, float& total_cost) {
                         return getCellCosts(cx, cy, path_cost, goal_cost, occ_cost, total_cost);
@@ -167,7 +167,7 @@ DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil* p
   private_nh.param("global_frame_id", frame_id_, std::string("odom"));
 
   traj_cloud_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("trajectory_cloud", 1);
-  private_nh.param("publish_traj_pc", publish_traj_pc_, false);
+  private_nh.param("publish_traj_pc", publish_traj_pc_, true);
 
   // set up all the cost functions that will be applied in order
   // (any function returning negative values will abort scoring, so the order can improve performance)
