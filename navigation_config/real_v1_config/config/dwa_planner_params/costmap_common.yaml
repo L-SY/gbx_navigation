@@ -10,8 +10,8 @@ static:
   subscribe_to_updates: true
 
 inflation_global:
-  cost_scaling_factor: 3.0
-  inflation_radius: 1.0
+  cost_scaling_factor: 1.0
+  inflation_radius: 6
 
 obstacles_ouster:
   track_unknown_space: true
