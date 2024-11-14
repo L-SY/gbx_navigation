@@ -32,20 +32,20 @@ DWAPlannerROS:
   vx_samples: 20
   vy_samples: 0
   vtheta_samples: 15
-  sim_period: 0.1
+  sim_period: 0.05
 
-  goal_distance_bias: 20.0
-  path_distance_bias: 10.0
-  occdist_scale: 0.01
+  goal_distance_bias: 40.0
+  path_distance_bias: 20.0
+  occdist_scale: 0.001
   stop_time_buffer: 0.001
   controller_frequency: 15.0
   oscillation_reset_dist: 0.05
   forward_point_distance: 0.325
-  scaling_speed: 0.25
-  max_scaling_factor: 0.1
+  scaling_speed: 1.2
+  max_scaling_factor: 0.05
 
   xy_goal_tolerance: 0.5
-  yaw_goal_tolerance: 0.7
+  yaw_goal_tolerance: 0.4
   theta_stopped_vel: 0.1
   trans_stopped_vel: 0.1
 
