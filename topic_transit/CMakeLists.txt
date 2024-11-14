@@ -6,17 +6,28 @@ find_package(catkin REQUIRED COMPONENTS
         nav_msgs
         pcl_ros
         roscpp
-        rospy
         std_msgs
         geometry_msgs
         sensor_msgs
+        tf2
+        tf2_ros
+        tf2_sensor_msgs
 )
 
 catkin_package(
-        #  INCLUDE_DIRS include
-        #  LIBRARIES pcd2pgm
-        #  CATKIN_DEPENDS nav_msgs pcl roscpp rospy std_msgs
-        #  DEPENDS system_lib
+          INCLUDE_DIRS include
+          LIBRARIES
+          CATKIN_DEPENDS
+            nav_msgs
+            pcl_ros
+            roscpp
+            std_msgs
+            geometry_msgs
+            sensor_msgs
+            tf2
+            tf2_ros
+            tf2_sensor_msgs
+          DEPENDS system_lib
 )
 
 find_package(PCL REQUIRED)
