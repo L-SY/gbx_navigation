@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-          INCLUDE_DIRS include
+          INCLUDE_DIRS
           LIBRARIES
           CATKIN_DEPENDS
             nav_msgs
@@ -27,7 +27,7 @@ catkin_package(
             tf2
             tf2_ros
             tf2_sensor_msgs
-          DEPENDS system_lib
+          DEPENDS
 )
 
 find_package(PCL REQUIRED)
