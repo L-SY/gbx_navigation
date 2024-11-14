@@ -1,19 +1,20 @@
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 class PointCloudFilter {
 public:
   PointCloudFilter() {
     ros::NodeHandle private_nh("~");
 
-    // 从参数服务器获取参数
     private_nh.param("min_z", min_z_, 0.0);
     private_nh.param("max_z", max_z_, 1.0);
     private_nh.param("max_radius", max_radius_, 5.0);
@@ -21,6 +22,7 @@ public:
     private_nh.param("input_topic", input_topic_, std::string("/cloud_registered"));
     private_nh.param("output_topic", output_topic_, std::string("/cloud_registered_filter"));
     private_nh.param("frequency", frequency_, 10.0);
+    private_nh.param("frame_id", frame_id_, std::string("base_link"));
 
     point_cloud_sub_ = nh_.subscribe(input_topic_, 1, &PointCloudFilter::pointCloudCallback, this);
     point_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(output_topic_, 1);
@@ -50,18 +52,36 @@ public:
     pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
     radius_filter.setInputCloud(cloud);
     radius_filter.setRadiusSearch(max_radius_);  // 设置半径
-    radius_filter.setMinNeighborsInRadius(2);  // 设置邻居点最小数量
+    radius_filter.setMinNeighborsInRadius(10);  // 设置邻居点最小数量
     radius_filter.filter(*cloud);
 
     // 将处理后的点云转换回ROS消息格式并发布
     sensor_msgs::PointCloud2 output;
     pcl::toROSMsg(*cloud, output);
     output.header = input->header;
-    // output.header.frame_id = "camera_init";
     output.header.stamp = ros::Time::now();
-    point_cloud_pub_.publish(output);
 
-    rate_->sleep();  // 控制发布频率
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener(tfBuffer);
+
+    geometry_msgs::TransformStamped transformStamped;
+    try {
+      transformStamped = tfBuffer.lookupTransform(
+          frame_id_, input->header.frame_id,
+          ros::Time(0), ros::Duration(1.0));
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("%s",ex.what());
+      return;
+    }
+
+    sensor_msgs::PointCloud2 transformed_cloud;
+    tf2::doTransform(output, transformed_cloud, transformStamped);
+
+    transformed_cloud.header.frame_id = transformStamped.header.frame_id;
+    transformed_cloud.header.stamp = ros::Time::now();
+    point_cloud_pub_.publish(transformed_cloud);
+    rate_->sleep();
   }
 
 private:
@@ -77,6 +97,7 @@ private:
   std::string input_topic_;
   std::string output_topic_;
   double frequency_;
+  std::string frame_id_;
 };
 
 int main(int argc, char** argv) {
