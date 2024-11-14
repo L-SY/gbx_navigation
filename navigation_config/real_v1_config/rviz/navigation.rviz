@@ -7,10 +7,8 @@ Panels:
         - /Global Options1
         - /TF1/Frames1
         - /local_costmap1
-        - /global_plan1
-        - /PointCloud25
       Splitter Ratio: 0.5010706782341003
-    Tree Height: 839
+    Tree Height: 363
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -372,7 +370,7 @@ Visualization Manager:
       Marker Topic: /move_base/RegularGlobalPlanner/waypoints
       Name: MarkerArray
       Namespaces:
-        /move_base/waypoint_global_planner: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -504,7 +502,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 14.973968505859375
+      Distance: 9.605497360229492
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -512,9 +510,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.3881840407848358
-        Y: 1.4831734895706177
-        Z: -1.7159041166305542
+        X: 0.2820444703102112
+        Y: 0.23024262487888336
+        Z: -1.714656114578247
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

@@ -5,9 +5,9 @@ publish_frequency: 1.0
 transform_tolerance: 0.5
 static_map: true
 track_unknown_space: true
-resolution: 0.05
-width: 500
-height: 500
+resolution: 0.025
+width: 50
+height: 50
 
 plugins:
   - { name: static,                  type: "costmap_2d::StaticLayer" }

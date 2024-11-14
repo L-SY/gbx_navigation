@@ -9,7 +9,7 @@
           args="0 0 0 0 0 0 map odom 100" />
 
     <node pkg="tf" type="static_transform_publisher" name="camera_to_odom"
-          args="0 0 0 0 0 0 base_link camera_init 100" />
+          args="0 0 0 0 0 0 base_link camera_link 100" />
 
     <include file="$(find real_v1_config)/launch/lio/ouster_os1_mapping.launch"/>
     <include file="$(find real_v1_config)/launch/lio/ouster_os1_loc_qn.launch"/>
