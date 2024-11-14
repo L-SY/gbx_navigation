@@ -14,28 +14,29 @@ RegularGlobalPlanner:
   waypoints_per_meter: 10  # number of waypoints per meter for the interpolation of the path
 
 DWAPlannerROS:
-  acc_lim_th: 3
-  acc_lim_x: 3
+  odom_topic: /ranger_base_node/odom
+  acc_lim_th: 5
+  acc_lim_x: 5
   acc_lim_y: 0
-  max_vel_x: 5.0
+  max_vel_x: 3.0
   min_vel_x: -1.0
   max_vel_y: 0.0
   min_vel_y: 0.0
   max_vel_theta: 3.0
   min_vel_theta: -3.0
 
-  max_vel_trans: 2.5
-  min_vel_trans: -2.5
+  max_vel_trans: 5
+  min_vel_trans: -5
 
-  sim_time: 5.0
+  sim_time: 6.0
   sim_granularity: 0.025
-  vx_samples: 20
+  vx_samples: 40
   vy_samples: 0
-  vtheta_samples: 15
-  sim_period: 0.05
+  vtheta_samples: 10
+  sim_period: 0.2
 
   goal_distance_bias: 40.0
-  path_distance_bias: 20.0
+  path_distance_bias: 10.0
   occdist_scale: 0.001
   stop_time_buffer: 0.001
   controller_frequency: 15.0
