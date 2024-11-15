@@ -26,7 +26,7 @@ DWAPlannerROS:
   min_vel_theta: -3.0
 
   max_vel_trans: 5
-  min_vel_trans: -5
+  min_vel_trans: 0.05
 
   sim_time: 6.0
   sim_granularity: 0.025
