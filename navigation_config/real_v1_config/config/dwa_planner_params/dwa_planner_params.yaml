@@ -25,7 +25,7 @@ DWAPlannerROS:
   max_vel_theta: 3.0
   min_vel_theta: -3.0
 
-  max_vel_trans: 5
+  max_vel_trans: 10
   min_vel_trans: 0.05
 
   sim_time: 6.0
@@ -37,9 +37,9 @@ DWAPlannerROS:
 
   goal_distance_bias: 40.0
   path_distance_bias: 15.0
-  occdist_scale: 0.0005
+  occdist_scale: 1e-10
   stop_time_buffer: 0.001
-  controller_frequency: 15.0
+  controller_frequency: 20.0
   oscillation_reset_dist: 0.05
   forward_point_distance: 0.325
   scaling_speed: 1.2

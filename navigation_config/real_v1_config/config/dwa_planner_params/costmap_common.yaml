@@ -34,4 +34,4 @@ obstacles_ouster:
 
 inflation:
   cost_scaling_factor: 2.0
-  inflation_radius: 1.0
+  inflation_radius: 1.5

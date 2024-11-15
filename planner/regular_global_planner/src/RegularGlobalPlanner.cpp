@@ -155,7 +155,7 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
     return true;
   }
 
-  double threshold_distance = 0.5;
+  double threshold_distance = 1.0;
   auto& first_point = waypoints_[first_false_index];
   auto& second_point = waypoints_[first_false_index + 1];
   if (first_false_index + 1 < waypoints_.size())
