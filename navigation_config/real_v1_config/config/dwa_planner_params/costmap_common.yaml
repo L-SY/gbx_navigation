@@ -10,8 +10,8 @@ static:
   subscribe_to_updates: true
 
 inflation_global:
-  cost_scaling_factor: 3.0
-  inflation_radius: 1.0
+  cost_scaling_factor: 1.0
+  inflation_radius: 6
 
 obstacles_ouster:
   track_unknown_space: true
@@ -24,14 +24,14 @@ obstacles_ouster:
     data_type: PointCloud2,
     clearing: true,
     marking: true,
-    topic: /corrected_current_pcd,
+    topic: /corrected_current_pcd_manual,
     inf_is_valid: true,
-    min_obstacle_height: 0.1,
-    max_obstacle_height: 1.5,
+    min_obstacle_height: -0.5,
+    max_obstacle_height: 1.0,
     obstacle_range: 500.0,
     raytrace_range: 500.0
   }
 
 inflation:
   cost_scaling_factor: 2.0
-  inflation_radius: 0.5
+  inflation_radius: 1.0

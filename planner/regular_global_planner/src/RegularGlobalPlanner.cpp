@@ -123,12 +123,12 @@ bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, con
    {
      double min_distance = std::numeric_limits<double>::max();
      size_t nearest_waypoint_index = 0;
-
+     ROS_INFO_STREAM("start X = "<< start.pose.position.x << "; Y =" << start.pose.position.y);
      for (size_t i = 0; i < waypoints_.size(); ++i) {
        double dx = waypoints_[i].pose.position.x - start.pose.position.x;
        double dy = waypoints_[i].pose.position.y - start.pose.position.y;
        double distance = std::sqrt(dx * dx + dy * dy);
-
+       ROS_INFO_STREAM("distance = " << distance);
        if (distance < min_distance) {
          min_distance = distance;
          nearest_waypoint_index = i;
@@ -230,7 +230,7 @@ void RegularGlobalPlanner::waypointCallback(const geometry_msgs::PointStamped::C
   waypoints_.back().header.frame_id = "map";
   // create and publish markers
   createAndPublishMarkersFromPath(waypoints_);
-
+  ROS_INFO_STREAM("waypoints size:=" << waypoints_.size());
   if (waypoints_.size() < 2)
     return;
 

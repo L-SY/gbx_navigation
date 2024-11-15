@@ -7,6 +7,7 @@ velocity_cmd_topic: "/cmd_vel"
 
 story_trajectories:
   - E3_121: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/E3_121.csv"
+  - E3_121_long: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/E3_121_long.csv"
   - 2F_E: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_E.csv"
   - 2F_0_1: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_0_1.csv"
   - 2F_1_3: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_1_3.csv"

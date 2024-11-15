@@ -111,7 +111,7 @@ void SimpleTrajectoryGenerator::initialise(const Eigen::Vector3f& pos, const Eig
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
     }
 
-    const float MIN_TURNING_RADIUS = 1.0;
+    const float MIN_TURNING_RADIUS = 0.5;
     Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
     VelocityIterator x_it(min_vel[0], max_vel[0], vsamples[0]);
     VelocityIterator y_it(min_vel[1], max_vel[1], vsamples[1]);
