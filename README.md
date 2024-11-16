@@ -10,6 +10,10 @@
 
 `ranger_mini_v2` :  Base on https://github.com/agilexrobotics/ugv_gazebo_sim, Cut out the original huge package and keep only the parts that are relevant to ranger_mini_v2.
 
+### Dependencies
++ `C++` >= 17, `OpenMP` >= 4.5, `CMake` >= 3.10.0, `Eigen` >= 3.2, `Boost` >= 1.54
++ `ROS`
+
 ### How to build
 
 - [`GTSAM`](https://github.com/borglab/gtsam)
