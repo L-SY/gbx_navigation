@@ -35,6 +35,8 @@
 #include "navigation_msgs/pub_trajectory.h"
 #include "ranger_msgs/SystemState.h"
 
+#include "gbx_manual/NavigationMonitor.h"
+
 namespace gbx_manual
 {
 enum class NavigationState
@@ -175,6 +177,7 @@ private:
   NavigationState currentState_;
 
   std::unique_ptr<TrajectoryPublisher> trajectoryPublisher_;
+  std::unique_ptr<NavigationMonitor> navigationMonitor_;
 
 // For cloud
   double cloudMinZ_, cloudMaxZ_, cloudRadius_, cloudLeafSize_;

@@ -25,6 +25,8 @@ GBXManual::GBXManual(ros::NodeHandle nh, tf2_ros::Buffer& tfBuffer)
   localCostmapRos_->start();
   globalCostmap_ = globalCostmapRos_->getCostmap();
   localCostmap_ = localCostmapRos_->getCostmap();
+
+  navigationMonitor_ = std::make_unique<NavigationMonitor>(nh_);
 }
 
 GBXManual::~GBXManual()
@@ -56,6 +58,8 @@ void GBXManual::initialize()
   cloud_nh.param<double>("leaf_size", cloudLeafSize_, 0.1);
 
   pubTrajectoryServer_ = nh_.advertiseService("pub_trajectory", &GBXManual::pubTrajectory, this);
+
+  navigationMonitor_->initialize();
 }
 
 bool GBXManual::pubTrajectory(navigation_msgs::pub_trajectory::Request& req,navigation_msgs::pub_trajectory::Response& res)
@@ -156,6 +160,7 @@ void GBXManual::handleMove()
   // }
 
 //  ROS_INFO("In MOVE state. Robot is moving.");
+  navigationMonitor_->publishSpeedMarkers();
 }
 
 void GBXManual::handleWait()
