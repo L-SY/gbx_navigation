@@ -49,6 +49,8 @@ private:
   std::string ground_topic_;  // 新增：地面点云话题
   double frequency_;
   std::string frame_id_;
+  bool use_ground_filter_;  // 是否使用地面滤波
+  bool publish_ground_;     // 是否发布地面点云
 };
 
 PointCloudFilter::PointCloudFilter() {
@@ -68,6 +70,8 @@ PointCloudFilter::PointCloudFilter() {
   private_nh.param("ground_topic", ground_topic_, std::string("/ground_cloud"));
   private_nh.param("frequency", frequency_, 10.0);
   private_nh.param("frame_id", frame_id_, std::string("base_link"));
+  private_nh.param("use_ground_filter", use_ground_filter_, false);
+  private_nh.param("publish_ground", publish_ground_, false);
 
   // 设置订阅和发布
   point_cloud_sub_ = nh_.subscribe(input_topic_, 1, &PointCloudFilter::pointCloudCallback, this);
@@ -91,6 +95,8 @@ void PointCloudFilter::configCallback(topic_transit::CloudFilterConfig &config, 
   slope_ = config.slope;
   initial_distance_ = config.initial_distance;
   max_distance_ = config.max_distance;
+  use_ground_filter_ = config.use_ground_filter;
+  publish_ground_ = config.publish_ground;
 }
 
 void PointCloudFilter::removeGround(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
@@ -126,63 +132,70 @@ void PointCloudFilter::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::fromROSMsg(*input, *cloud);
 
-  // 基于Z轴（高度）过滤点云
+  // 基础滤波处理（保持不变）
   pcl::PassThrough<pcl::PointXYZ> pass;
   pass.setInputCloud(cloud);
   pass.setFilterFieldName("z");
   pass.setFilterLimits(min_z_, max_z_);
   pass.filter(*cloud);
 
-  // 基于体素栅格降采样
   pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
   voxel_filter.setInputCloud(cloud);
   voxel_filter.setLeafSize(leaf_size_, leaf_size_, leaf_size_);
   voxel_filter.filter(*cloud);
 
-  // 半径过滤
-//  pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
-//  radius_filter.setInputCloud(cloud);
-//  radius_filter.setRadiusSearch(max_radius_);
-//  radius_filter.setMinNeighborsInRadius(10);
-//  radius_filter.filter(*cloud);
+  pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
+  radius_filter.setInputCloud(cloud);
+  radius_filter.setRadiusSearch(max_radius_);
+  radius_filter.setMinNeighborsInRadius(10);
+  radius_filter.filter(*cloud);
 
-  // 地面分割
-  pcl::PointCloud<pcl::PointXYZ>::Ptr ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  removeGround(cloud, ground_cloud, non_ground_cloud);
-
-  // TF转换和发布处理后的点云
+  // TF 变换准备
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
+  geometry_msgs::TransformStamped transformStamped;
 
   try {
-    geometry_msgs::TransformStamped transformStamped = tfBuffer.lookupTransform(
+    transformStamped = tfBuffer.lookupTransform(
         frame_id_, input->header.frame_id,
         ros::Time(0), ros::Duration(1.0));
+  }
+  catch (tf2::TransformException &ex) {
+    ROS_WARN("TF lookup failed: %s", ex.what());
+    return;
+  }
 
-    // 发布非地面点云
+  if (use_ground_filter_) {
+    // 如果启用地面滤波
+    pcl::PointCloud<pcl::PointXYZ>::Ptr ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+    // 执行地面滤波
+    removeGround(cloud, ground_cloud, non_ground_cloud);
+
+    // 发布非地面点云（主要输出）
     sensor_msgs::PointCloud2 output_non_ground;
     pcl::toROSMsg(*non_ground_cloud, output_non_ground);
     output_non_ground.header = input->header;
+
     sensor_msgs::PointCloud2 transformed_non_ground;
     tf2::doTransform(output_non_ground, transformed_non_ground, transformStamped);
     transformed_non_ground.header.frame_id = frame_id_;
     transformed_non_ground.header.stamp = ros::Time::now();
     point_cloud_pub_.publish(transformed_non_ground);
 
-    // 发布地面点云
-    sensor_msgs::PointCloud2 output_ground;
-    pcl::toROSMsg(*ground_cloud, output_ground);
-    output_ground.header = input->header;
-    sensor_msgs::PointCloud2 transformed_ground;
-    tf2::doTransform(output_ground, transformed_ground, transformStamped);
-    transformed_ground.header.frame_id = frame_id_;
-    transformed_ground.header.stamp = ros::Time::now();
-    ground_cloud_pub_.publish(transformed_ground);
-  }
-  catch (tf2::TransformException &ex) {
-    ROS_WARN("%s", ex.what());
-    return;
+    // 如果需要，额外发布地面点云
+    if (publish_ground_) {
+      sensor_msgs::PointCloud2 output_ground;
+      pcl::toROSMsg(*ground_cloud, output_ground);
+      output_ground.header = input->header;
+
+      sensor_msgs::PointCloud2 transformed_ground;
+      tf2::doTransform(output_ground, transformed_ground, transformStamped);
+      transformed_ground.header.frame_id = frame_id_;
+      transformed_ground.header.stamp = ros::Time::now();
+      ground_cloud_pub_.publish(transformed_ground);
+    }
   }
 
   rate_->sleep();
