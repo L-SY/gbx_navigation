@@ -39,6 +39,7 @@ private:
   double min_z_;
   double max_z_;
   double max_radius_;
+  int min_neighbors_;
   double leaf_size_;
   int max_window_size_;    // 新增：PMF参数
   double slope_;           // 新增：PMF参数
@@ -57,14 +58,15 @@ PointCloudFilter::PointCloudFilter() {
   ros::NodeHandle private_nh("~");
 
   // 加载参数
-  private_nh.param("min_z", min_z_, 0.0);
-  private_nh.param("max_z", max_z_, 1.0);
-  private_nh.param("max_radius", max_radius_, 5.0);
+  private_nh.param("min_z", min_z_, -0.5);
+  private_nh.param("max_z", max_z_, 0.5);
+  private_nh.param("max_radius", max_radius_, 0.5);
+  private_nh.param("min_neighbors", min_neighbors_, 10);
   private_nh.param("leaf_size", leaf_size_, 0.1);
-  private_nh.param("max_window_size", max_window_size_, 20);
-  private_nh.param("slope", slope_, 1.0);
+  private_nh.param("max_window_size", max_window_size_, 5);
+  private_nh.param("slope", slope_, 0.3);
   private_nh.param("initial_distance", initial_distance_, 0.5);
-  private_nh.param("max_distance", max_distance_, 3.0);
+  private_nh.param("max_distance", max_distance_, 1.0);
   private_nh.param("input_topic", input_topic_, std::string("/cloud_registered"));
   private_nh.param("output_topic", output_topic_, std::string("/cloud_registered_filter"));
   private_nh.param("ground_topic", ground_topic_, std::string("/ground_cloud"));
@@ -90,6 +92,7 @@ void PointCloudFilter::configCallback(topic_transit::CloudFilterConfig &config, 
   min_z_ = config.min_z;
   max_z_ = config.max_z;
   max_radius_ = config.max_radius;
+  min_neighbors_ = config.min_neighbors;
   leaf_size_ = config.leaf_size;
   max_window_size_ = config.max_window_size;
   slope_ = config.slope;
@@ -147,7 +150,7 @@ void PointCloudFilter::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr
   pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
   radius_filter.setInputCloud(cloud);
   radius_filter.setRadiusSearch(max_radius_);
-  radius_filter.setMinNeighborsInRadius(10);
+  radius_filter.setMinNeighborsInRadius(min_neighbors_);
   radius_filter.filter(*cloud);
 
   // TF 变换准备
@@ -196,6 +199,15 @@ void PointCloudFilter::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr
       transformed_ground.header.stamp = ros::Time::now();
       ground_cloud_pub_.publish(transformed_ground);
     }
+  }
+  else
+  {
+    sensor_msgs::PointCloud2 output_cloud;
+    pcl::toROSMsg(*cloud, output_cloud);
+    tf2::doTransform(output_cloud, output_cloud, transformStamped);
+    output_cloud.header.frame_id = frame_id_;
+    output_cloud.header.stamp = ros::Time::now();
+    point_cloud_pub_.publish(output_cloud);
   }
 
   rate_->sleep();
