@@ -34,7 +34,7 @@ void NavigationMonitor::reset() {
 
 std::string NavigationMonitor::convertToBeijingTime(const ros::Time& time) {
   time_t raw_time = time.sec;
-  raw_time += 8 * 3600;  // 转换为北京时间（UTC+8）
+  // raw_time += 8 * 3600;  // 转换为北京时间（UTC+8）
   struct tm* timeinfo = localtime(&raw_time);
   char buffer[80];
   strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
