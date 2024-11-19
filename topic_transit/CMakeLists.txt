@@ -12,6 +12,13 @@ find_package(catkin REQUIRED COMPONENTS
         tf2
         tf2_ros
         tf2_sensor_msgs
+        dynamic_reconfigure
+)
+
+find_package(PCL 1.10 REQUIRED)
+
+generate_dynamic_reconfigure_options(
+        cfg/CloudFilter.cfg
 )
 
 catkin_package(
@@ -27,6 +34,7 @@ catkin_package(
             tf2
             tf2_ros
             tf2_sensor_msgs
+            dynamic_reconfigure
           DEPENDS
 )
 
