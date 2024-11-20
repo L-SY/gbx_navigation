@@ -15,11 +15,11 @@ RegularGlobalPlanner:
 
 DWAPlannerROS:
   odom_topic: /ranger_base_node/odom
-  acc_lim_th: 5
-  acc_lim_x: 5
+  acc_lim_th: 10
+  acc_lim_x: 10
   acc_lim_y: 0
-  max_vel_x: 1.0
-  min_vel_x: -1.0
+  max_vel_x: 2.0
+  min_vel_x: -2.0
   max_vel_y: 0.0
   min_vel_y: 0.0
   max_vel_theta: 3.0
@@ -37,7 +37,7 @@ DWAPlannerROS:
 
   goal_distance_bias: 40.0
   path_distance_bias: 15.0
-  occdist_scale: 1e-10
+  occdist_scale: -0.05
   stop_time_buffer: 0.001
   controller_frequency: 20.0
   oscillation_reset_dist: 0.05
