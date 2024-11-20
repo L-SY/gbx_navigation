@@ -47,23 +47,22 @@ private:
   bool loadDeliveryPoints(ros::NodeHandle& nh);
 
   ros::NodeHandle& nh_;
-  ros::Subscriber cmd_vel_sub_;
-  ros::Subscriber nav_state_sub_;
-  ros::Subscriber nav_feedback_sub_;
-  ros::Publisher speed_marker_pub_;
+  ros::Subscriber cmdVelSub_;
+  ros::Subscriber navStateSub_;
+  ros::Subscriber navFeedbackSub_;
+  ros::Publisher speedMarkerPub_;
   ros::Publisher deliveryPointsPub_;
-  ros::Time navigation_start_time_;
-  ros::Time navigation_end_time_;
-  ros::Time last_position_time_;
-  geometry_msgs::Point last_position_;
-
+  ros::Time navigationStartTime_;
+  ros::Time navigationEndTime_;
+  ros::Time lastPositionTime_;
+  geometry_msgs::Point lastPosition_;
   std::vector<NavigationSegment> segments_;
-  double total_distance_;
-  double wait_time_;
-  double velocity_threshold_;  // 速度阈值，低于此值认为是等待状态
-  bool is_navigating_;
-  bool is_waiting_;
-  ros::Time wait_start_time_;
+  double totalDistance_;
+  double waitTime_;
+  double velocityThreshold_;  // 速度阈值，低于此值认为是等待状态
+  bool isNavigating_;
+  bool isWaiting_;
+  ros::Time waitStartTime_;
   std::map<int, std::vector<double>> deliveryPoints_;
 };
 
