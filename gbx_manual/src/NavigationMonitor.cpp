@@ -37,19 +37,23 @@ void NavigationMonitor::reset() {
 
 bool NavigationMonitor::loadDeliveryPoints(ros::NodeHandle& nh) {
   XmlRpc::XmlRpcValue delivery_points;
+
   if (!nh.getParam("delivery_point", delivery_points)) {
     ROS_ERROR("Failed to get delivery_point from parameter server.");
     return false;
   }
+
   if (delivery_points.getType() != XmlRpc::XmlRpcValue::TypeArray) {
     ROS_ERROR("delivery_point should be an array.");
     return false;
   }
+
   for (int i = 0; i < delivery_points.size(); ++i) {
     if (delivery_points[i].getType() != XmlRpc::XmlRpcValue::TypeStruct) {
       ROS_WARN("Each entry in delivery_point should be a dictionary.");
       continue;
     }
+
     for (auto it = delivery_points[i].begin(); it != delivery_points[i].end(); ++it) {
       int id;
       try {
@@ -58,22 +62,30 @@ bool NavigationMonitor::loadDeliveryPoints(ros::NodeHandle& nh) {
         ROS_WARN("Failed to convert key to integer: %s", it->first.c_str());
         continue;
       }
+
       XmlRpc::XmlRpcValue coords = it->second;
       if (coords.getType() != XmlRpc::XmlRpcValue::TypeArray || coords.size() != 3) {
         ROS_WARN("Coordinates for point %d should be an array of size 3", id);
         continue;
       }
+
       std::vector<double> point_coords;
       for (int j = 0; j < 3; ++j) {
-        if (coords[j].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
-          point_coords.push_back(static_cast<double>(coords[j]));
-        } else if (coords[j].getType() == XmlRpc::XmlRpcValue::TypeInt) {
-          point_coords.push_back(static_cast<int>(coords[j]));
-        } else {
-          ROS_WARN("Coordinate value for point %d should be a number", id);
+        try {
+          // XmlRpc::XmlRpcValue到double的转换
+          if (coords[j].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            point_coords.push_back(static_cast<double>(coords[j]));
+          } else if (coords[j].getType() == XmlRpc::XmlRpcValue::TypeInt) {
+            point_coords.push_back(static_cast<int>(coords[j]));
+          } else {
+            throw std::runtime_error("Invalid coordinate type");
+          }
+        } catch (const std::exception& e) {
+          ROS_WARN("Error converting coordinate for point %d: %s", id, e.what());
           continue;
         }
       }
+
       if (point_coords.size() == 3) {
         deliveryPoints_[id] = point_coords;
         ROS_INFO("Loaded delivery point %d: [%.2f, %.2f, %.2f]",
@@ -81,6 +93,7 @@ bool NavigationMonitor::loadDeliveryPoints(ros::NodeHandle& nh) {
       }
     }
   }
+
   return !deliveryPoints_.empty();
 }
 
