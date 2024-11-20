@@ -111,9 +111,9 @@ void NavigationMonitor::publishDeliveryPointMarkers() {
     pointMarker.pose.position.y = point.second[1];
     pointMarker.pose.position.z = point.second[2];
     pointMarker.pose.orientation.w = 1.0;
-    pointMarker.scale.x = 0.5;
-    pointMarker.scale.y = 0.5;
-    pointMarker.scale.z = 0.5;
+    pointMarker.scale.x = 5;
+    pointMarker.scale.y = 5;
+    pointMarker.scale.z = 5;
     pointMarker.color.r = 0.0;
     pointMarker.color.g = 0.0;
     pointMarker.color.b = 1.0;
@@ -123,8 +123,8 @@ void NavigationMonitor::publishDeliveryPointMarkers() {
     textMarker.id = point.first + 1000;
     textMarker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
     textMarker.text = std::to_string(point.first);
-    textMarker.pose.position.z += 0.5;
-    textMarker.scale.z = 0.5;
+    textMarker.pose.position.z += 5;
+    textMarker.scale.z = 5;
     textMarker.color.r = 1.0;
     textMarker.color.g = 1.0;
     textMarker.color.b = 1.0;
