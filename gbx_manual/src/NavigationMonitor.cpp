@@ -20,6 +20,10 @@ void NavigationMonitor::initialize() {
   nav_state_sub_ = nh_.subscribe("/move_base/status", 1, &NavigationMonitor::navigationStateCallback, this);
   nav_feedback_sub_ = nh_.subscribe("/move_base/feedback", 1, &NavigationMonitor::navigationFeedbackCallback, this);
   speed_marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("/navigation_speed_markers", 1);
+  deliveryPointsPub_ = nh_.advertise<visualization_msgs::MarkerArray>("/delivery_points_markers", 1, true);
+  if (loadDeliveryPoints(nh_)) {
+    publishDeliveryPointMarkers();
+  }
 }
 
 void NavigationMonitor::reset() {
@@ -30,6 +34,112 @@ void NavigationMonitor::reset() {
   segments_.clear();
   is_navigating_ = false;
   is_waiting_ = false;
+}
+
+bool NavigationMonitor::loadDeliveryPoints(ros::NodeHandle& nh)
+{
+  XmlRpc::XmlRpcValue delivery_points;
+
+  if (!nh.getParam("delivery_point", delivery_points)) {
+    ROS_ERROR("Failed to get delivery_point from parameter server.");
+    return false;
+  }
+
+  if (delivery_points.getType() != XmlRpc::XmlRpcValue::TypeArray) {
+    ROS_ERROR("delivery_point should be an array.");
+    return false;
+  }
+
+  for (int i = 0; i < delivery_points.size(); ++i) {
+    if (delivery_points[i].getType() != XmlRpc::XmlRpcValue::TypeStruct) {
+      ROS_WARN("Each entry in delivery_point should be a dictionary.");
+      continue;
+    }
+
+    for (auto it = delivery_points[i].begin(); it != delivery_points[i].end(); ++it) {
+      int id;
+      try {
+        id = std::stoi(it->first);
+      } catch (const std::exception& e) {
+        ROS_WARN("Failed to convert key to integer: %s", it->first.c_str());
+        continue;
+      }
+
+      XmlRpc::XmlRpcValue coords = it->second;
+      if (coords.getType() != XmlRpc::XmlRpcValue::TypeArray || coords.size() != 3) {
+        ROS_WARN("Coordinates for point %d should be an array of size 3", id);
+        continue;
+      }
+
+      std::vector<double> point_coords;
+      for (int j = 0; j < 3; ++j) {
+        if (coords[j].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+          point_coords.push_back(static_cast<double>(coords[j]));
+        } else if (coords[j].getType() == XmlRpc::XmlRpcValue::TypeInt) {
+          point_coords.push_back(static_cast<int>(coords[j]));
+        } else {
+          ROS_WARN("Coordinate value for point %d should be a number", id);
+          continue;
+        }
+      }
+
+      if (point_coords.size() == 3) {
+        deliveryPoints_[id] = point_coords;
+        ROS_INFO("Loaded delivery point %d: [%.2f, %.2f, %.2f]",
+                 id, point_coords[0], point_coords[1], point_coords[2]);
+      }
+    }
+  }
+
+  return !deliveryPoints_.empty();
+}
+
+void NavigationMonitor::publishDeliveryPointMarkers()
+{
+  visualization_msgs::MarkerArray markerArray;
+
+  for (const auto& point : deliveryPoints_) {
+    visualization_msgs::Marker pointMarker;
+    pointMarker.header.frame_id = "map";
+    pointMarker.header.stamp = ros::Time::now();
+    pointMarker.ns = "delivery_points";
+    pointMarker.id = point.first;
+    pointMarker.type = visualization_msgs::Marker::SPHERE;
+    pointMarker.action = visualization_msgs::Marker::ADD;
+
+    pointMarker.pose.position.x = point.second[0];
+    pointMarker.pose.position.y = point.second[1];
+    pointMarker.pose.position.z = point.second[2];
+
+    pointMarker.pose.orientation.w = 1.0;
+
+    pointMarker.scale.x = 0.5;
+    pointMarker.scale.y = 0.5;
+    pointMarker.scale.z = 0.5;
+
+    pointMarker.color.r = 0.0;
+    pointMarker.color.g = 0.0;
+    pointMarker.color.b = 1.0;
+    pointMarker.color.a = 1.0;
+
+    pointMarker.lifetime = ros::Duration(0);
+
+    visualization_msgs::Marker textMarker = pointMarker;
+    textMarker.id = point.first + 1000;
+    textMarker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+    textMarker.text = std::to_string(point.first);
+    textMarker.pose.position.z += 0.5;
+    textMarker.scale.z = 0.5;
+
+    textMarker.color.r = 1.0;
+    textMarker.color.g = 1.0;
+    textMarker.color.b = 1.0;
+
+    markerArray.markers.push_back(pointMarker);
+    markerArray.markers.push_back(textMarker);
+  }
+
+  deliveryPointsPub_.publish(markerArray);
 }
 
 std::string NavigationMonitor::convertToBeijingTime(const ros::Time& time) {

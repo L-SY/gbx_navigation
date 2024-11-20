@@ -43,13 +43,15 @@ private:
   double calculateDistance(const geometry_msgs::Point& p1, const geometry_msgs::Point& p2);
   void updateSegment();
   void printNavigationSummary();
+  void publishDeliveryPointMarkers();
+  bool loadDeliveryPoints(ros::NodeHandle& nh);
 
   ros::NodeHandle& nh_;
   ros::Subscriber cmd_vel_sub_;
   ros::Subscriber nav_state_sub_;
   ros::Subscriber nav_feedback_sub_;
   ros::Publisher speed_marker_pub_;
-
+  ros::Publisher deliveryPointsPub_;
   ros::Time navigation_start_time_;
   ros::Time navigation_end_time_;
   ros::Time last_position_time_;
@@ -62,6 +64,7 @@ private:
   bool is_navigating_;
   bool is_waiting_;
   ros::Time wait_start_time_;
+  std::map<int, std::vector<double>> deliveryPoints_;
 };
 
 } // namespace gbx_manual
