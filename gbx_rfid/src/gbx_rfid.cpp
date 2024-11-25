@@ -1,5 +1,5 @@
 //
-// Created by lsy on 24-11-25.
+// Created by lsy-cloude3.5 Sonnet on 24-11-25.
 //
 #include "gbx_rfid/gbx_rfid.h"
 #include <sstream>
@@ -69,16 +69,15 @@ bool GbxRfid::setRegion(uint8_t region) {
       0x00,
       0x01,
       region,
-      0x00,    // 校验位先置0
+      0x00,
       FRAME_END
   };
 
-  // 计算校验和 - 从第2个字节到倒数第3个字节的累加和的低字节
   uint8_t checksum = 0;
   for(size_t i = 1; i < cmd.size()-2; i++) {
     checksum += cmd[i];
   }
-  cmd[cmd.size()-2] = checksum;  // 更新校验位
+  cmd[cmd.size()-2] = checksum;
 
   if(!sendCommand(cmd)) {
     return false;
@@ -94,7 +93,6 @@ bool GbxRfid::setRegion(uint8_t region) {
   return true;
 }
 
-// 检查连接是否正常
 bool GbxRfid::checkConnection() {
   // 发送获取功率命令: BB 00 B7 00 00 B7 7E
   std::vector<uint8_t> cmd = {
@@ -142,7 +140,6 @@ bool GbxRfid::startReading(READ_MODE mode, int retry_count) {
     };
   } else {
     // 多次读卡命令: BB 00 27 00 03 22 XX XX YY 7E
-    // XX XX为读取次数(最大FFFF)，YY为校验
     uint8_t count_h = (retry_count >> 8) & 0xFF;
     uint8_t count_l = retry_count & 0xFF;
 
@@ -205,7 +202,6 @@ bool GbxRfid::parseResponse(const std::vector<uint8_t>& resp, RfidData& data) {
 
     ROS_DEBUG("Command byte: 0x%02X", resp[2]);
 
-    // 打印完整响应内容
     std::string debug_hex;
     for(uint8_t byte : resp) {
       char hex[4];
@@ -219,15 +215,9 @@ bool GbxRfid::parseResponse(const std::vector<uint8_t>& resp, RfidData& data) {
       return false;
     }
 
-//    if(resp[2] != CMD_SINGLE_READ && resp[2] != CMD_MULTI_READ) {
-//      ROS_ERROR("Unexpected command byte: 0x%02X", resp[2]);
-//      return false;
-//    }
-
     data.rssi = static_cast<int8_t>(resp[5]);
     ROS_DEBUG("RSSI: %d", data.rssi);
 
-    // 打印解析的EPC
     std::string epc;
     for(size_t i = 8; i < resp.size()-3; i++) {
       char hex[3];
@@ -240,43 +230,7 @@ bool GbxRfid::parseResponse(const std::vector<uint8_t>& resp, RfidData& data) {
     data.timestamp = std::to_string(ros::Time::now().toSec());
 
     return true;
-  }
-//  if(resp.size() < 7 || resp[0] != FRAME_HEAD || resp.back() != FRAME_END) {
-//    return false;
-//  }
-//
-//  // 如果是无卡响应: BB 01 FF 00 01 15 16 7E
-//  if(resp[2] == 0xFF && resp[5] == 0x15) {
-//    return false;
-//  }
-//
-//  // 解析EPC号 - 正常响应格式:
-//  // BB 02 22 00 11 DC 30 00 E2 80 68 94 00 00 50 24 58 95 B5 EB D5 F9 6E 7E
-//  //    |  |  |  |  |  |  |  |------------EPC-------------|    CRC    |  |
-//  if(resp[2] == CMD_SINGLE_READ || resp[2] == CMD_MULTI_READ) {
-//    // RSSI值
-//    data.rssi = static_cast<int8_t>(resp[5]);
-//
-//    // PC值
-//    uint16_t pc = (resp[6] << 8) | resp[7];
-//
-//    // EPC号 - 从第9个字节开始,去掉最后3个字节(CRC和帧尾)
-//    std::string epc;
-//    for(size_t i = 8; i < resp.size()-3; i++) {
-//      char hex[3];
-//      snprintf(hex, sizeof(hex), "%02X", resp[i]);
-//      epc += hex;
-//    }
-//    data.epc = epc;
-//
-//    // 时间戳
-//    data.timestamp = std::to_string(ros::Time::now().toSec());
-//
-//    return true;
-//  }
-//
-//  return false;
-//}
+}
 
 bool GbxRfid::getLatestData(RfidData& data) {
   std::vector<uint8_t> resp = readResponse();
