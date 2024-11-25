@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gbx_rfid</name>
+  <version>0.0.0</version>
+  <description>The gbx_rfid package</description>
+
+
+  <maintainer email="lsy@todo.todo">lsy</maintainer>
+
+  <license>TODO</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <exec_depend>roscpp</exec_depend>
+  <depend>std_msgs</depend>
+  <depend>serial</depend>
+</package>
