@@ -42,7 +42,8 @@
     <arg name="frequency" value="10.0" />
     <arg name="leaf_size" value="0.1" />
 
-    <node name="cloud_transit" pkg="topic_transit" type="cloud_transit" output="screen">
+    <node pkg="nodelet" type="nodelet" name="cloud_transit_nodelet"
+          args="load topic_transit/CloudTransitNodelet ouster/os_nodelet_mgr">
         <param name="min_z" value="$(arg min_z)" />
         <param name="max_z" value="$(arg max_z)" />
         <param name="max_radius" value="$(arg max_radius)" />

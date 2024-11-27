@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
         tf2_ros
         tf2_sensor_msgs
         dynamic_reconfigure
+        nodelet
+        pluginlib
 )
 
 find_package(PCL 1.10 REQUIRED)
@@ -35,6 +37,8 @@ catkin_package(
             tf2_ros
             tf2_sensor_msgs
             dynamic_reconfigure
+            nodelet
+            pluginlib
           DEPENDS
 )
 
@@ -48,8 +52,8 @@ include_directories(
 add_executable(cmd_transit src/CmdTransit.cpp)
 target_link_libraries(cmd_transit ${catkin_LIBRARIES})
 
-add_executable(cloud_transit src/CloudTransit.cpp)
-target_link_libraries(cloud_transit ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+add_library(cloud_transit_nodelet src/CloudTransitNodelet.cpp)
+target_link_libraries(cloud_transit_nodelet ${PCL_LIBRARIES} ${catkin_LIBRARIES})
 
 add_executable(topic_gen_trajectory src/TopicGenTrajectory.cpp)
 target_link_libraries(topic_gen_trajectory ${catkin_LIBRARIES} )
