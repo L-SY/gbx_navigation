@@ -37,19 +37,21 @@
     <arg name="min_z" value="-0.5" />
     <arg name="max_z" value="0.5" />
     <arg name="max_radius" value="0.5" />
-    <arg name="input_topic" value="/corrected_current_pcd" />
+    <arg name="input_topic" value="/ouster/points" />
     <arg name="output_topic" value="/corrected_current_pcd_manual" />
     <arg name="frequency" value="10.0" />
     <arg name="leaf_size" value="0.1" />
 
-    <node pkg="nodelet" type="nodelet" name="cloud_transit_nodelet"
-          args="load topic_transit/CloudTransitNodelet ouster/os_nodelet_mgr">
-        <param name="min_z" value="$(arg min_z)" />
-        <param name="max_z" value="$(arg max_z)" />
-        <param name="max_radius" value="$(arg max_radius)" />
-        <param name="input_topic" value="$(arg input_topic)" />
-        <param name="output_topic" value="$(arg output_topic)" />
-        <param name="frequency" value="$(arg frequency)" />
-        <param name="leaf_size" value="$(arg leaf_size)" />
-    </node>
+<!--     <group ns="ouster"> -->
+        <node pkg="nodelet" type="nodelet" name="cloud_transit_nodelet"
+              args="load topic_transit/CloudTransitNodelet /os_nodelet_mgr">
+            <param name="min_z" value="$(arg min_z)" />
+            <param name="max_z" value="$(arg max_z)" />
+            <param name="max_radius" value="$(arg max_radius)" />
+            <param name="input_topic" value="$(arg input_topic)" />
+            <param name="output_topic" value="$(arg output_topic)" />
+            <param name="frequency" value="$(arg frequency)" />
+            <param name="leaf_size" value="$(arg leaf_size)" />
+        </node>
+<!--     </group> -->
 </launch>

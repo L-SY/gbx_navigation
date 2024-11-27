@@ -1,4 +1,4 @@
-<library path="lib/libcloud_filter_nodelet">
+<library path="lib/libcloud_transit_nodelet">
     <class name="topic_transit/CloudTransitNodelet"
            type="topic_transit::CloudTransitNodelet"
            base_class_type="nodelet::Nodelet">
