@@ -19,14 +19,14 @@ GBXManual::GBXManual(ros::NodeHandle nh, tf2_ros::Buffer& tfBuffer)
   }
   trajectoryPublisher_ = std::make_unique<TrajectoryPublisher>(nh_,csv_paths);
   cancelNavigationClient_ = nh_.serviceClient<std_srvs::Empty>("/cancel_navigation");
-  globalCostmapRos_ = new costmap_2d::Costmap2DROS("global_costmap", tfBuffer_);
-  localCostmapRos_ = new costmap_2d::Costmap2DROS("local_costmap", tfBuffer_);
-  globalCostmapRos_->start();
-  localCostmapRos_->start();
-  globalCostmap_ = globalCostmapRos_->getCostmap();
-  localCostmap_ = localCostmapRos_->getCostmap();
+  // globalCostmapRos_ = new costmap_2d::Costmap2DROS("global_costmap", tfBuffer_);
+  // localCostmapRos_ = new costmap_2d::Costmap2DROS("local_costmap", tfBuffer_);
+  // globalCostmapRos_->start();
+  // localCostmapRos_->start();
+  // globalCostmap_ = globalCostmapRos_->getCostmap();
+  // localCostmap_ = localCostmapRos_->getCostmap();
 
-  navigationMonitor_ = std::make_unique<NavigationMonitor>(nh_);
+  // navigationMonitor_ = std::make_unique<NavigationMonitor>(nh_);
 }
 
 GBXManual::~GBXManual()
@@ -59,7 +59,7 @@ void GBXManual::initialize()
 
   pubTrajectoryServer_ = nh_.advertiseService("pub_trajectory", &GBXManual::pubTrajectory, this);
 
-  navigationMonitor_->initialize();
+  // navigationMonitor_->initialize();
 }
 
 bool GBXManual::pubTrajectory(navigation_msgs::pub_trajectory::Request& req,navigation_msgs::pub_trajectory::Response& res)
@@ -160,7 +160,7 @@ void GBXManual::handleMove()
   // }
 
 //  ROS_INFO("In MOVE state. Robot is moving.");
-  navigationMonitor_->publishSpeedMarkers();
+  // navigationMonitor_->publishSpeedMarkers();
 }
 
 void GBXManual::handleWait()
