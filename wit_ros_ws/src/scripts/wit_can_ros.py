@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-import serial
+import sys
+print("Python path:", sys.path)
+try:
+    import serial
+    print("Serial path:", serial.__file__)
+except ImportError as e:
+    print("Import error:", e)
+
 import struct
 import rospy
 import time
 import math
-import sys
 import platform
 import threading
 import serial.tools.list_ports
