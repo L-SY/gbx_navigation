@@ -167,6 +167,7 @@ DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil* p
   private_nh.param("global_frame_id", frame_id_, std::string("odom"));
 
   traj_cloud_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("trajectory_cloud", 1);
+  best_traj_pub_ = private_nh.advertise<nav_msgs::Path>("best_trajectory", 1);
   private_nh.param("publish_traj_pc", publish_traj_pc_, true);
 
   // set up all the cost functions that will be applied in order
@@ -355,6 +356,31 @@ base_local_planner::Trajectory DWAPlanner::findBestPath(const geometry_msgs::Pos
     }
     traj_cloud_pub_.publish(traj_cloud);
   }
+
+  nav_msgs::Path best_path;
+  best_path.header.frame_id = frame_id_;
+
+  for (unsigned int i = 0; i < result_traj_.getPointsSize(); ++i) {
+    double p_x, p_y, p_th;
+    result_traj_.getPoint(i, p_x, p_y, p_th);
+
+    geometry_msgs::PoseStamped pose;
+    pose.header = best_path.header;
+    pose.pose.position.x = p_x;
+    pose.pose.position.y = p_y;
+    pose.pose.position.z = 0.0;
+
+    tf2::Quaternion q;
+    q.setRPY(0, 0, p_th);
+    pose.pose.orientation.x = q.x();
+    pose.pose.orientation.y = q.y();
+    pose.pose.orientation.z = q.z();
+    pose.pose.orientation.w = q.w();
+
+    best_path.poses.push_back(pose);
+  }
+
+  best_traj_pub_.publish(best_path);
 
   // verbose publishing of point clouds
   if (publish_cost_grid_pc_)
