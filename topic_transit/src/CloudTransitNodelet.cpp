@@ -162,7 +162,7 @@ private:
     try {
       transformStamped = tfBuffer.lookupTransform(
           frame_id_, input->header.frame_id,
-          ros::Time(0), ros::Duration(1.0));
+          ros::Time(0), ros::Duration(0.3));
     }
     catch (tf2::TransformException &ex) {
       NODELET_WARN("TF lookup failed: %s", ex.what());

@@ -6,7 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /TF1/Frames1
-        - /Deploy1
+        - /Debug1
+        - /Debug1/manual1/local_cloudpoint1
         - /Deploy1/dwa_planner1
       Splitter Ratio: 0.550000011920929
     Tree Height: 545
@@ -617,7 +618,7 @@ Visualization Manager:
               Queue Size: 10
               Selectable: true
               Size (Pixels): 3
-              Size (m): 0.30000001192092896
+              Size (m): 0.20000000298023224
               Style: Flat Squares
               Topic: /corrected_current_pcd_manual
               Unreliable: false
@@ -785,10 +786,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 3.0780186653137207
+      Scale: 4.283794403076172
       Target Frame: <Fixed Frame>
-      X: -70.15167999267578
-      Y: -20.740352630615234
+      X: -34.485660552978516
+      Y: 2.3390886783599854
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 25.267837524414062
@@ -881,4 +882,4 @@ Window Geometry:
     collapsed: true
   Width: 1440
   X: 393
-  Y: 124
+  Y: 87
