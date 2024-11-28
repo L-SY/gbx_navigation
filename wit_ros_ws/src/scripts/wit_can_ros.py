@@ -191,17 +191,17 @@ def callback(data):
     print(data)
     if "mag" in data.data:
         wt_imu.write(unlock_imu_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(reset_magx_offset_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(reset_magy_offset_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(reset_magz_offset_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(reset_mag_param_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(enter_mag_cali_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         flag = 1
         calibuff = []
         mag_offset = [0, 0, 0]
@@ -209,9 +209,9 @@ def callback(data):
     elif "exti" in data.data:
         flag = 0
         wt_imu.write(unlock_imu_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(exti_cali_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(save_param_cmd)
         time.sleep(1)
         readreg = 0x0b
@@ -260,7 +260,7 @@ def callback(data):
                     cmd[3] = val
                     cmd[4] = 0x00
                     wt_imu.write(unlock_imu_cmd)
-                    time.sleep(0.1)
+                    time.sleep(0.01)
                     wt_imu.write(cmd)
         except Exception as e:
             print(e)
@@ -278,17 +278,17 @@ def callback(data):
                     cmd[3] = val
                     cmd[4] = 0x00
                     wt_imu.write(unlock_imu_cmd)
-                    time.sleep(0.1)
+                    time.sleep(0.01)
                     wt_imu.write(cmd)
-                    time.sleep(0.1)
+                    time.sleep(0.01)
                     wt_imu.baudrate = baud
         except Exception as e:
             print(e)
     elif "rsw" in data.data:
         wt_imu.write(unlock_imu_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
         wt_imu.write(set_rsw_demo_cmd)
-        time.sleep(0.1)
+        time.sleep(0.01)
 
 
 def thread_job():
