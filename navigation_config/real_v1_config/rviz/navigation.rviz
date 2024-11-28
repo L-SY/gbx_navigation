@@ -6,9 +6,11 @@ Panels:
       Expanded:
         - /Global Options1
         - /TF1/Frames1
-        - /Debug1
+        - /Debug1/move_base1
         - /Debug1/manual1/local_cloudpoint1
+        - /Deploy1
         - /Deploy1/dwa_planner1
+        - /Deploy1/move_base1
       Splitter Ratio: 0.550000011920929
     Tree Height: 545
   - Class: rviz/Selection
@@ -463,6 +465,14 @@ Visualization Manager:
                 {}
               Queue Size: 100
               Value: true
+            - Class: rviz/MarkerArray
+              Enabled: true
+              Marker Topic: /move_base/RegularGlobalPlanner/waypoints
+              Name: MarkerArray
+              Namespaces:
+                {}
+              Queue Size: 100
+              Value: true
           Enabled: true
           Name: trajectory_vis
         - Class: rviz/Group
@@ -627,7 +637,7 @@ Visualization Manager:
               Value: true
           Enabled: true
           Name: manual
-      Enabled: true
+      Enabled: false
       Name: Debug
     - Class: rviz/Group
       Displays:
@@ -745,6 +755,16 @@ Visualization Manager:
               Topic: /move_base/RegularGlobalPlanner/global_plan
               Unreliable: false
               Value: true
+            - Alpha: 0.5
+              Class: rviz/Map
+              Color Scheme: costmap
+              Draw Behind: false
+              Enabled: true
+              Name: local_costmap
+              Topic: /move_base/local_costmap/costmap
+              Unreliable: false
+              Use Timestamp: false
+              Value: true
           Enabled: true
           Name: move_base
       Enabled: true
@@ -776,7 +796,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 4.415002822875977
+      Angle: 4.4800028800964355
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -786,10 +806,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 4.283794403076172
+      Scale: 9.626373291015625
       Target Frame: <Fixed Frame>
-      X: -34.485660552978516
-      Y: 2.3390886783599854
+      X: -93.10668182373047
+      Y: -43.18463897705078
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 25.267837524414062
@@ -881,5 +901,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1440
-  X: 393
-  Y: 87
+  X: 338
+  Y: 225

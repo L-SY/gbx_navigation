@@ -6,13 +6,13 @@ basic:
 #  saved_map: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/2F_E.bag"
 
 keyframe:
-  keyframe_threshold: 0.5                     # unit [meter] every this distance, generate keyframe
-  subkeyframes_number: 3                      # how many subkeyframes are merged to ICP with current keyframe (closest-this ~ closest+this, if exists)
+  keyframe_threshold: 5                     # unit [meter] every this distance, generate keyframe
+  subkeyframes_number: 5                      # how many subkeyframes are merged to ICP with current keyframe (closest-this ~ closest+this, if exists)
 
 match:
-  match_detection_radius: 50.0                # unit [meter] within this radius, check if matched or not
+  match_detection_radius: 200.0                # unit [meter] within this radius, check if matched or not
   quatro_nano_gicp_voxel_resolution: 1      # voxel resolution to use Quatro and Nano-GI2f_3CP matching
-  icp_lowest_score: 0.05
+  icp_lowest_score: 0.02
   score_decay_rate: -0.3
 
 nano_gicp:                                    # all values are from Nano-GICP official github (Direct LiDAR Odometry)

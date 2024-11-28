@@ -15,6 +15,7 @@ story_trajectories:
   - 2F_5_6: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_5_6.csv"
   - 2F_6_7: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_6_7.csv"
   - 2F_E_whole: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_E_whole.csv"
+  - 2F_sl: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl.csv"
 
 delivery_point:
   - "1": [0.0, 0.0, 0.0]

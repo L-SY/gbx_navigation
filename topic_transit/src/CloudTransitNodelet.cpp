@@ -124,19 +124,19 @@ private:
     pass_z.setFilterLimits(min_z_, max_z_);
     pass_z.filter(*cloud);
 
-    // X轴过滤
-    pcl::PassThrough<pcl::PointXYZ> pass_x;
-    pass_x.setInputCloud(cloud);
-    pass_x.setFilterFieldName("x");
-    pass_x.setFilterLimits(min_x_, max_x_);
-    pass_x.filter(*cloud);
-
-    // Y轴过滤
-    pcl::PassThrough<pcl::PointXYZ> pass_y;
-    pass_y.setInputCloud(cloud);
-    pass_y.setFilterFieldName("y");
-    pass_y.setFilterLimits(min_y_, max_y_);
-    pass_y.filter(*cloud);
+    // // X轴过滤
+    // pcl::PassThrough<pcl::PointXYZ> pass_x;
+    // pass_x.setInputCloud(cloud);
+    // pass_x.setFilterFieldName("x");
+    // pass_x.setFilterLimits(min_x_, max_x_);
+    // pass_x.filter(*cloud);
+    //
+    // // Y轴过滤
+    // pcl::PassThrough<pcl::PointXYZ> pass_y;
+    // pass_y.setInputCloud(cloud);
+    // pass_y.setFilterFieldName("y");
+    // pass_y.setFilterLimits(min_y_, max_y_);
+    // pass_y.filter(*cloud);
 
     // 体素滤波（可选）
     if (use_voxel_filter_) {
@@ -162,7 +162,7 @@ private:
     try {
       transformStamped = tfBuffer.lookupTransform(
           frame_id_, input->header.frame_id,
-          ros::Time(0), ros::Duration(0.3));
+          ros::Time(0), ros::Duration(0.5));
     }
     catch (tf2::TransformException &ex) {
       NODELET_WARN("TF lookup failed: %s", ex.what());

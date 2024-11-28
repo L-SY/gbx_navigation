@@ -9,7 +9,7 @@
     <param name="basic/saved_map"
            value="/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/bag/$(arg map_name).bag"/>
 
-<!--     <include file="$(find real_v1_config)/launch/ranger_mini_v2.launch"/> -->
+    <include file="$(find real_v1_config)/launch/ranger_mini_v2.launch"/>
 
     <node name="gbx_manual" pkg="gbx_manual" type="gbx_manual_node" output="screen">
         <rosparam file="$(find real_v1_config)/config/manual.yaml" command="load"/>

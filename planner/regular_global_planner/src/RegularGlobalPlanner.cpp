@@ -458,9 +458,9 @@ void RegularGlobalPlanner::createAndPublishMarkersFromPath(const std::vector<geo
   marker.ns = "/move_base/waypoint_global_planner";
   marker.type = visualization_msgs::Marker::SPHERE;
   marker.action = visualization_msgs::Marker::DELETEALL;
-  marker.scale.x = 0.2;
-  marker.scale.y = 0.2;
-  marker.scale.z = 0.2;
+  marker.scale.x = 2;
+  marker.scale.y = 2;
+  marker.scale.z = 2;
   marker.color.a = 1.0;
   marker.color.r = 1.0;
   marker.color.g = 0.0;
