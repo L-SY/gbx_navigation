@@ -33,6 +33,10 @@ private:
     // 加载参数
     private_nh_.param("min_z", min_z_, -0.5);
     private_nh_.param("max_z", max_z_, 0.5);
+    private_nh_.param("min_x", min_x_, -5.0);
+    private_nh_.param("max_x", max_x_, 5.0);
+    private_nh_.param("min_y", min_y_, -5.0);
+    private_nh_.param("max_y", max_y_, 5.0);
     private_nh_.param("max_radius", max_radius_, 0.5);
     private_nh_.param("min_neighbors", min_neighbors_, 10);
     private_nh_.param("leaf_size", leaf_size_, 0.1);
@@ -47,6 +51,8 @@ private:
     private_nh_.param("frame_id", frame_id_, std::string("base_link"));
     private_nh_.param("use_ground_filter", use_ground_filter_, false);
     private_nh_.param("publish_ground", publish_ground_, false);
+    private_nh_.param("use_voxel_filter", use_voxel_filter_, true);
+    private_nh_.param("use_radius_filter", use_radius_filter_, true);
 
     // 设置订阅和发布
     point_cloud_sub_ = nh_.subscribe(input_topic_, 1, &CloudTransitNodelet::pointCloudCallback, this);
@@ -66,6 +72,10 @@ private:
   void configCallback(topic_transit::CloudFilterConfig &config, uint32_t level) {
     min_z_ = config.min_z;
     max_z_ = config.max_z;
+    min_x_ = config.min_x;
+    max_x_ = config.max_x;
+    min_y_ = config.min_y;
+    max_y_ = config.max_y;
     max_radius_ = config.max_radius;
     min_neighbors_ = config.min_neighbors;
     leaf_size_ = config.leaf_size;
@@ -75,6 +85,8 @@ private:
     max_distance_ = config.max_distance;
     use_ground_filter_ = config.use_ground_filter;
     publish_ground_ = config.publish_ground;
+    use_voxel_filter_ = config.use_voxel_filter;
+    use_radius_filter_ = config.use_radius_filter;
   }
 
   void removeGround(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
@@ -105,22 +117,43 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::fromROSMsg(*input, *cloud);
 
-    pcl::PassThrough<pcl::PointXYZ> pass;
-    pass.setInputCloud(cloud);
-    pass.setFilterFieldName("z");
-    pass.setFilterLimits(min_z_, max_z_);
-    pass.filter(*cloud);
+    // Z轴过滤
+    pcl::PassThrough<pcl::PointXYZ> pass_z;
+    pass_z.setInputCloud(cloud);
+    pass_z.setFilterFieldName("z");
+    pass_z.setFilterLimits(min_z_, max_z_);
+    pass_z.filter(*cloud);
 
-    pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
-    voxel_filter.setInputCloud(cloud);
-    voxel_filter.setLeafSize(leaf_size_, leaf_size_, leaf_size_);
-    voxel_filter.filter(*cloud);
+    // X轴过滤
+    pcl::PassThrough<pcl::PointXYZ> pass_x;
+    pass_x.setInputCloud(cloud);
+    pass_x.setFilterFieldName("x");
+    pass_x.setFilterLimits(min_x_, max_x_);
+    pass_x.filter(*cloud);
 
-    pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
-    radius_filter.setInputCloud(cloud);
-    radius_filter.setRadiusSearch(max_radius_);
-    radius_filter.setMinNeighborsInRadius(min_neighbors_);
-    radius_filter.filter(*cloud);
+    // Y轴过滤
+    pcl::PassThrough<pcl::PointXYZ> pass_y;
+    pass_y.setInputCloud(cloud);
+    pass_y.setFilterFieldName("y");
+    pass_y.setFilterLimits(min_y_, max_y_);
+    pass_y.filter(*cloud);
+
+    // 体素滤波（可选）
+    if (use_voxel_filter_) {
+      pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
+      voxel_filter.setInputCloud(cloud);
+      voxel_filter.setLeafSize(leaf_size_, leaf_size_, leaf_size_);
+      voxel_filter.filter(*cloud);
+    }
+
+    // 半径滤波（可选）
+    if (use_radius_filter_) {
+      pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
+      radius_filter.setInputCloud(cloud);
+      radius_filter.setRadiusSearch(max_radius_);
+      radius_filter.setMinNeighborsInRadius(min_neighbors_);
+      radius_filter.filter(*cloud);
+    }
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
@@ -188,6 +221,10 @@ private:
 
   double min_z_;
   double max_z_;
+  double min_x_;
+  double max_x_;
+  double min_y_;
+  double max_y_;
   double max_radius_;
   int min_neighbors_;
   double leaf_size_;
@@ -202,6 +239,8 @@ private:
   std::string frame_id_;
   bool use_ground_filter_;
   bool publish_ground_;
+  bool use_voxel_filter_;
+  bool use_radius_filter_;
 };
 
 } // namespace topic_transit
