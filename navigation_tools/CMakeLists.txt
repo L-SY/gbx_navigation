@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(topic_transit)
+project(navigation_tools)
 
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS

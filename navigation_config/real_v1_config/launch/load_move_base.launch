@@ -50,7 +50,7 @@
       output="screen" required="true" args="manager"/>
 
     <node pkg="nodelet" type="nodelet" name="cloud_transit_nodelet"
-          args="load topic_transit/CloudTransitNodelet cloud_mgr">
+          args="load navigation_tools/CloudTransitNodelet cloud_mgr">
         <param name="min_z" value="$(arg min_z)" />
         <param name="max_z" value="$(arg max_z)" />
         <param name="max_radius" value="$(arg max_radius)" />

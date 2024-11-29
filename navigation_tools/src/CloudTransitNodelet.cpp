@@ -13,10 +13,10 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 #include <dynamic_reconfigure/server.h>
-#include <topic_transit/CloudFilterConfig.h>
+#include <navigation_tools/CloudFilterConfig.h>
 #include <pcl/filters/extract_indices.h>
 
-namespace topic_transit
+namespace navigation_tools
 {
 
 class CloudTransitNodelet : public nodelet::Nodelet
@@ -62,14 +62,14 @@ private:
     rate_ = new ros::Rate(frequency_);
 
     // 设置动态参数服务器
-    server_ = new dynamic_reconfigure::Server<topic_transit::CloudFilterConfig>(private_nh_);
+    server_ = new dynamic_reconfigure::Server<navigation_tools::CloudFilterConfig>(private_nh_);
     f_ = boost::bind(&CloudTransitNodelet::configCallback, this, _1, _2);
     server_->setCallback(f_);
 
     NODELET_INFO("Point cloud filter nodelet initialized");
   }
 
-  void configCallback(topic_transit::CloudFilterConfig &config, uint32_t level) {
+  void configCallback(navigation_tools::CloudFilterConfig &config, uint32_t level) {
     min_z_ = config.min_z;
     max_z_ = config.max_z;
     min_x_ = config.min_x;
@@ -216,8 +216,8 @@ private:
   ros::Publisher ground_cloud_pub_;
   ros::Rate* rate_;
 
-  dynamic_reconfigure::Server<topic_transit::CloudFilterConfig>* server_;
-  dynamic_reconfigure::Server<topic_transit::CloudFilterConfig>::CallbackType f_;
+  dynamic_reconfigure::Server<navigation_tools::CloudFilterConfig>* server_;
+  dynamic_reconfigure::Server<navigation_tools::CloudFilterConfig>::CallbackType f_;
 
   double min_z_;
   double max_z_;
@@ -243,6 +243,6 @@ private:
   bool use_radius_filter_;
 };
 
-} // namespace topic_transit
+} // namespace navigation_tools
 
-PLUGINLIB_EXPORT_CLASS(topic_transit::CloudTransitNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(navigation_tools::CloudTransitNodelet, nodelet::Nodelet)

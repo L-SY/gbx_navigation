@@ -7,7 +7,7 @@
     <arg name="frequency" value="10.0" />
     <arg name="leaf_size" value="0.1" />
 
-    <node name="cloud_transit" pkg="topic_transit" type="cloud_transit" output="screen">
+    <node name="cloud_transit" pkg="navigation_tools" type="cloud_transit" output="screen">
         <param name="min_z" value="$(arg min_z)" />
         <param name="max_z" value="$(arg max_z)" />
         <param name="max_radius" value="$(arg max_radius)" />
