@@ -60,3 +60,13 @@ target_link_libraries(topic_gen_trajectory ${catkin_LIBRARIES} )
 
 add_executable(point_transit src/PointTransit.cpp)
 target_link_libraries(point_transit ${catkin_LIBRARIES})
+
+
+add_library(cloud_filter_nodelet
+        src/CloudIntensityFilterNodelet.cpp
+)
+
+target_link_libraries(cloud_filter_nodelet
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+)
