@@ -70,3 +70,11 @@ target_link_libraries(cloud_filter_nodelet
         ${catkin_LIBRARIES}
         ${PCL_LIBRARIES}
 )
+
+install(FILES cloud_intensity_filter_nodelet.xml
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install(FILES cloud_transit_nodelet.xml
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)

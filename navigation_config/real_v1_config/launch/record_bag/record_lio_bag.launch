@@ -13,6 +13,7 @@
               /ouster/nearir_image/mouse_click
               /ouster/os_nodelet_mgr/bond
               /ouster/points
+              /ouster/points_filtered
               /ouster/points2
               /ouster/range_image
               /ouster/range_image/mouse_click
