@@ -12,7 +12,7 @@ keyframe:
 match:
   match_detection_radius: 300.0                # unit [meter] within this radius, check if matched or not
   quatro_nano_gicp_voxel_resolution: 1      # voxel resolution to use Quatro and Nano-GI2f_3CP matching
-  icp_lowest_score: 0.02
+  icp_lowest_score: 0.3
   score_decay_rate: -0.3
 
 nano_gicp:                                    # all values are from Nano-GICP official github (Direct LiDAR Odometry)
