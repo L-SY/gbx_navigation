@@ -4,7 +4,7 @@ basic:
   vis_hz: 1.0                                 # visualize Hz
 
 keyframe:
-  keyframe_threshold: 1.5                     # unit [meter] every this distance, generate keyframe
+  keyframe_threshold: 0.5                     # unit [meter] every this distance, generate keyframe
   subkeyframes_number: 1                      # how many subkeyframes are merged to ICP with current keyframe (closest-this ~ closest+this, if exists)
 
 loop:
@@ -15,13 +15,13 @@ quatro_nano_gicp_voxel_resolution: 0.5        # voxel resolution to use Quatro a
 
 nano_gicp:                                    # all values are from Nano-GICP official github (Direct LiDAR Odometry)
   thread_number: 0                            # if 0, max number of core
-  icp_score_threshold: 0.2                      # lower is more accurate, for loop detection
+  icp_score_threshold: 0.03                      # lower is more accurate, for loop detection
   correspondences_number: 60
   max_iter: 128
   transformation_epsilon: 0.05
   euclidean_fitness_epsilon: 0.05
   ransac:
-    max_iter: 5
+    max_iter: 25
     outlier_rejection_threshold: 0.5
 
 quatro:                                       # all values are from Quatro official github

@@ -34,13 +34,17 @@
         <rosparam file="$(find real_v1_config)/config/$(arg planner)_params/costmap_local.yaml" command="load" ns="local_costmap"/>
     </node>
 
-    <arg name="min_z" value="-0.5" />
-    <arg name="max_z" value="0.5" />
+    <arg name="min_z" value="-0.2" />
+    <arg name="max_z" value="0.2" />
     <arg name="max_radius" value="0.5" />
-    <arg name="input_topic" value="/cloud_registered" />
+    <arg name="input_topic" value="/corrected_current_pcd" />
     <arg name="output_topic" value="/corrected_current_pcd_manual" />
     <arg name="frequency" value="10" />
-    <arg name="leaf_size" value="0.1" />
+    <arg name="leaf_size" value="0.3" />
+    <arg name="use_ground_filter" value="False" />
+    <arg name="publish_ground" value="False" />
+    <arg name="use_voxel_filter" value="True" />
+    <arg name="use_radius_filter" value="True" />
 
     <node pkg="nodelet" type="nodelet" name="cloud_mgr"
       output="screen" required="true" args="manager"/>
@@ -54,6 +58,10 @@
         <param name="output_topic" value="$(arg output_topic)" />
         <param name="frequency" value="$(arg frequency)" />
         <param name="leaf_size" value="$(arg leaf_size)" />
+        <param name="use_ground_filter" value="$(arg use_ground_filter)" />
+        <param name="publish_ground" value="$(arg publish_ground)" />
+        <param name="use_voxel_filter" value="$(arg use_voxel_filter)" />
+        <param name="use_radius_filter" value="$(arg use_radius_filter)" />
     </node>
 
 </launch>

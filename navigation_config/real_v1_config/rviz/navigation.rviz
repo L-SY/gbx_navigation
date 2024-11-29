@@ -8,7 +8,6 @@ Panels:
         - /TF1/Frames1
         - /Debug1/move_base1
         - /Debug1/manual1/local_cloudpoint1
-        - /Deploy1
         - /Deploy1/dwa_planner1
         - /Deploy1/move_base1
       Splitter Ratio: 0.550000011920929
@@ -81,10 +80,6 @@ Visualization Manager:
           Value: true
         odom:
           Value: false
-        os_imu:
-          Value: true
-        os_lidar:
-          Value: true
         os_sensor:
           Value: true
         rl_steering_wheel_link:
@@ -114,10 +109,7 @@ Visualization Manager:
               fr_wheel_link:
                 {}
             os_sensor:
-              os_imu:
-                {}
-              os_lidar:
-                {}
+              {}
             rl_steering_wheel_link:
               rl_wheel_link:
                 {}
@@ -297,7 +289,7 @@ Visualization Manager:
               Color: 255; 255; 255
               Color Transformer: FlatColor
               Decay Time: 0
-              Enabled: false
+              Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Min Color: 0; 0; 0
@@ -312,7 +304,7 @@ Visualization Manager:
               Unreliable: false
               Use Fixed Frame: true
               Use rainbow: true
-              Value: false
+              Value: true
             - Alpha: 0.5
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
@@ -345,7 +337,7 @@ Visualization Manager:
               Buffer Length: 2
               Class: rviz/Path
               Color: 0; 0; 255
-              Enabled: false
+              Enabled: true
               Head Diameter: 0
               Head Length: 0
               Length: 0.30000001192092896
@@ -364,12 +356,12 @@ Visualization Manager:
               Shaft Length: 0.4000000059604645
               Topic: /ori_path
               Unreliable: false
-              Value: false
+              Value: true
             - Alpha: 0
               Buffer Length: 2
               Class: rviz/Path
               Color: 0; 255; 0
-              Enabled: false
+              Enabled: true
               Head Diameter: 0
               Head Length: 0
               Length: 0.30000001192092896
@@ -388,7 +380,7 @@ Visualization Manager:
               Shaft Length: 0.4000000059604645
               Topic: /corrected_path
               Unreliable: false
-              Value: false
+              Value: true
             - Alpha: 1
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
@@ -637,7 +629,7 @@ Visualization Manager:
               Value: true
           Enabled: true
           Name: manual
-      Enabled: false
+      Enabled: true
       Name: Debug
     - Class: rviz/Group
       Displays:
@@ -902,4 +894,4 @@ Window Geometry:
     collapsed: true
   Width: 1440
   X: 338
-  Y: 225
+  Y: 188
