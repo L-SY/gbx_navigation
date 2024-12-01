@@ -1,9 +1,0 @@
-<library path="lib/libcloud_transit_nodelet">
-    <class name="navigation_tools/CloudTransitNodelet"
-           type="navigation_tools::CloudTransitNodelet"
-           base_class_type="nodelet::Nodelet">
-        <description>
-            A nodelet for filtering point cloud data
-        </description>
-    </class>
-</library>

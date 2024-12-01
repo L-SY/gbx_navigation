@@ -33,7 +33,6 @@
   <depend>nodelet</depend>
   <depend>pluginlib</depend>
   <export>
-    <nodelet plugin="${prefix}/cloud_transit_nodelet.xml" />
-    <nodelet plugin="${prefix}/cloud_intensity_filter_nodelet.xml" />
+    <nodelet plugin="${prefix}/cloud_filter_nodelet.xml" />
   </export>
 </package>

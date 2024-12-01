@@ -11,8 +11,8 @@
 
     <include file="$(find real_v1_config)/launch/ranger_mini_v2.launch"/>
 
-    <include file="$(find real_v1_config)/launch/lio/driver.launch"/>
-    <include file="$(find real_v1_config)/launch/cloud_intensity_filter.launch"/>
+<!--     <include file="$(find real_v1_config)/launch/lio/driver.launch"/> -->
+<!--     <include file="$(find real_v1_config)/launch/cloud_intensity_filter.launch"/> -->
 
     <node name="gbx_manual" pkg="gbx_manual" type="gbx_manual_node" output="screen">
         <rosparam file="$(find real_v1_config)/config/manual.yaml" command="load"/>

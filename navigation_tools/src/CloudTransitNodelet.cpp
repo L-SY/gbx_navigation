@@ -16,7 +16,7 @@
 #include <navigation_tools/CloudFilterConfig.h>
 #include <pcl/filters/extract_indices.h>
 
-namespace navigation_tools
+namespace cloud_filter
 {
 
 class CloudTransitNodelet : public nodelet::Nodelet
@@ -243,6 +243,6 @@ private:
   bool use_radius_filter_;
 };
 
-} // namespace navigation_tools
+} // namespace cloud_filter
 
-PLUGINLIB_EXPORT_CLASS(navigation_tools::CloudTransitNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(cloud_filter::CloudTransitNodelet, nodelet::Nodelet)

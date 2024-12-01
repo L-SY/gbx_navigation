@@ -46,11 +46,12 @@
     <arg name="use_voxel_filter" value="True" />
     <arg name="use_radius_filter" value="True" />
 
-    <node pkg="nodelet" type="nodelet" name="cloud_mgr"
-      output="screen" required="true" args="manager"/>
+<!--  Just for test-->
+<!--     <node pkg="nodelet" type="nodelet" name="cloud_mgr" -->
+<!--       output="screen" required="true" args="manager"/> -->
 
     <node pkg="nodelet" type="nodelet" name="cloud_transit_nodelet"
-          args="load navigation_tools/CloudTransitNodelet cloud_mgr">
+          args="load cloud_filter/CloudTransitNodelet /ouster/os_nodelet_mgr">
         <param name="min_z" value="$(arg min_z)" />
         <param name="max_z" value="$(arg max_z)" />
         <param name="max_radius" value="$(arg max_radius)" />

@@ -52,9 +52,6 @@ include_directories(
 add_executable(cmd_transit src/CmdTransit.cpp)
 target_link_libraries(cmd_transit ${catkin_LIBRARIES})
 
-add_library(cloud_transit_nodelet src/CloudTransitNodelet.cpp)
-target_link_libraries(cloud_transit_nodelet ${PCL_LIBRARIES} ${catkin_LIBRARIES})
-
 add_executable(topic_gen_trajectory src/TopicGenTrajectory.cpp)
 target_link_libraries(topic_gen_trajectory ${catkin_LIBRARIES} )
 
@@ -64,6 +61,7 @@ target_link_libraries(point_transit ${catkin_LIBRARIES})
 
 add_library(cloud_filter_nodelet
         src/CloudIntensityFilterNodelet.cpp
+        src/CloudTransitNodelet.cpp
 )
 
 target_link_libraries(cloud_filter_nodelet
@@ -71,10 +69,6 @@ target_link_libraries(cloud_filter_nodelet
         ${PCL_LIBRARIES}
 )
 
-install(FILES cloud_intensity_filter_nodelet.xml
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
-
-install(FILES cloud_transit_nodelet.xml
+install(FILES cloud_filter_nodelet.xml
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
