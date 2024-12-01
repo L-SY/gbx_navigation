@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
         roscpp
         std_msgs
         serial
+        navigation_msgs
 )
 
 catkin_package(
@@ -15,6 +16,7 @@ catkin_package(
         roscpp
         serial
         std_msgs
+        navigation_msgs
         DEPENDS
 )
 
