@@ -1,15 +1,15 @@
 #include "gbx_rqt_interact/serial_node.h"
 #include "ui_main_window.h"
-#include <QTime>
 #include <QDebug>
 
 namespace gbx_rqt_interact {
 
 SerialNode::SerialNode(QObject *parent)
-    : QThread(parent),
+    : QObject(parent),
       mainWindow_ui(nullptr),
       serial(nullptr),
-      updateTimer(nullptr),
+      rosTimer(new QTimer(this)),
+      serialTimer(new QTimer(this)),
       show_box_flag(false),
       show_dest_flag(false),
       send_set_flag(false),
@@ -19,33 +19,38 @@ SerialNode::SerialNode(QObject *parent)
   memset(box_fdb_state, 0, sizeof(box_fdb_state));
   memset(box_set_state, 0, sizeof(box_set_state));
   memset(last_box_state, 0, sizeof(last_box_state));
+
+  // 设置定时器
+  rosTimer->setInterval(50);     // 20Hz for ROS
+  serialTimer->setInterval(50);  // 20Hz for Serial
+
+  // 连接定时器信号
+  connect(rosTimer, &QTimer::timeout, this, &SerialNode::processROSData);
+  connect(serialTimer, &QTimer::timeout, this, &SerialNode::processSerialData);
 }
 
 SerialNode::~SerialNode()
 {
-  requestInterruption();
-  wait();
+  rosTimer->stop();
+  serialTimer->stop();
 
   if (serial && serial->isOpen()) {
     serial->close();
   }
   delete serial;
   delete nh_;
-  if (updateTimer) {
-    updateTimer->stop();
-    delete updateTimer;
-  }
+}
+
+void SerialNode::start()
+{
+  rosTimer->start();
+  serialTimer->start();
 }
 
 void SerialNode::Init(Ui::MainWindow* _mainWindow_ui)
 {
   mainWindow_ui = _mainWindow_ui;
   serial = new QSerialPort(this);
-
-  // 创建定时器用于串口数据处理
-  updateTimer = new QTimer(this);
-  updateTimer->setInterval(20); // 50Hz更新频率
-  connect(updateTimer, &QTimer::timeout, this, &SerialNode::processSerialData);
 
   DeviceInit();
 
@@ -58,7 +63,7 @@ void SerialNode::Init(Ui::MainWindow* _mainWindow_ui)
   UiInit();
   connect(this, &SerialNode::requestUIUpdate, this, &SerialNode::UpdateUI, Qt::QueuedConnection);
 
-  updateTimer->start();
+  start();
 }
 
 void SerialNode::DeviceInit()
@@ -122,6 +127,18 @@ void SerialNode::UiInit()
           this, [this](){ handleButtonClick(5); }, Qt::QueuedConnection);
 }
 
+void SerialNode::processROSData()
+{
+  if (nh_) {
+    ros::spinOnce();
+  }
+}
+
+void SerialNode::processSerialData()
+{
+  readSerialData();
+}
+
 void SerialNode::handleButtonClick(int buttonIndex)
 {
   if (show_box_flag) {
@@ -143,21 +160,6 @@ void SerialNode::handleDestButtonClick()
   show_box_flag = false;
   show_dest_flag = true;
   emit requestUIUpdate();
-}
-
-void SerialNode::run()
-{
-  while (!isInterruptionRequested()) {
-    if (nh_) {
-      ros::spinOnce();
-    }
-    msleep(20); // 降低线程频率到50Hz
-  }
-}
-
-void SerialNode::processSerialData()
-{
-  readSerialData();
 }
 
 void SerialNode::readSerialData()
@@ -307,3 +309,5 @@ void SerialNode::sendTrajectoryRequest(const QString& path_name)
 }
 
 } // namespace gbx_rqt_interact
+
+#include "serial_node.moc"
