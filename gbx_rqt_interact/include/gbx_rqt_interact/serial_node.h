@@ -6,7 +6,10 @@
 #include <QPushButton>
 #include <QString>
 #include <ros/ros.h>
+
 #include <navigation_msgs/pub_trajectory.h>
+#include <navigation_msgs/CabinetDoorArray.h>
+#include <navigation_msgs/CabinetContentArray.h>
 
 namespace Ui {
 class MainWindow;
@@ -59,6 +62,17 @@ private:
 
   ros::NodeHandle* nh_;
   ros::ServiceClient trajectory_client_;
+
+  ros::Publisher door_state_pub_;
+  ros::Publisher cabinet_content_pub_;
+  ros::Subscriber cabinet_content_sub_;
+
+  std::vector<navigation_msgs::CabinetContent> current_contents_;
+  ros::Time last_publish_time_;
+
+  void publishDoorStates();
+  void cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg);
+  void updateCabinetDisplay();
 
   void readSerialData();
 };

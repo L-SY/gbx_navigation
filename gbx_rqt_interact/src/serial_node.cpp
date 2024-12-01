@@ -35,24 +35,19 @@ void SerialNode::Init(Ui::MainWindow* _mainWindow_ui)
 {
   mainWindow_ui = _mainWindow_ui;
 
-  // 初始化串口
   serial = new QSerialPort();
   DeviceInit();
 
-  // 尝试初始化ROS (但即使失败也继续)
   try {
     ROSInit();
   } catch (const std::exception& e) {
     qDebug() << "ROS initialization failed, but continuing with other functions";
   }
 
-  // 初始化UI连接
   UiInit();
 
-  // 连接UI更新信号
   connect(this, &SerialNode::requestUIUpdate, this, &SerialNode::UpdateUI, Qt::QueuedConnection);
 
-  // 启动线程
   start();
 }
 
@@ -87,12 +82,75 @@ void SerialNode::ROSInit()
   if (!nh_) {
     nh_ = new ros::NodeHandle("~");
   }
+
   trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/gbx_manual/pub_trajectory");
+
+  door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 10);
+
+  cabinet_content_sub_ = nh_->subscribe("/cabinet/contents_update", 10,
+                                        &SerialNode::cabinetContentCallback, this);
+}
+
+void SerialNode::publishDoorStates()
+{
+  navigation_msgs::CabinetDoorArray msg;
+  msg.header.stamp = ros::Time::now();
+
+  for (int i = 0; i < 6; ++i) {
+    navigation_msgs::CabinetDoor door;
+    door.id = "door_" + std::to_string(i + 1);
+    door.is_open = (box_fdb_state[i + 1] == 1);
+    door.status = door.is_open ? "open" : "closed";
+    door.last_changed = ros::Time::now();
+    msg.doors.push_back(door);
+  }
+
+  door_state_pub_.publish(msg);
+}
+
+void SerialNode::cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg)
+{
+  current_contents_.clear();
+  for (const auto& cabinet : msg->cabinets) {
+    current_contents_.push_back(cabinet);
+  }
+
+  updateCabinetDisplay();
+}
+
+void SerialNode::updateCabinetDisplay()
+{
+  QPushButton* buttons[6] = {mainWindow_ui->B1, mainWindow_ui->B2, mainWindow_ui->B3,
+                             mainWindow_ui->B4, mainWindow_ui->B5, mainWindow_ui->B6};
+
+  if (show_box_flag) {
+    for (int i = 0; i < 6; ++i) {
+      QString buttonText;
+      std::string cabinet_id = "cabinet_" + std::to_string(i + 1);
+
+      auto it = std::find_if(current_contents_.begin(), current_contents_.end(),
+                             [&](const navigation_msgs::CabinetContent& content) {
+                               return content.cabinet_id == cabinet_id;
+                             });
+
+      if (it != current_contents_.end() && !it->box.box_id.empty()) {
+        buttonText = QString("Box %1\n%2")
+                         .arg(i + 1)
+                         .arg(QString::fromStdString(it->box.box_id));
+        buttons[i]->setStyleSheet("color: #A367CA;");
+      } else {
+        buttonText = QString("Box %1\n%2")
+                         .arg(i + 1)
+                         .arg(box_fdb_state[i+1] == 1 ? "OPEN" : "CLOSE");
+        buttons[i]->setStyleSheet("color: #091648;");
+      }
+      buttons[i]->setText(buttonText);
+    }
+  }
 }
 
 void SerialNode::UiInit()
 {
-  // 解除之前的所有连接
   if(mainWindow_ui->B1) mainWindow_ui->B1->disconnect();
   if(mainWindow_ui->B2) mainWindow_ui->B2->disconnect();
   if(mainWindow_ui->B3) mainWindow_ui->B3->disconnect();
@@ -128,6 +186,12 @@ void SerialNode::run()
   while (!isInterruptionRequested()) {
     if (nh_) {
       ros::spinOnce();
+
+      ros::Time now = ros::Time::now();
+      if ((now - last_publish_time_).toSec() >= 0.1) {
+        publishDoorStates();
+        last_publish_time_ = now;
+      }
     }
     readSerialData();
     msleep(100);
