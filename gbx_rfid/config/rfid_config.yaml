@@ -1,14 +1,9 @@
-readers:
+rfid_readers:
   - id: "reader1"
     port: "/dev/ttyUSB0"
     baudrate: 115200
+    cabinet_id: "cabinet_1"
   - id: "reader2"
     port: "/dev/ttyUSB1"
     baudrate: 115200
-  - id: "reader3"
-    port: "/dev/ttyUSB2"
-    baudrate: 115200
-
-tag_timeout: 5.0
-
-read_rate: 10
+    cabinet_id: "cabinet_2"
