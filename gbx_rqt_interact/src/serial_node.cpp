@@ -2,6 +2,7 @@
 #include "ui_main_window.h"
 #include <QTime>
 #include <QDebug>
+#include <QMetaObject>
 
 namespace gbx_rqt_interact {
 
@@ -41,7 +42,7 @@ SerialNode::~SerialNode()
 void SerialNode::Init(Ui::MainWindow* _mainWindow_ui)
 {
   mainWindow_ui = _mainWindow_ui;
-  serial = new QSerialPort();
+  serial = new QSerialPort(this);
 
   DeviceInit();
 
@@ -52,14 +53,13 @@ void SerialNode::Init(Ui::MainWindow* _mainWindow_ui)
   }
 
   UiInit();
-  connect(this, &SerialNode::requestUIUpdate, this, &SerialNode::UpdateUI, Qt::QueuedConnection);
-  start();
+  start(QThread::HighPriority);
 }
 
 void SerialNode::DeviceInit()
 {
   if (!serial) {
-    serial = new QSerialPort();
+    serial = new QSerialPort(this);
   }
 
   serial->setPortName("/dev/ttyACM0");
@@ -82,15 +82,16 @@ void SerialNode::ROSInit()
   if (!ros::isInitialized()) {
     int argc = 0;
     char** argv = nullptr;
-    ros::init(argc, argv, "gbx_rqt_interact_node", ros::init_options::NoSigintHandler);
+    ros::init(argc, argv, "gbx_rqt_interact_node",
+              ros::init_options::NoSigintHandler | ros::init_options::NoRosout);
   }
   if (!nh_) {
     nh_ = new ros::NodeHandle("~");
   }
 
   trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/pub_trajectory");
-  door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 50);
-  cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 50,
+  door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
+  cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,
                                         &SerialNode::cabinetContentCallback, this);
 }
 
@@ -103,23 +104,23 @@ void SerialNode::UiInit()
   if(mainWindow_ui->B5) mainWindow_ui->B5->disconnect();
   if(mainWindow_ui->B6) mainWindow_ui->B6->disconnect();
 
-  connect(mainWindow_ui->boxButton, &QPushButton::clicked, this, &SerialNode::ChangeBox, Qt::QueuedConnection);
-  connect(mainWindow_ui->destButton, &QPushButton::clicked, this, &SerialNode::ChangeDest, Qt::QueuedConnection);
+  connect(mainWindow_ui->boxButton, &QPushButton::clicked, this, &SerialNode::ChangeBox, Qt::DirectConnection);
+  connect(mainWindow_ui->destButton, &QPushButton::clicked, this, &SerialNode::ChangeDest, Qt::DirectConnection);
 
   if (show_box_flag) {
-    connect(mainWindow_ui->B1, &QPushButton::clicked, this, &SerialNode::OpenBox1, Qt::QueuedConnection);
-    connect(mainWindow_ui->B2, &QPushButton::clicked, this, &SerialNode::OpenBox2, Qt::QueuedConnection);
-    connect(mainWindow_ui->B3, &QPushButton::clicked, this, &SerialNode::OpenBox3, Qt::QueuedConnection);
-    connect(mainWindow_ui->B4, &QPushButton::clicked, this, &SerialNode::OpenBox4, Qt::QueuedConnection);
-    connect(mainWindow_ui->B5, &QPushButton::clicked, this, &SerialNode::OpenBox5, Qt::QueuedConnection);
-    connect(mainWindow_ui->B6, &QPushButton::clicked, this, &SerialNode::OpenBox6, Qt::QueuedConnection);
+    connect(mainWindow_ui->B1, &QPushButton::clicked, this, &SerialNode::OpenBox1, Qt::DirectConnection);
+    connect(mainWindow_ui->B2, &QPushButton::clicked, this, &SerialNode::OpenBox2, Qt::DirectConnection);
+    connect(mainWindow_ui->B3, &QPushButton::clicked, this, &SerialNode::OpenBox3, Qt::DirectConnection);
+    connect(mainWindow_ui->B4, &QPushButton::clicked, this, &SerialNode::OpenBox4, Qt::DirectConnection);
+    connect(mainWindow_ui->B5, &QPushButton::clicked, this, &SerialNode::OpenBox5, Qt::DirectConnection);
+    connect(mainWindow_ui->B6, &QPushButton::clicked, this, &SerialNode::OpenBox6, Qt::DirectConnection);
   } else if (show_dest_flag) {
-    connect(mainWindow_ui->B1, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("A"); }, Qt::QueuedConnection);
-    connect(mainWindow_ui->B2, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("B"); }, Qt::QueuedConnection);
-    connect(mainWindow_ui->B3, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("C"); }, Qt::QueuedConnection);
-    connect(mainWindow_ui->B4, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("D"); }, Qt::QueuedConnection);
-    connect(mainWindow_ui->B5, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("E"); }, Qt::QueuedConnection);
-    connect(mainWindow_ui->B6, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("F"); }, Qt::QueuedConnection);
+    connect(mainWindow_ui->B1, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("A"); }, Qt::DirectConnection);
+    connect(mainWindow_ui->B2, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("B"); }, Qt::DirectConnection);
+    connect(mainWindow_ui->B3, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("C"); }, Qt::DirectConnection);
+    connect(mainWindow_ui->B4, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("D"); }, Qt::DirectConnection);
+    connect(mainWindow_ui->B5, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("E"); }, Qt::DirectConnection);
+    connect(mainWindow_ui->B6, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("F"); }, Qt::DirectConnection);
   }
 }
 
@@ -130,18 +131,20 @@ void SerialNode::run()
       ros::spinOnce();
     }
     readSerialData();
-    msleep(10);  // 10ms间隔
+    msleep(5);
   }
 }
 
 void SerialNode::readSerialData()
 {
-  if (serial && serial->isOpen()) {
-    while (serial->bytesAvailable() >= 8) {
-      serial->read((char*)box_fdb_state, 8);
-      emit requestUIUpdate();
-      publishDoorStates();
-    }
+  if (!serial || !serial->isOpen()) return;
+
+  if (serial->bytesAvailable() >= 8) {
+    QByteArray data = serial->read(8);
+    memcpy(box_fdb_state, data.constData(), 8);
+
+    QMetaObject::invokeMethod(this, "UpdateUI", Qt::DirectConnection);
+    publishDoorStates();
   }
 }
 
@@ -151,20 +154,17 @@ void SerialNode::publishDoorStates()
   msg.header.stamp = ros::Time::now();
 
   for (int i = 0; i < 6; ++i) {
-    bool current_state = (box_fdb_state[i + 1] == 1);
-    std::string current_status = current_state ? "open" : "closed";
-
-    if (current_state != previous_door_states_[i].is_open) {
-      previous_door_states_[i].is_open = current_state;
-      previous_door_states_[i].last_changed = ros::Time::now();
-      previous_door_states_[i].status = current_status;
-    }
-
     navigation_msgs::CabinetDoor door;
     door.id = "door_" + std::to_string(i + 1);
-    door.is_open = current_state;
-    door.status = current_status;
+    door.is_open = (box_fdb_state[i + 1] == 1);
+    door.status = door.is_open ? "open" : "closed";
+
+    if (door.is_open != previous_door_states_[i].is_open) {
+      previous_door_states_[i].is_open = door.is_open;
+      previous_door_states_[i].last_changed = ros::Time::now();
+    }
     door.last_changed = previous_door_states_[i].last_changed;
+
     msg.doors.push_back(door);
   }
 
@@ -174,7 +174,7 @@ void SerialNode::publishDoorStates()
 void SerialNode::cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg)
 {
   current_contents_ = msg->cabinets;
-  emit requestUIUpdate();
+  QMetaObject::invokeMethod(this, "UpdateUI", Qt::DirectConnection);
 }
 
 void SerialNode::UpdateUI()
@@ -191,16 +191,22 @@ void SerialNode::UpdateUI()
                                return content.cabinet_id == cabinet_id;
                              });
 
+      // 根据门的开关状态设置颜色
+      if (box_fdb_state[i+1] == 1) {
+        buttons[i]->setStyleSheet("color: #A367CA;");
+      } else {
+        buttons[i]->setStyleSheet("color: #091648;");
+      }
+
+      // 设置显示文本（包含箱子ID）
       if (it != current_contents_.end() && !it->box.box_id.empty()) {
         buttonText = QString("Box %1\n%2")
                          .arg(i + 1)
                          .arg(QString::fromStdString(it->box.box_id));
-        buttons[i]->setStyleSheet("color: #A367CA;");
       } else {
         buttonText = QString("Box %1\n%2")
                          .arg(i + 1)
                          .arg(box_fdb_state[i+1] == 1 ? "OPEN" : "CLOSE");
-        buttons[i]->setStyleSheet("color: #091648;");
       }
       buttons[i]->setText(buttonText);
     }
@@ -214,9 +220,7 @@ void SerialNode::UpdateUI()
 
 void SerialNode::SendTrajectoryRequest(const QString& path_name)
 {
-  if (!show_dest_flag) {
-    return;
-  }
+  if (!show_dest_flag) return;
 
   if (!nh_ || !trajectory_client_) {
     qDebug() << "ROS service not available for path:" << path_name;
@@ -243,7 +247,7 @@ void SerialNode::ChangeBox()
   show_box_flag = true;
   show_dest_flag = false;
   UiInit();
-  emit requestUIUpdate();
+  UpdateUI();
 }
 
 void SerialNode::ChangeDest()
@@ -251,17 +255,15 @@ void SerialNode::ChangeDest()
   show_box_flag = false;
   show_dest_flag = true;
   UiInit();
-  emit requestUIUpdate();
+  UpdateUI();
 }
 
-// OpenBox1-6的实现
 void SerialNode::OpenBox1()
 {
   if (serial && serial->isOpen()) {
     memset(box_set_state, 0, sizeof(box_set_state));
     box_set_state[0] = 1;
     serial->write((char*)box_set_state, 6);
-    qDebug() << "Opening Box 1";
   }
 }
 
@@ -271,7 +273,6 @@ void SerialNode::OpenBox2()
     memset(box_set_state, 0, sizeof(box_set_state));
     box_set_state[1] = 1;
     serial->write((char*)box_set_state, 6);
-    qDebug() << "Opening Box 2";
   }
 }
 
@@ -281,7 +282,6 @@ void SerialNode::OpenBox3()
     memset(box_set_state, 0, sizeof(box_set_state));
     box_set_state[2] = 1;
     serial->write((char*)box_set_state, 6);
-    qDebug() << "Opening Box 3";
   }
 }
 
@@ -291,7 +291,6 @@ void SerialNode::OpenBox4()
     memset(box_set_state, 0, sizeof(box_set_state));
     box_set_state[3] = 1;
     serial->write((char*)box_set_state, 6);
-    qDebug() << "Opening Box 4";
   }
 }
 

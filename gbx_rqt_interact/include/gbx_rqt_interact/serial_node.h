@@ -43,9 +43,6 @@ public slots:
   void UpdateUI();
   void SendTrajectoryRequest(const QString& path_name);
 
-signals:
-  void requestUIUpdate();
-
 private:
   Ui::MainWindow* mainWindow_ui;
   QSerialPort* serial;
