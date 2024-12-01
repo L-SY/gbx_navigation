@@ -17,6 +17,11 @@ add_service_files(
 
 add_message_files(
         FILES
+        BoxInfo.msg
+        CabinetContent.msg
+        CabinetContentArray.msg
+        CabinetDoor.msg
+        CabinetDoorArray.msg
 )
 #
 #add_action_files(
