@@ -17,6 +17,13 @@ SerialNode::SerialNode(QObject *parent)
 {
   memset(box_fdb_state, 0, sizeof(box_fdb_state));
   memset(box_set_state, 0, sizeof(box_set_state));
+
+  previous_door_states_.resize(6);
+  for (auto& state : previous_door_states_) {
+    state.is_open = false;
+    state.last_changed = ros::Time::now();
+    state.status = "closed";
+  }
 }
 
 SerialNode::~SerialNode()
@@ -91,31 +98,56 @@ void SerialNode::ROSInit()
                                         &SerialNode::cabinetContentCallback, this);
 }
 
-void SerialNode::publishDoorStates()
-{
+void SerialNode::publishDoorStates() {
+  bool states_changed = false;
   navigation_msgs::CabinetDoorArray msg;
   msg.header.stamp = ros::Time::now();
 
   for (int i = 0; i < 6; ++i) {
+    bool current_state = (box_fdb_state[i + 1] == 1);
+    std::string current_status = current_state ? "open" : "closed";
+
+    if (current_state != previous_door_states_[i].is_open) {
+      previous_door_states_[i].is_open = current_state;
+      previous_door_states_[i].last_changed = ros::Time::now();
+      previous_door_states_[i].status = current_status;
+      states_changed = true;
+    }
+
     navigation_msgs::CabinetDoor door;
     door.id = "door_" + std::to_string(i + 1);
-    door.is_open = (box_fdb_state[i + 1] == 1);
-    door.status = door.is_open ? "open" : "closed";
-    door.last_changed = ros::Time::now();
+    door.is_open = current_state;
+    door.status = current_status;
+    door.last_changed = previous_door_states_[i].last_changed;
     msg.doors.push_back(door);
   }
 
-  door_state_pub_.publish(msg);
+  if (states_changed) {
+    door_state_pub_.publish(msg);
+  }
 }
 
 void SerialNode::cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg)
 {
-  current_contents_.clear();
-  for (const auto& cabinet : msg->cabinets) {
-    current_contents_.push_back(cabinet);
+  bool contents_changed = false;
+
+  if (msg->cabinets.size() != previous_contents_.size()) {
+    contents_changed = true;
+  } else {
+    for (size_t i = 0; i < msg->cabinets.size(); ++i) {
+      if (msg->cabinets[i].box.box_id != previous_contents_[i].box.box_id ||
+          msg->cabinets[i].status != previous_contents_[i].status) {
+        contents_changed = true;
+        break;
+      }
+    }
   }
 
-  updateCabinetDisplay();
+  if (contents_changed) {
+    current_contents_ = msg->cabinets;
+    previous_contents_ = current_contents_;
+    emit requestUIUpdate();
+  }
 }
 
 void SerialNode::updateCabinetDisplay()
@@ -186,15 +218,10 @@ void SerialNode::run()
   while (!isInterruptionRequested()) {
     if (nh_) {
       ros::spinOnce();
-
-      ros::Time now = ros::Time::now();
-      if ((now - last_publish_time_).toSec() >= 0.1) {
-        publishDoorStates();
-        last_publish_time_ = now;
-      }
+      publishDoorStates();
     }
     readSerialData();
-    msleep(100);
+    msleep(50);
   }
 }
 

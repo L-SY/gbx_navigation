@@ -48,6 +48,14 @@ signals:
   void requestUIUpdate();
 
 private:
+  struct DoorState {
+    bool is_open;
+    ros::Time last_changed;
+    std::string status;
+  };
+  std::vector<DoorState> previous_door_states_;
+  std::vector<navigation_msgs::CabinetContent> previous_contents_;
+
   Ui::MainWindow* mainWindow_ui;
   QSerialPort* serial;
   QStringList labels = {"E3_121", "2F_sl_go", "2F_sl_back", "D", "E", "F"};
