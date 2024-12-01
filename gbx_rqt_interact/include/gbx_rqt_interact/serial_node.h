@@ -47,7 +47,7 @@ signals:
 private:
   Ui::MainWindow* mainWindow_ui;
   QSerialPort* serial;
-  QStringList labels = {"A", "B", "C", "D", "E", "F"};
+  QStringList labels = {"E3_121", "2F_sl_go", "2F_sl_back", "D", "E", "F"};
 
   bool show_box_flag;
   bool show_dest_flag;
