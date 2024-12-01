@@ -17,6 +17,7 @@
   <exec_depend>rqt_gui</exec_depend>
   <exec_depend>rqt_gui_cpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+  <depend>navigation_msgs</depend>
 
   <export>
     <rqt_gui plugin="${prefix}/plugin.xml"/>

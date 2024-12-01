@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
         rqt_gui
         rqt_gui_cpp
         std_msgs
+        navigation_msgs
 )
 
 find_package(Qt5 REQUIRED COMPONENTS
@@ -29,7 +30,12 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS ${PROJECT_SOURCE_DIR}/resource)
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES ${PROJECT_NAME}
-        CATKIN_DEPENDS roscpp rqt_gui rqt_gui_cpp std_msgs
+        CATKIN_DEPENDS
+            roscpp
+            rqt_gui
+            rqt_gui_cpp
+            std_msgs
+            navigation_msgs
 )
 
 include_directories(

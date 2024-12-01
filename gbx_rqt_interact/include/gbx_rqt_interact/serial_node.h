@@ -5,8 +5,9 @@
 #include <QObject>
 #include <QPushButton>
 #include <QString>
+#include <ros/ros.h>
+#include <navigation_msgs/pub_trajectory.h>
 
-// 前向声明
 namespace Ui {
 class MainWindow;
 }
@@ -18,11 +19,12 @@ class SerialNode : public QThread
   Q_OBJECT
 public:
   explicit SerialNode(QObject *parent = nullptr);
-  ~SerialNode();
+  virtual ~SerialNode();
 
   void Init(Ui::MainWindow* _mainWindow_ui);
   void DeviceInit();
   void UiInit();
+  void ROSInit();
 
 protected:
   void run() override;
@@ -37,6 +39,7 @@ public slots:
   void OpenBox5();
   void OpenBox6();
   void UpdateUI();
+  void SendTrajectoryRequest(const QString& path_name);
 
 signals:
   void requestUIUpdate();
@@ -53,6 +56,10 @@ private:
 
   uint8_t box_fdb_state[8];
   uint8_t box_set_state[8];
+
+  ros::NodeHandle* nh_;
+  ros::ServiceClient trajectory_client_;
+
   void readSerialData();
 };
 

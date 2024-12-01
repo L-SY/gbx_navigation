@@ -1,7 +1,3 @@
-//
-// Created by lsy on 24-12-1.
-//
-
 #include "gbx_rqt_interact/serial_node.h"
 #include "ui_main_window.h"
 #include <QTime>
@@ -10,18 +6,29 @@
 namespace gbx_rqt_interact {
 
 SerialNode::SerialNode(QObject *parent)
-    : QThread(parent), show_box_flag(false), show_dest_flag(false),
-      send_set_flag(false), button_update_flag(false), serial(nullptr)
+    : QThread(parent),
+      mainWindow_ui(nullptr),
+      serial(nullptr),
+      show_box_flag(false),
+      show_dest_flag(false),
+      send_set_flag(false),
+      button_update_flag(false),
+      nh_(nullptr)
 {
   memset(box_fdb_state, 0, sizeof(box_fdb_state));
   memset(box_set_state, 0, sizeof(box_set_state));
 }
 
-SerialNode::~SerialNode() {
+SerialNode::~SerialNode()
+{
+  requestInterruption();
+  wait();
+
   if (serial && serial->isOpen()) {
     serial->close();
   }
   delete serial;
+  delete nh_;
 }
 
 void SerialNode::Init(Ui::MainWindow* _mainWindow_ui)
@@ -30,17 +37,18 @@ void SerialNode::Init(Ui::MainWindow* _mainWindow_ui)
 
   serial = new QSerialPort();
   DeviceInit();
+  ROSInit();
   UiInit();
 
-  // 连接信号槽，确保UI更新在主线程中进行
   connect(this, &SerialNode::requestUIUpdate, this, &SerialNode::UpdateUI, Qt::QueuedConnection);
-
-  // 启动线程
-  start();
 }
 
 void SerialNode::DeviceInit()
 {
+  if (!serial) {
+    serial = new QSerialPort();
+  }
+
   serial->setPortName("/dev/ttyACM0");
   serial->setBaudRate(QSerialPort::Baud115200);
   serial->setDataBits(QSerialPort::Data8);
@@ -50,26 +58,44 @@ void SerialNode::DeviceInit()
 
   if (serial->open(QIODevice::ReadWrite)) {
     serial->setDataTerminalReady(true);
+    qDebug() << "Serial port opened successfully";
   } else {
     qDebug() << "Failed to open serial port!";
   }
+}
+
+void SerialNode::ROSInit()
+{
+  if (!ros::isInitialized()) {
+    int argc = 0;
+    char** argv = nullptr;
+    ros::init(argc, argv, "gbx_rqt_interact_node", ros::init_options::NoSigintHandler);
+  }
+  if (!nh_) {
+    nh_ = new ros::NodeHandle("~");
+  }
+  trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/pub_trajectory");
 }
 
 void SerialNode::UiInit()
 {
   connect(mainWindow_ui->boxButton, &QPushButton::clicked, this, &SerialNode::ChangeBox, Qt::QueuedConnection);
   connect(mainWindow_ui->destButton, &QPushButton::clicked, this, &SerialNode::ChangeDest, Qt::QueuedConnection);
-  connect(mainWindow_ui->B1, &QPushButton::clicked, this, &SerialNode::OpenBox1, Qt::QueuedConnection);
-  connect(mainWindow_ui->B2, &QPushButton::clicked, this, &SerialNode::OpenBox2, Qt::QueuedConnection);
-  connect(mainWindow_ui->B3, &QPushButton::clicked, this, &SerialNode::OpenBox3, Qt::QueuedConnection);
-  connect(mainWindow_ui->B4, &QPushButton::clicked, this, &SerialNode::OpenBox4, Qt::QueuedConnection);
-  connect(mainWindow_ui->B5, &QPushButton::clicked, this, &SerialNode::OpenBox5, Qt::QueuedConnection);
-  connect(mainWindow_ui->B6, &QPushButton::clicked, this, &SerialNode::OpenBox6, Qt::QueuedConnection);
+
+  connect(mainWindow_ui->B1, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("A"); }, Qt::QueuedConnection);
+  connect(mainWindow_ui->B2, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("B"); }, Qt::QueuedConnection);
+  connect(mainWindow_ui->B3, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("C"); }, Qt::QueuedConnection);
+  connect(mainWindow_ui->B4, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("D"); }, Qt::QueuedConnection);
+  connect(mainWindow_ui->B5, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("E"); }, Qt::QueuedConnection);
+  connect(mainWindow_ui->B6, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("F"); }, Qt::QueuedConnection);
 }
 
 void SerialNode::run()
 {
-  while (true) {
+  while (!isInterruptionRequested()) {
+    if (nh_) {
+      ros::spinOnce();
+    }
     readSerialData();
     msleep(100);
   }
@@ -77,9 +103,9 @@ void SerialNode::run()
 
 void SerialNode::readSerialData()
 {
-  if (serial->bytesAvailable() >= 8) {
+  if (serial && serial->isOpen() && serial->bytesAvailable() >= 8) {
     serial->read((char*)box_fdb_state, 8);
-    emit requestUIUpdate(); // 请求主线程更新UI
+    emit requestUIUpdate();
   }
 }
 
@@ -103,6 +129,27 @@ void SerialNode::UpdateUI()
       buttons[i]->setStyleSheet("color: rgb(0,0,0)");
       buttons[i]->setText(labels[i]);
     }
+  }
+}
+
+void SerialNode::SendTrajectoryRequest(const QString& path_name)
+{
+  if (!show_dest_flag) {
+    return;
+  }
+
+  navigation_msgs::pub_trajectory srv;
+  srv.request.sender = "rqt_interact";
+  srv.request.path_name = path_name.toStdString();
+
+  if (trajectory_client_.call(srv)) {
+    if (srv.response.success) {
+      qDebug() << "Successfully sent trajectory request for path:" << path_name;
+    } else {
+      qDebug() << "Failed to send trajectory request:" << QString::fromStdString(srv.response.message);
+    }
+  } else {
+    qDebug() << "Failed to call trajectory service";
   }
 }
 
