@@ -87,7 +87,7 @@ void SerialNode::ROSInit()
   if (!nh_) {
     nh_ = new ros::NodeHandle("~");
   }
-  trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/pub_trajectory");
+  trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/gbx_manual/pub_trajectory");
 }
 
 void SerialNode::UiInit()
@@ -114,9 +114,9 @@ void SerialNode::UiInit()
     connect(mainWindow_ui->B6, &QPushButton::clicked, this, &SerialNode::OpenBox6, Qt::QueuedConnection);
   } else if (show_dest_flag) {
     // Dest模式下的连接
-    connect(mainWindow_ui->B1, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("A"); }, Qt::QueuedConnection);
-    connect(mainWindow_ui->B2, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("B"); }, Qt::QueuedConnection);
-    connect(mainWindow_ui->B3, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("C"); }, Qt::QueuedConnection);
+    connect(mainWindow_ui->B1, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("E3_121"); }, Qt::QueuedConnection);
+    connect(mainWindow_ui->B2, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("2F_sl_go"); }, Qt::QueuedConnection);
+    connect(mainWindow_ui->B3, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("2F_sl_back"); }, Qt::QueuedConnection);
     connect(mainWindow_ui->B4, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("D"); }, Qt::QueuedConnection);
     connect(mainWindow_ui->B5, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("E"); }, Qt::QueuedConnection);
     connect(mainWindow_ui->B6, &QPushButton::clicked, this, [this](){ SendTrajectoryRequest("F"); }, Qt::QueuedConnection);
