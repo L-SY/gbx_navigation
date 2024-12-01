@@ -22,7 +22,7 @@ namespace cloud_filter
 class CloudTransitNodelet : public nodelet::Nodelet
 {
 public:
-  CloudTransitNodelet() {}
+  CloudTransitNodelet() : tf_listener_(tf_buffer_) {}
 
 private:
   virtual void onInit()
@@ -53,6 +53,14 @@ private:
     private_nh_.param("publish_ground", publish_ground_, false);
     private_nh_.param("use_voxel_filter", use_voxel_filter_, true);
     private_nh_.param("use_radius_filter", use_radius_filter_, true);
+
+    // 打印初始参数
+    NODELET_INFO("Initialized with parameters:");
+    NODELET_INFO("Z range: [%f, %f]", min_z_, max_z_);
+    NODELET_INFO("X range: [%f, %f]", min_x_, max_x_);
+    NODELET_INFO("Y range: [%f, %f]", min_y_, max_y_);
+    NODELET_INFO("Leaf size: %f", leaf_size_);
+    NODELET_INFO("Radius filter: max_radius=%f, min_neighbors=%d", max_radius_, min_neighbors_);
 
     // 设置订阅和发布
     point_cloud_sub_ = nh_.subscribe(input_topic_, 1, &CloudTransitNodelet::pointCloudCallback, this);
@@ -89,78 +97,139 @@ private:
     use_radius_filter_ = config.use_radius_filter;
   }
 
-  void removeGround(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-                    pcl::PointCloud<pcl::PointXYZ>::Ptr ground_cloud,
-                    pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground_cloud) {
-    pcl::ProgressiveMorphologicalFilter<pcl::PointXYZ> pmf;
-    pmf.setInputCloud(cloud);
-    pmf.setMaxWindowSize(max_window_size_);
-    pmf.setSlope(slope_);
-    pmf.setInitialDistance(initial_distance_);
-    pmf.setMaxDistance(max_distance_);
+  bool removeGround(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud,
+                    pcl::PointCloud<pcl::PointXYZ>::Ptr& ground_cloud,
+                    pcl::PointCloud<pcl::PointXYZ>::Ptr& non_ground_cloud) {
+    if (cloud->empty()) {
+      NODELET_WARN("Input cloud is empty in removeGround!");
+      return false;
+    }
 
-    pcl::PointIndices::Ptr ground_indices(new pcl::PointIndices);
-    pmf.extract(ground_indices->indices);
+    try {
+      pcl::ProgressiveMorphologicalFilter<pcl::PointXYZ> pmf;
+      pmf.setInputCloud(cloud);
+      pmf.setMaxWindowSize(max_window_size_);
+      pmf.setSlope(slope_);
+      pmf.setInitialDistance(initial_distance_);
+      pmf.setMaxDistance(max_distance_);
 
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
-    extract.setInputCloud(cloud);
-    extract.setIndices(ground_indices);
+      pcl::PointIndices::Ptr ground_indices(new pcl::PointIndices);
+      pmf.extract(ground_indices->indices);
 
-    extract.setNegative(false);
-    extract.filter(*ground_cloud);
+      if (ground_indices->indices.empty()) {
+        NODELET_WARN("No ground points detected!");
+        return false;
+      }
 
-    extract.setNegative(true);
-    extract.filter(*non_ground_cloud);
+      pcl::ExtractIndices<pcl::PointXYZ> extract;
+      extract.setInputCloud(cloud);
+      extract.setIndices(ground_indices);
+
+      extract.setNegative(false);
+      extract.filter(*ground_cloud);
+
+      extract.setNegative(true);
+      extract.filter(*non_ground_cloud);
+
+      return true;
+    }
+    catch (const std::exception& e) {
+      NODELET_ERROR("Exception in ground removal: %s", e.what());
+      return false;
+    }
   }
 
   void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& input) {
+    if (input->data.empty()) {
+      NODELET_WARN("Received empty point cloud message!");
+      return;
+    }
+
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::fromROSMsg(*input, *cloud);
+
+    try {
+      pcl::fromROSMsg(*input, *cloud);
+    }
+    catch (const std::exception& e) {
+      NODELET_ERROR("Error converting ROS message to PCL: %s", e.what());
+      return;
+    }
+
+    NODELET_DEBUG("Initial point cloud size: %lu", cloud->size());
+
+    if (cloud->empty()) {
+      NODELET_WARN("Converted point cloud is empty!");
+      return;
+    }
 
     // Z轴过滤
-    pcl::PassThrough<pcl::PointXYZ> pass_z;
-    pass_z.setInputCloud(cloud);
-    pass_z.setFilterFieldName("z");
-    pass_z.setFilterLimits(min_z_, max_z_);
-    pass_z.filter(*cloud);
+    try {
+      pcl::PassThrough<pcl::PointXYZ> pass_z;
+      pass_z.setInputCloud(cloud);
+      pass_z.setFilterFieldName("z");
+      pass_z.setFilterLimits(min_z_, max_z_);
+      pass_z.filter(*cloud);
 
-    // // X轴过滤
-    // pcl::PassThrough<pcl::PointXYZ> pass_x;
-    // pass_x.setInputCloud(cloud);
-    // pass_x.setFilterFieldName("x");
-    // pass_x.setFilterLimits(min_x_, max_x_);
-    // pass_x.filter(*cloud);
-    //
-    // // Y轴过滤
-    // pcl::PassThrough<pcl::PointXYZ> pass_y;
-    // pass_y.setInputCloud(cloud);
-    // pass_y.setFilterFieldName("y");
-    // pass_y.setFilterLimits(min_y_, max_y_);
-    // pass_y.filter(*cloud);
+      NODELET_DEBUG("After Z filter: %lu points", cloud->size());
+
+      if (cloud->empty()) {
+        NODELET_WARN("Point cloud empty after Z filtering! Check min_z_(%f) and max_z_(%f)", min_z_, max_z_);
+        return;
+      }
+    }
+    catch (const std::exception& e) {
+      NODELET_ERROR("Error in Z filtering: %s", e.what());
+      return;
+    }
 
     // 体素滤波（可选）
-    if (use_voxel_filter_) {
-      pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
-      voxel_filter.setInputCloud(cloud);
-      voxel_filter.setLeafSize(leaf_size_, leaf_size_, leaf_size_);
-      voxel_filter.filter(*cloud);
+    if (use_voxel_filter_ && !cloud->empty()) {
+      try {
+        pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
+        voxel_filter.setInputCloud(cloud);
+        voxel_filter.setLeafSize(leaf_size_, leaf_size_, leaf_size_);
+        voxel_filter.filter(*cloud);
+
+        NODELET_DEBUG("After voxel filter: %lu points", cloud->size());
+
+        if (cloud->empty()) {
+          NODELET_WARN("Point cloud empty after voxel filtering! Check leaf_size_(%f)", leaf_size_);
+          return;
+        }
+      }
+      catch (const std::exception& e) {
+        NODELET_ERROR("Error in voxel filtering: %s", e.what());
+        return;
+      }
     }
 
     // 半径滤波（可选）
-    if (use_radius_filter_) {
-      pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
-      radius_filter.setInputCloud(cloud);
-      radius_filter.setRadiusSearch(max_radius_);
-      radius_filter.setMinNeighborsInRadius(min_neighbors_);
-      radius_filter.filter(*cloud);
+    if (use_radius_filter_ && !cloud->empty()) {
+      try {
+        pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
+        radius_filter.setInputCloud(cloud);
+        radius_filter.setRadiusSearch(max_radius_);
+        radius_filter.setMinNeighborsInRadius(min_neighbors_);
+        radius_filter.filter(*cloud);
+
+        NODELET_DEBUG("After radius filter: %lu points", cloud->size());
+
+        if (cloud->empty()) {
+          NODELET_WARN("Point cloud empty after radius filtering! Check max_radius_(%f) and min_neighbors_(%d)",
+                       max_radius_, min_neighbors_);
+          return;
+        }
+      }
+      catch (const std::exception& e) {
+        NODELET_ERROR("Error in radius filtering: %s", e.what());
+        return;
+      }
     }
 
-    tf2_ros::Buffer tfBuffer;
-    tf2_ros::TransformListener tfListener(tfBuffer);
     geometry_msgs::TransformStamped transformStamped;
 
     try {
-      transformStamped = tfBuffer.lookupTransform(
+      transformStamped = tf_buffer_.lookupTransform(
           frame_id_, input->header.frame_id,
           ros::Time(0), ros::Duration(1.0));
     }
@@ -173,48 +242,70 @@ private:
       pcl::PointCloud<pcl::PointXYZ>::Ptr ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
       pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
-      removeGround(cloud, ground_cloud, non_ground_cloud);
+      if (!removeGround(cloud, ground_cloud, non_ground_cloud)) {
+        NODELET_WARN("Ground removal failed!");
+        return;
+      }
 
-      sensor_msgs::PointCloud2 output_non_ground;
-      pcl::toROSMsg(*non_ground_cloud, output_non_ground);
-      output_non_ground.header = input->header;
+      try {
+        sensor_msgs::PointCloud2 output_non_ground;
+        pcl::toROSMsg(*non_ground_cloud, output_non_ground);
+        output_non_ground.header = input->header;
 
-      sensor_msgs::PointCloud2 transformed_non_ground;
-      tf2::doTransform(output_non_ground, transformed_non_ground, transformStamped);
-      transformed_non_ground.header.frame_id = frame_id_;
-      transformed_non_ground.header.stamp = ros::Time::now();
-      point_cloud_pub_.publish(transformed_non_ground);
+        sensor_msgs::PointCloud2 transformed_non_ground;
+        tf2::doTransform(output_non_ground, transformed_non_ground, transformStamped);
+        transformed_non_ground.header.frame_id = frame_id_;
+        transformed_non_ground.header.stamp = ros::Time::now();
+        point_cloud_pub_.publish(transformed_non_ground);
 
-      if (publish_ground_) {
-        sensor_msgs::PointCloud2 output_ground;
-        pcl::toROSMsg(*ground_cloud, output_ground);
-        output_ground.header = input->header;
+        if (publish_ground_ && !ground_cloud->empty()) {
+          sensor_msgs::PointCloud2 output_ground;
+          pcl::toROSMsg(*ground_cloud, output_ground);
+          output_ground.header = input->header;
 
-        sensor_msgs::PointCloud2 transformed_ground;
-        tf2::doTransform(output_ground, transformed_ground, transformStamped);
-        transformed_ground.header.frame_id = frame_id_;
-        transformed_ground.header.stamp = ros::Time::now();
-        ground_cloud_pub_.publish(transformed_ground);
+          sensor_msgs::PointCloud2 transformed_ground;
+          tf2::doTransform(output_ground, transformed_ground, transformStamped);
+          transformed_ground.header.frame_id = frame_id_;
+          transformed_ground.header.stamp = ros::Time::now();
+          ground_cloud_pub_.publish(transformed_ground);
+        }
+      }
+      catch (const std::exception& e) {
+        NODELET_ERROR("Error publishing ground/non-ground clouds: %s", e.what());
+        return;
       }
     }
     else {
-      sensor_msgs::PointCloud2 output_cloud;
-      pcl::toROSMsg(*cloud, output_cloud);
-      tf2::doTransform(output_cloud, output_cloud, transformStamped);
-      output_cloud.header.frame_id = frame_id_;
-      output_cloud.header.stamp = ros::Time::now();
-      point_cloud_pub_.publish(output_cloud);
+      try {
+        sensor_msgs::PointCloud2 output_cloud;
+        pcl::toROSMsg(*cloud, output_cloud);
+        output_cloud.header = input->header;
+
+        sensor_msgs::PointCloud2 transformed_cloud;
+        tf2::doTransform(output_cloud, transformed_cloud, transformStamped);
+        transformed_cloud.header.frame_id = frame_id_;
+        transformed_cloud.header.stamp = ros::Time::now();
+        point_cloud_pub_.publish(transformed_cloud);
+      }
+      catch (const std::exception& e) {
+        NODELET_ERROR("Error publishing filtered cloud: %s", e.what());
+        return;
+      }
     }
 
     rate_->sleep();
   }
 
+private:
   ros::NodeHandle nh_;
   ros::NodeHandle private_nh_;
   ros::Subscriber point_cloud_sub_;
   ros::Publisher point_cloud_pub_;
   ros::Publisher ground_cloud_pub_;
   ros::Rate* rate_;
+
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
 
   dynamic_reconfigure::Server<navigation_tools::CloudFilterConfig>* server_;
   dynamic_reconfigure::Server<navigation_tools::CloudFilterConfig>::CallbackType f_;
