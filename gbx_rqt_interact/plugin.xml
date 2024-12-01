@@ -1,0 +1,15 @@
+<library path="lib/libgbx_rqt_interact">
+    <class name="gbx_rqt_interact" type="gbx_rqt_interact::MainWindow" base_class_type="rqt_gui_cpp::Plugin">
+        <description>
+            Robot control interface for GBX
+        </description>
+        <qtgui>
+            <group>
+                <label>Robot Control</label>
+            </group>
+            <label>GBX Interact</label>
+            <icon type="theme">system-help</icon>
+            <statustip>GBX robot interaction interface</statustip>
+        </qtgui>
+    </class>
+</library>
