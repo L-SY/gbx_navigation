@@ -1,3 +1,4 @@
+// serial_node.h
 #pragma once
 
 #include <QThread>
@@ -43,6 +44,9 @@ public slots:
   void UpdateUI();
   void SendTrajectoryRequest(const QString& path_name);
 
+signals:
+  void requestUIUpdate();
+
 private:
   Ui::MainWindow* mainWindow_ui;
   QSerialPort* serial;
@@ -61,12 +65,6 @@ private:
   ros::Publisher door_state_pub_;
   ros::Subscriber cabinet_content_sub_;
 
-  struct DoorState {
-    bool is_open;
-    ros::Time last_changed;
-    std::string status;
-  };
-  std::vector<DoorState> previous_door_states_;
   std::vector<navigation_msgs::CabinetContent> current_contents_;
 
   void readSerialData();
