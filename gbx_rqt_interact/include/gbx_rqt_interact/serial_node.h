@@ -6,7 +6,6 @@
 #include <QPushButton>
 #include <QString>
 #include <ros/ros.h>
-
 #include <navigation_msgs/pub_trajectory.h>
 #include <navigation_msgs/CabinetDoorArray.h>
 #include <navigation_msgs/CabinetContentArray.h>
@@ -48,17 +47,9 @@ signals:
   void requestUIUpdate();
 
 private:
-  struct DoorState {
-    bool is_open;
-    ros::Time last_changed;
-    std::string status;
-  };
-  std::vector<DoorState> previous_door_states_;
-  std::vector<navigation_msgs::CabinetContent> previous_contents_;
-
   Ui::MainWindow* mainWindow_ui;
   QSerialPort* serial;
-  QStringList labels = {"E3_121", "2F_sl_go", "2F_sl_back", "D", "E", "F"};
+  QStringList labels = {"A", "B", "C", "D", "E", "F"};
 
   bool show_box_flag;
   bool show_dest_flag;
@@ -70,19 +61,20 @@ private:
 
   ros::NodeHandle* nh_;
   ros::ServiceClient trajectory_client_;
-
   ros::Publisher door_state_pub_;
-  ros::Publisher cabinet_content_pub_;
   ros::Subscriber cabinet_content_sub_;
 
+  struct DoorState {
+    bool is_open;
+    ros::Time last_changed;
+    std::string status;
+  };
+  std::vector<DoorState> previous_door_states_;
   std::vector<navigation_msgs::CabinetContent> current_contents_;
-  ros::Time last_publish_time_;
-
-  void publishDoorStates();
-  void cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg);
-  void updateCabinetDisplay();
 
   void readSerialData();
+  void publishDoorStates();
+  void cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg);
 };
 
 } // namespace gbx_rqt_interact
