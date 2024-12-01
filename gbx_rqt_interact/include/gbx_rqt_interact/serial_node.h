@@ -1,4 +1,3 @@
-// serial_node.h
 #pragma once
 
 #include <QThread>
@@ -10,6 +9,7 @@
 #include <navigation_msgs/pub_trajectory.h>
 #include <navigation_msgs/CabinetDoorArray.h>
 #include <navigation_msgs/CabinetContentArray.h>
+#include <QTimer>
 
 namespace Ui {
 class MainWindow;
@@ -32,17 +32,12 @@ public:
 protected:
   void run() override;
 
-public slots:
-  void ChangeBox();
-  void ChangeDest();
-  void OpenBox1();
-  void OpenBox2();
-  void OpenBox3();
-  void OpenBox4();
-  void OpenBox5();
-  void OpenBox6();
+private slots:
+  void handleButtonClick(int buttonIndex);
+  void handleBoxButtonClick();
+  void handleDestButtonClick();
   void UpdateUI();
-  void SendTrajectoryRequest(const QString& path_name);
+  void processSerialData();
 
 signals:
   void requestUIUpdate();
@@ -51,6 +46,7 @@ private:
   Ui::MainWindow* mainWindow_ui;
   QSerialPort* serial;
   QStringList labels = {"A", "B", "C", "D", "E", "F"};
+  QTimer* updateTimer;
 
   bool show_box_flag;
   bool show_dest_flag;
@@ -59,6 +55,8 @@ private:
 
   uint8_t box_fdb_state[8];
   uint8_t box_set_state[8];
+  uint8_t last_box_state[8];
+  std::vector<navigation_msgs::CabinetContent> last_contents_;
 
   ros::NodeHandle* nh_;
   ros::ServiceClient trajectory_client_;
@@ -70,6 +68,11 @@ private:
   void readSerialData();
   void publishDoorStates();
   void cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg);
+  void updateButton(int index);
+  void sendBoxCommand(int boxIndex);
+  void sendTrajectoryRequest(const QString& path_name);
+  bool hasStateChanged() const;
+  bool hasContentsChanged() const;
 };
 
 } // namespace gbx_rqt_interact
