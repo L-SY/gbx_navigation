@@ -3,51 +3,76 @@
 //
 
 #include <ros/ros.h>
-#include "gbx_rfid/gbx_rfid.h"
 #include <std_msgs/String.h>
+#include "gbx_rfid/rfid_reader_node.h"
+#include <vector>
 
 int main(int argc, char** argv) {
-  ros::init(argc, argv, "rfid_node");
+  ros::init(argc, argv, "multi_rfid_node");
   ros::NodeHandle nh("~");
 
-  gbx_rfid::GbxRfid rfid;
-
-  std::string port;
-  int baudrate;
-  nh.param<std::string>("port", port, "/dev/ttyUSB0");
-  nh.param<int>("baudrate", baudrate, 115200);
-
-  if(!rfid.init(port, baudrate)) {
-    ROS_ERROR("Failed to initialize RFID reader");
+  XmlRpc::XmlRpcValue readers_config;
+  if (!nh.getParam("readers", readers_config)) {
+    ROS_ERROR("No RFID readers configured!");
     return -1;
   }
 
-  ros::Publisher tag_pub = nh.advertise<std_msgs::String>("rfid_tag", 10);
+  if (readers_config.getType() != XmlRpc::XmlRpcValue::TypeArray) {
+    ROS_ERROR("readers parameter should be an array!");
+    return -1;
+  }
 
-  ros::Rate rate(10);
-  while(ros::ok()) {
-    if(rfid.startReading(gbx_rfid::SINGLE_MODE)) {
-      gbx_rfid::RfidData data;
-      if(rfid.getLatestData(data)) {
-        std::string raw_epc = data.epc;
+  TagManager tag_manager;
+  std::vector<std::unique_ptr<RfidReaderNode>> readers;
+  ros::Publisher status_pub = nh.advertise<std_msgs::String>("tags_status", 10);
 
-        std::string ascii_epc;
-        for(size_t i = 0; i < raw_epc.length(); i += 2) {
-          uint8_t byte = std::stoi(raw_epc.substr(i,2), nullptr, 16);
-          ascii_epc += isprint(byte) ? (char)byte : '.';
-        }
-        ascii_epc = ascii_epc.substr(0, 8);
-
-        std_msgs::String msg;
-        msg.data = "Raw EPC: " + raw_epc +
-                   ", ASCII EPC: " + ascii_epc +
-                   ", RSSI: " + std::to_string(data.rssi) +
-                   ", Time: " + data.timestamp;
-        tag_pub.publish(msg);
-      }
+  for (int i = 0; i < readers_config.size(); ++i) {
+    if (readers_config[i].getType() != XmlRpc::XmlRpcValue::TypeStruct) {
+      ROS_ERROR("Each reader config should be a struct!");
+      continue;
     }
+
+    std::string reader_id = static_cast<std::string>(readers_config[i]["id"]);
+    std::string port = static_cast<std::string>(readers_config[i]["port"]);
+    int baudrate = static_cast<int>(readers_config[i]["baudrate"]);
+
+    auto reader = std::make_unique<RfidReaderNode>(reader_id, port, baudrate, tag_manager);
+    if (reader->init()) {
+      reader->start();
+      readers.push_back(std::move(reader));
+      ROS_INFO("Started RFID reader %s on port %s", reader_id.c_str(), port.c_str());
+    }
+  }
+
+  if (readers.empty()) {
+    ROS_ERROR("No RFID readers were successfully initialized!");
+    return -1;
+  }
+
+  ros::Rate rate(5);
+  while (ros::ok()) {
+    tag_manager.cleanExpiredTags(5.0);
+
+    auto current_tags = tag_manager.getCurrentTags();
+    std::stringstream ss;
+    ss << "Current tags:\n";
+    for (const auto& tag : current_tags) {
+      ss << "EPC: " << tag.first
+         << ", Reader: " << tag.second.reader_id
+         << ", RSSI: " << tag.second.rssi
+         << ", Last seen: " << tag.second.last_seen << "\n";
+    }
+
+    std_msgs::String msg;
+    msg.data = ss.str();
+    status_pub.publish(msg);
+
     ros::spinOnce();
     rate.sleep();
+  }
+
+  for (auto& reader : readers) {
+    reader->stop();
   }
 
   return 0;

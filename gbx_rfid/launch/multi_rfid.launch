@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="your_package" type="multi_rfid_node" name="multi_rfid_node" output="screen">
+        <rosparam command="load" file="$(find gbx_rfid)/config/rfid_config.yaml" />
+    </node>
+</launch>
