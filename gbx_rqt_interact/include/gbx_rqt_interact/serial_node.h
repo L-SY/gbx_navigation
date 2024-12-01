@@ -1,14 +1,15 @@
 #pragma once
 
-#include <QObject>
+#include <QThread>
 #include <QSerialPort>
+#include <QObject>
 #include <QPushButton>
 #include <QString>
-#include <QTimer>
 #include <ros/ros.h>
 #include <navigation_msgs/pub_trajectory.h>
 #include <navigation_msgs/CabinetDoorArray.h>
 #include <navigation_msgs/CabinetContentArray.h>
+#include <QTimer>
 
 namespace Ui {
 class MainWindow;
@@ -16,7 +17,7 @@ class MainWindow;
 
 namespace gbx_rqt_interact {
 
-class SerialNode : public QObject
+class SerialNode : public QThread
 {
   Q_OBJECT
 public:
@@ -27,7 +28,9 @@ public:
   void DeviceInit();
   void UiInit();
   void ROSInit();
-  void start();
+
+protected:
+  void run() override;
 
 private slots:
   void handleButtonClick(int buttonIndex);
@@ -35,7 +38,6 @@ private slots:
   void handleDestButtonClick();
   void UpdateUI();
   void processSerialData();
-  void processROSData();
 
 signals:
   void requestUIUpdate();
@@ -44,8 +46,7 @@ private:
   Ui::MainWindow* mainWindow_ui;
   QSerialPort* serial;
   QStringList labels = {"A", "B", "C", "D", "E", "F"};
-  QTimer* rosTimer;
-  QTimer* serialTimer;
+  QTimer* updateTimer;
 
   bool show_box_flag;
   bool show_dest_flag;

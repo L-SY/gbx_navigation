@@ -31,14 +31,20 @@ MainWindow::~MainWindow()
 
 void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
 {
+  // 创建QMainWindow
   widget_ = new QMainWindow();
 
+  // 设置UI
   ui->setupUi(widget_);
 
+  // 设置背景
   setupBackground();
 
+  // 初始化串口节点
   serial_node->Init(ui);
+  serial_node->start();
 
+  // 添加窗口到rqt
   context.addWidget(widget_);
 }
 
@@ -65,6 +71,8 @@ void MainWindow::setupBackground()
 void MainWindow::shutdownPlugin()
 {
   if (serial_node) {
+    serial_node->quit();
+    serial_node->wait();
     delete serial_node;
     serial_node = nullptr;
   }
