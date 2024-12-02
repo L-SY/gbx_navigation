@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>800</width>
+                <height>600</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>Delivery Robot Interface</string>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                    <widget class="QStackedWidget" name="stackedWidget">
+                        <!-- Main Page -->
+                        <widget class="QWidget" name="mainPage">
+                            <layout class="QVBoxLayout" name="mainLayout">
+                                <item>
+                                    <widget class="QLabel" name="imageLabel">
+                                        <property name="minimumSize">
+                                            <size>
+                                                <width>400</width>
+                                                <height>300</height>
+                                            </size>
+                                        </property>
+                                        <property name="text">
+                                            <string>Image Placeholder</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <layout class="QHBoxLayout" name="buttonLayout">
+                                        <item>
+                                            <widget class="QPushButton" name="pickupButton">
+                                                <property name="minimumSize">
+                                                    <size>
+                                                        <width>200</width>
+                                                        <height>100</height>
+                                                    </size>
+                                                </property>
+                                                <property name="font">
+                                                    <font>
+                                                        <pointsize>24</pointsize>
+                                                        <bold>true</bold>
+                                                    </font>
+                                                </property>
+                                                <property name="text">
+                                                    <string>取件</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QPushButton" name="deliveryButton">
+                                                <property name="minimumSize">
+                                                    <size>
+                                                        <width>200</width>
+                                                        <height>100</height>
+                                                    </size>
+                                                </property>
+                                                <property name="font">
+                                                    <font>
+                                                        <pointsize>24</pointsize>
+                                                        <bold>true</bold>
+                                                    </font>
+                                                </property>
+                                                <property name="text">
+                                                    <string>寄件</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </item>
+                            </layout>
+                        </widget>
+
+                        <!-- Delivery Phone Page -->
+                        <widget class="QWidget" name="deliveryPhonePage">
+                            <layout class="QVBoxLayout" name="deliveryLayout">
+                                <item>
+                                    <widget class="QLabel" name="deliveryPhoneLabel">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>18</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="text">
+                                            <string>请输入寄件人完整手机号:</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QLineEdit" name="deliveryPhoneEdit">
+                                        <property name="minimumSize">
+                                            <size>
+                                                <width>0</width>
+                                                <height>40</height>
+                                            </size>
+                                        </property>
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>18</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="maxLength">
+                                            <number>11</number>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                        <property name="readOnly">
+                                            <bool>true</bool>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QWidget" name="numpadWidget" native="true">
+                                        <layout class="QGridLayout" name="numpadLayout"/>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+
+                        <!-- Box Selection Page -->
+                        <widget class="QWidget" name="boxSelectionPage">
+                            <layout class="QVBoxLayout" name="boxLayout">
+                                <item>
+                                    <widget class="QLabel" name="boxLabel">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>18</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="text">
+                                            <string>请选择快递柜:</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QWidget" name="boxButtonsWidget" native="true">
+                                        <layout class="QGridLayout" name="boxButtonsLayout">
+                                            <!-- Box buttons will be added in code -->
+                                        </layout>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+
+                        <!-- Destination Selection Page -->
+                        <widget class="QWidget" name="destinationPage">
+                            <layout class="QVBoxLayout" name="destinationLayout">
+                                <item>
+                                    <widget class="QLabel" name="mapLabel">
+                                        <property name="minimumSize">
+                                            <size>
+                                                <width>600</width>
+                                                <height>400</height>
+                                            </size>
+                                        </property>
+                                        <property name="text">
+                                            <string>Map Placeholder</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QLabel" name="destinationLabel">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>18</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="text">
+                                            <string>请选择目的地:</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QWidget" name="destinationButtonsWidget" native="true">
+                                        <layout class="QGridLayout" name="destinationButtonsLayout">
+                                            <!-- Destination buttons will be added in code -->
+                                        </layout>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+
+                        <!-- Pickup Phone Page -->
+                        <widget class="QWidget" name="pickupPhonePage">
+                            <layout class="QVBoxLayout" name="pickupLayout">
+                                <item>
+                                    <widget class="QLabel" name="pickupPhoneLabel">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>18</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="text">
+                                            <string>请输入收件人手机号后四位:</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QLineEdit" name="pickupPhoneEdit">
+                                        <property name="minimumSize">
+                                            <size>
+                                                <width>0</width>
+                                                <height>40</height>
+                                            </size>
+                                        </property>
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>18</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="maxLength">
+                                            <number>4</number>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                        <property name="readOnly">
+                                            <bool>true</bool>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QWidget" name="pickupNumpadWidget" native="true">
+                                        <layout class="QGridLayout" name="pickupNumpadLayout"/>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+
+                        <!-- Box Open Page -->
+                        <widget class="QWidget" name="boxOpenPage">
+                            <layout class="QVBoxLayout" name="boxOpenLayout">
+                                <item>
+                                    <widget class="QLabel" name="boxOpenLabel">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>24</pointsize>
+                                                <bold>true</bold>
+                                            </font>
+                                        </property>
+                                        <property name="text">
+                                            <string>柜门已打开
+                                                取/放物品后请关门</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+
+                        <!-- Door Closed Page -->
+                        <widget class="QWidget" name="doorClosedPage">
+                            <layout class="QVBoxLayout" name="doorClosedLayout">
+                                <item>
+                                    <widget class="QLabel" name="doorClosedLabel">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>24</pointsize>
+                                                <bold>true</bold>
+                                            </font>
+                                        </property>
+                                        <property name="text">
+                                            <string>柜门已关闭
+                                                感谢使用!</string>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+
+                    </widget>
+                </item>
+            </layout>
+        </widget>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>

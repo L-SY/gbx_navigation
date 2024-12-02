@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<library path="lib/libgbx_delivery_rqt">
+    <class name="gbx_delivery_rqt/MainWindow"
+           type="gbx_delivery_rqt::MainWindow"
+           base_class_type="rqt_gui_cpp::Plugin">
+        <description>
+            A GUI plugin for delivery robot control.
+        </description>
+        <qtgui>
+            <group>
+                <label>Robot</label>
+                <icon type="theme">folder</icon>
+                <statustip>Plugins related to robots.</statustip>
+            </group>
+            <label>Delivery Control</label>
+            <icon type="theme">preferences-system</icon>
+            <statustip>A GUI plugin for delivery robot control.</statustip>
+        </qtgui>
+    </class>
+</library>
