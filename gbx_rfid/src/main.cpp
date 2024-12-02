@@ -190,37 +190,59 @@ private:
     std::string cabinet_id = "cabinet_" + last_open_door_id_.substr(5);
 
     // 处理单个柜子的变化
+    std::set<std::string> all_current_tags;
     for (const auto& reader_pair : readers_) {
       const std::string& reader_id = reader_pair.first;
-      std::set<std::string> current_set = current_tags_[reader_id];
-      std::set<std::string> previous_set = tags_before_open_[reader_id];
+      all_current_tags.insert(current_tags_[reader_id].begin(), current_tags_[reader_id].end());
+    }
 
-      std::set<std::string> added_tags;
-      std::set_difference(current_set.begin(), current_set.end(),
-                          previous_set.begin(), previous_set.end(),
-                          std::inserter(added_tags, added_tags.begin()));
+    // 获取变化前的柜子内容
+    std::set<std::string> previous_content = cabinet_contents_[cabinet_id];
 
-      if (!added_tags.empty()) {
-        // 发布单个柜子的内容变化
-        navigation_msgs::CabinetContentArray single_msg;
-        single_msg.header.stamp = ros::Time::now();
+    // 计算新增和移除的标签
+    std::set<std::string> added_tags;
+    std::set<std::string> removed_tags;
 
-        for (const auto& tag : added_tags) {
-          navigation_msgs::CabinetContent content;
-          content.cabinet_id = cabinet_id;
-          content.box.box_id = tag;
-          single_msg.cabinets.push_back(content);
-        }
+    // 找出新增的标签
+    std::set_difference(all_current_tags.begin(), all_current_tags.end(),
+                        previous_content.begin(), previous_content.end(),
+                        std::inserter(added_tags, added_tags.begin()));
 
-        if (!single_msg.cabinets.empty()) {
-          single_content_pub_.publish(single_msg);
-          ROS_INFO_STREAM("Published " << added_tags.size() << " new items in cabinet " << cabinet_id);
-        }
+    // 找出移除的标签
+    std::set_difference(previous_content.begin(), previous_content.end(),
+                        all_current_tags.begin(), all_current_tags.end(),
+                        std::inserter(removed_tags, removed_tags.begin()));
 
-        // 更新总体内容记录
-        cabinet_contents_[cabinet_id].insert(added_tags.begin(), added_tags.end());
+    // 更新柜子内容
+    cabinet_contents_[cabinet_id] = all_current_tags;
+
+    // 发布单个柜子的内容变化
+    navigation_msgs::CabinetContentArray single_msg;
+    single_msg.header.stamp = ros::Time::now();
+
+    for (const auto& tag : all_current_tags) {
+      navigation_msgs::CabinetContent content;
+      content.cabinet_id = cabinet_id;
+      content.box.box_id = tag;
+      single_msg.cabinets.push_back(content);
+    }
+
+    // 打印变化信息
+    if (!added_tags.empty()) {
+      ROS_INFO_STREAM("Cabinet " << cabinet_id << " new items:");
+      for (const auto& tag : added_tags) {
+        ROS_INFO_STREAM("  + " << tag);
       }
     }
+    if (!removed_tags.empty()) {
+      ROS_INFO_STREAM("Cabinet " << cabinet_id << " removed items:");
+      for (const auto& tag : removed_tags) {
+        ROS_INFO_STREAM("  - " << tag);
+      }
+    }
+
+    // 发布单个柜子的完整内容
+    single_content_pub_.publish(single_msg);
 
     // 发布所有柜子的内容
     publishAllCabinetContents();
@@ -234,14 +256,12 @@ private:
     for (int i = 1; i <= 6; ++i) {
       std::string cabinet_id = "cabinet_" + std::to_string(i);
 
-      // 只有当柜子中有内容时才添加到消息中
-      if (!cabinet_contents_[cabinet_id].empty()) {
-        for (const auto& tag : cabinet_contents_[cabinet_id]) {
-          navigation_msgs::CabinetContent content;
-          content.cabinet_id = cabinet_id;
-          content.box.box_id = tag;
-          msg.cabinets.push_back(content);
-        }
+      // 包含每个柜子的全部内容，即使是空的
+      for (const auto& tag : cabinet_contents_[cabinet_id]) {
+        navigation_msgs::CabinetContent content;
+        content.cabinet_id = cabinet_id;
+        content.box.box_id = tag;
+        msg.cabinets.push_back(content);
       }
     }
 
@@ -269,15 +289,20 @@ private:
 
     if (any_door_open) {
       if (!was_door_open_) {
-        auto previous_tags = current_tags_;
-        tags_before_open_ = previous_tags;
+        // 门刚刚打开，清空当前读取的标签并记录之前的状态
+        tags_before_open_ = current_tags_;
+        for (auto& reader_pair : current_tags_) {
+          reader_pair.second.clear();
+        }
         was_door_open_ = true;
         open_door_id_ = newly_opened_door;
         last_open_door_id_ = newly_opened_door;
         ROS_INFO("Door %s opened", newly_opened_door.c_str());
       }
     } else if (was_door_open_) {
+      // 门刚刚关闭
       was_door_open_ = false;
+      ROS_INFO("Door %s closed", last_open_door_id_.c_str());
       processTagChanges();
       open_door_id_ = "";
     }
@@ -297,15 +322,28 @@ private:
 
       gbx_rfid::RfidData data;
       if (reader_pair.second->getLatestData(data)) {
+        std::string ascii_epc = convertEpcToAscii(data.epc);
+
         if (data.rssi < rssi_threshold_) {
           continue;
         }
 
-        std::string ascii_epc = convertEpcToAscii(data.epc);
-
         // 检查是否为系统标签
         if (system_tags_.find(ascii_epc) != system_tags_.end()) {
-          continue;  // 是系统标签，跳过
+          continue;
+        }
+
+        // 检查标签是否已经在当前柜子中
+        std::string current_cabinet_id = "cabinet_" + open_door_id_.substr(5);
+        bool tag_in_cabinet = false;
+        if (cabinet_contents_.find(current_cabinet_id) != cabinet_contents_.end()) {
+          tag_in_cabinet = cabinet_contents_[current_cabinet_id].find(ascii_epc) != cabinet_contents_[current_cabinet_id].end();
+        }
+
+        // 只有当标签是新的且不在当前柜子中时才打印
+        if (!tag_in_cabinet) {
+          ROS_INFO("New tag detected - Reader %s read tag: %s (Raw: %s), RSSI: %d",
+                   reader_id.c_str(), ascii_epc.c_str(), data.epc.c_str(), data.rssi);
         }
 
         // 更新标签读取记录
@@ -319,7 +357,7 @@ private:
           current_tags_[reader_id].insert(ascii_epc);
 
           std_msgs::String msg;
-          msg.data = "Reader " + reader_id +
+          msg.data = "Reader " + reader_id + " read tag: " + ascii_epc +
                      ", RSSI: " + std::to_string(data.rssi);
           tag_pub_.publish(msg);
         }
