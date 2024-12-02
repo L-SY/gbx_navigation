@@ -1,3 +1,4 @@
+// main.cpp
 #include "gbx_rfid/gbx_rfid.h"
 #include <XmlRpcException.h>
 #include <map>
@@ -25,25 +26,72 @@ public:
     content_pub_ = nh.advertise<navigation_msgs::CabinetContentArray>("/cabinet/contents", 10);
   }
 
+  ~RfidMonitor() {
+    // 确保所有读取器都停止读取并清理
+    for (auto& reader_pair : readers_) {
+      if (reader_pair.second) {
+        reader_pair.second->stopReading();
+      }
+    }
+    readers_.clear();
+  }
+
   bool init() {
     bool success = true;
+    std::vector<std::string> initialized_readers;
+    
     for (auto& config : reader_configs_) {
       auto rfid = std::make_unique<gbx_rfid::GbxRfid>();
+      ROS_INFO("Attempting to initialize reader %s on port %s", 
+               config.id.c_str(), config.port.c_str());
+      
       if (!rfid->init(config.port, config.baudrate)) {
         ROS_ERROR("Failed to initialize RFID reader on port %s", config.port.c_str());
         success = false;
-        continue;
+        // 清理之前初始化的读取器
+        for (const auto& reader_id : initialized_readers) {
+          if (readers_[reader_id]) {
+            readers_[reader_id]->stopReading();
+          }
+          readers_.erase(reader_id);
+        }
+        return false;
       }
+      
       readers_[config.id] = std::move(rfid);
-      ROS_INFO("Initialized RFID reader %s on port %s",
+      initialized_readers.push_back(config.id);
+      ROS_INFO("Successfully initialized RFID reader %s on port %s",
                config.id.c_str(), config.port.c_str());
     }
 
     if (success) {
       success = scanSystemTags();
+      if (!success) {
+        // 如果系统标签扫描失败，清理所有读取器
+        for (auto& reader_pair : readers_) {
+          if (reader_pair.second) {
+            reader_pair.second->stopReading();
+          }
+        }
+        readers_.clear();
+      }
     }
 
     return success;
+  }
+
+  void cleanup() {
+    ROS_INFO("Starting cleanup of RFID monitor...");
+    // 停止所有读取器
+    for (auto& reader_pair : readers_) {
+      if (reader_pair.second) {
+        ROS_INFO("Stopping reader %s", reader_pair.first.c_str());
+        reader_pair.second->stopReading();
+      }
+    }
+    // 清理读取器映射
+    readers_.clear();
+    ROS_INFO("Cleanup completed");
   }
 
   void run() {
@@ -55,6 +103,8 @@ public:
       ros::spinOnce();
       rate.sleep();
     }
+    // 程序结束时进行清理
+    cleanup();
   }
 
 private:
