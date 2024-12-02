@@ -249,8 +249,29 @@ private:
         ROS_INFO("Box %s placed in cabinet %s", detected_tag.c_str(), cabinet_id.c_str());
       }
     } else if (had_box) {
-      cabinet_contents_[cabinet_id] = "";
-      ROS_INFO("Box %s removed from cabinet %s", current_box.c_str(), cabinet_id.c_str());
+      bool box_still_there = false;
+      for (const auto& reader_pair : readers_) {
+        if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
+          continue;
+        }
+
+        gbx_rfid::RfidData data;
+        while (reader_pair.second->getLatestData(data)) {
+          std::string ascii_epc = convertEpcToAscii(data.epc);
+          if (ascii_epc == current_box) {
+            box_still_there = true;
+            break;
+          }
+        }
+        if (box_still_there) break;
+      }
+
+      if (!box_still_there) {
+        cabinet_contents_[cabinet_id] = "";
+        ROS_INFO("Box %s removed from cabinet %s", current_box.c_str(), cabinet_id.c_str());
+      } else {
+        ROS_INFO("Cabinet %s opened but box %s remained inside", cabinet_id.c_str(), current_box.c_str());
+      }
     }
 
     current_new_tag_.clear();
