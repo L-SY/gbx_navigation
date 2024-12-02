@@ -23,17 +23,17 @@ bool GbxRfid::init(const std::string& port, int baudrate, const SerialConfig& co
     // 初始化后等待设备稳定
     ros::Duration(serial_config_.init_delay / 1000.0).sleep();
 
-    // 尝试通信测试
-    if(!testCommunication()) {
-      ROS_ERROR("Communication test failed");
-      return false;
-    }
-
-    // 设置区域
-    if(!setRegion(CHINA_2_REGION)) {
-      ROS_ERROR("Failed to set region to China 2");
-      return false;
-    }
+    // // 尝试通信测试
+    // if(!testCommunication()) {
+    //   ROS_ERROR("Communication test failed");
+    //   return false;
+    // }
+    //
+    // // 设置区域
+    // if(!setRegion(CHINA_2_REGION)) {
+    //   ROS_ERROR("Failed to set region to China 2");
+    //   return false;
+    // }
 
     is_open_ = true;
 
