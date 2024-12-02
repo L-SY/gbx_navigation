@@ -27,13 +27,8 @@ public:
   }
 
   ~RfidMonitor() {
-    // 确保所有读取器都停止读取并清理
-    for (auto& reader_pair : readers_) {
-      if (reader_pair.second) {
-        reader_pair.second->stopReading();
-      }
-    }
-    readers_.clear();
+    cleanup();
+    ros::Duration(0.5).sleep();  // 确保所有清理操作都完成
   }
 
   bool init() {
@@ -82,16 +77,27 @@ public:
 
   void cleanup() {
     ROS_INFO("Starting cleanup of RFID monitor...");
-    // 停止所有读取器
-    for (auto& reader_pair : readers_) {
-      if (reader_pair.second) {
-        ROS_INFO("Stopping reader %s", reader_pair.first.c_str());
-        reader_pair.second->stopReading();
+
+    // 按照与初始化相反的顺序清理读取器
+    std::vector<std::string> reader_ids;
+    for (const auto& reader : readers_) {
+      reader_ids.push_back(reader.first);
+    }
+
+    // 反向遍历读取器进行清理
+    for (auto it = reader_ids.rbegin(); it != reader_ids.rend(); ++it) {
+      if (readers_[*it]) {
+        ROS_INFO_STREAM("Cleaning up reader " << *it);
+        readers_[*it]->stopReading();
+        ros::Duration(0.2).sleep();  // 给时间让停止命令生效
+        readers_[*it]->close();
+        ros::Duration(0.2).sleep();  // 给时间让关闭操作完成
       }
     }
-    // 清理读取器映射
+
+    // 清空读取器映射
     readers_.clear();
-    ROS_INFO("Cleanup completed");
+    ROS_INFO("RFID monitor cleanup completed");
   }
 
   void run() {
