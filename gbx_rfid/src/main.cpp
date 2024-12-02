@@ -220,6 +220,20 @@ private:
         current_new_tag_.insert(tag);
       }
     }
+
+    std_msgs::String msg;
+    if (!current_new_tag_.empty()) {
+      msg.data = *current_new_tag_.begin();
+    } else {
+      std::string current_cabinet_id = "cabinet_" + open_door_id_.substr(5);
+      std::string cabinet_tag = cabinet_contents_[current_cabinet_id];
+      if (!cabinet_tag.empty()) {
+        msg.data = cabinet_tag;
+      } else {
+        return;
+      }
+    }
+    tag_pub_.publish(msg);
   }
 
   void processTagChanges() {
