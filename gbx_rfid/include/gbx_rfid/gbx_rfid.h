@@ -1,7 +1,3 @@
-//
-// Created by lsy-cloude3.5 Sonnet on 24-11-25.
-//
-
 #pragma once
 #define FRAME_HEAD 0xBB
 #define FRAME_END  0x7E
@@ -53,15 +49,16 @@ public:
   bool initSerial(const std::string port, int baudrate);
   bool setRegion(uint8_t region);
   bool checkConnection();
+  bool testCommunication();
 
   void close();
 
-// Read
+  // Read
   bool startReading(READ_MODE mode = SINGLE_MODE, int retry_count = 1);
   bool stopReading();
   bool getLatestData(RfidData& data);
 
-//  Send
+  //  Send
   bool sendCommand(const std::vector<uint8_t>& cmd);
   bool sendCommand(const std::string& cmd_hex);
   std::vector<uint8_t> readResponse(int timeout_ms = 1000);
@@ -71,6 +68,7 @@ private:
   uint8_t calculateChecksum(const std::vector<uint8_t>& data);
   std::vector<uint8_t> hexStringToBytes(const std::string& hex);
   std::string bytesToHexString(const std::vector<uint8_t>& bytes);
+  std::string commandToHexString(const std::vector<uint8_t>& cmd);
 
   serial::Serial ser_;
   bool is_open_;
