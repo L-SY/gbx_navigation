@@ -212,14 +212,14 @@ private:
     just_closed_ = false;
   }
 
-  void publishSingleCabinetContent(const std::string& door_id,
-                                   const std::set<std::string>& tags,
-                                   const std::string& reader_id) {
+  void publishSingleCabinetContent(const std::string& cabinet_id,
+                                                const std::set<std::string>& tags,
+                                                const std::string& reader_id) {
     navigation_msgs::CabinetContentArray msg;
     msg.header.stamp = ros::Time::now();
 
     navigation_msgs::CabinetContent content;
-    content.cabinet_id = door_id;
+    content.cabinet_id = cabinet_id;
     for (const auto& tag : tags) {
       content.box.box_id = tag;
       msg.cabinets.push_back(content);
@@ -232,13 +232,13 @@ private:
     navigation_msgs::CabinetContentArray msg;
     msg.header.stamp = ros::Time::now();
 
-    // 为每个已知的柜门创建内容状态
     for (const auto& door : last_door_states_) {
-      navigation_msgs::CabinetContent content;
-      content.cabinet_id = door.id;
+      std::string cabinet_id = "cabinet_" + door.id.substr(5);
 
-      // 添加该柜门所有已知的标签
-      for (const auto& tag : cabinet_contents_[door.id]) {
+      navigation_msgs::CabinetContent content;
+      content.cabinet_id = cabinet_id;
+
+      for (const auto& tag : cabinet_contents_[cabinet_id]) {
         content.box.box_id = tag;
         msg.cabinets.push_back(content);
       }
