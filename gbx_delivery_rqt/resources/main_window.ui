@@ -166,38 +166,13 @@
                                     <widget class="QLabel" name="mapLabel">
                                         <property name="minimumSize">
                                             <size>
-                                                <width>600</width>
-                                                <height>400</height>
+                                                <width>800</width>
+                                                <height>600</height>
                                             </size>
                                         </property>
-                                        <property name="text">
-                                            <string>Map Placeholder</string>
-                                        </property>
                                         <property name="alignment">
                                             <set>Qt::AlignCenter</set>
                                         </property>
-                                    </widget>
-                                </item>
-                                <item>
-                                    <widget class="QLabel" name="destinationLabel">
-                                        <property name="font">
-                                            <font>
-                                                <pointsize>18</pointsize>
-                                            </font>
-                                        </property>
-                                        <property name="text">
-                                            <string>请选择目的地:</string>
-                                        </property>
-                                        <property name="alignment">
-                                            <set>Qt::AlignCenter</set>
-                                        </property>
-                                    </widget>
-                                </item>
-                                <item>
-                                    <widget class="QWidget" name="destinationButtonsWidget" native="true">
-                                        <layout class="QGridLayout" name="destinationButtonsLayout">
-                                            <!-- Destination buttons will be added in code -->
-                                        </layout>
                                     </widget>
                                 </item>
                             </layout>

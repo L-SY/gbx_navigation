@@ -35,7 +35,6 @@ void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
   setupBackground();
   setupConnections();
   setupBoxButtons();
-  setupDestinationButtons();
 
   // 设置定时器
   returnTimer->setInterval(5000);  // 5秒
@@ -255,26 +254,6 @@ void MainWindow::setupBoxButtons()
   }
 }
 
-void MainWindow::setupDestinationButtons()
-{
-  // 创建目的地按钮
-  QStringList destinations = {"A区", "B区", "C区", "D区"};
-  for (int i = 0; i < destinations.size(); i++) {
-    QPushButton* button = new QPushButton(widget_);
-    button->setText(destinations[i]);
-    button->setMinimumSize(150, 80);
-    button->setFont(QFont("Arial", 16, QFont::Bold));
-
-    connect(button, &QPushButton::clicked, this, [this, i]() {
-      handleDestinationSelect(i + 1);
-    });
-
-    int row = i / 2;
-    int col = i % 2;
-    ui->destinationButtonsLayout->addWidget(button, row, col);
-  }
-}
-
 void MainWindow::setupConnections()
 {
   // 基本页面切换
@@ -285,6 +264,195 @@ void MainWindow::setupConnections()
   connect(this, &MainWindow::boxOpened, this, &MainWindow::switchToBoxOpen);
   connect(this, &MainWindow::boxClosed, this, &MainWindow::switchToDoorClosed);
 }
+
+void MainWindow::setupDestinationPage()
+{
+  // 获取现有的布局
+  QVBoxLayout* mainLayout = qobject_cast<QVBoxLayout*>(ui->destinationPage->layout());
+  if (!mainLayout) {
+    mainLayout = new QVBoxLayout(ui->destinationPage);
+  } else {
+    // 保存第一个布局项（导航按钮的布局）
+    QLayoutItem* navItem = mainLayout->takeAt(0);
+
+    // 清除其他布局项
+    QLayoutItem* item;
+    while ((item = mainLayout->takeAt(0)) != nullptr) {
+      delete item->widget();
+      delete item;
+    }
+
+    // 修改导航按钮布局的间距
+    if (navItem) {
+      QHBoxLayout* navLayout = qobject_cast<QHBoxLayout*>(navItem->layout());
+      if (navLayout) {
+        navLayout->setSpacing(10);  // 设置导航按钮之间的间距
+        navLayout->setContentsMargins(10, 10, 10, 20);  // 设置导航按钮区域的边距
+      }
+      mainLayout->addItem(navItem);
+    }
+  }
+
+  mainLayout->setSpacing(10);  // 设置组件之间的间距
+  mainLayout->setContentsMargins(30, 20, 30, 20);  // 设置页面边距
+
+  // 创建标题标签
+  QLabel* titleLabel = new QLabel("请选择送货目的地", ui->destinationPage);
+  titleLabel->setFont(QFont("Microsoft YaHei", 24, QFont::Bold));
+  titleLabel->setAlignment(Qt::AlignCenter);
+  mainLayout->addWidget(titleLabel);
+
+  // 创建地图容器
+  QWidget* mapContainer = new QWidget(ui->destinationPage);
+  mapContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  QVBoxLayout* mapLayout = new QVBoxLayout(mapContainer);
+  mapLayout->setSpacing(5);  // 减小地图内部的间距
+
+  // 设置地图
+  QLabel* mapLabel = new QLabel(mapContainer);
+  QPixmap mapPixmap(":/images/2F_whole.png");
+  if (!mapPixmap.isNull()) {
+    mapLabel->setPixmap(mapPixmap.scaled(800, 600, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    mapLabel->setAlignment(Qt::AlignCenter);
+  } else {
+    qDebug() << "Failed to load map image from path:" << ":/images/2F_whole.png";
+    mapLabel->setText("地图加载失败");
+    mapLabel->setStyleSheet("QLabel { background-color: #f0f0f0; padding: 20px; }");
+  }
+  mapLayout->addWidget(mapLabel, 0, Qt::AlignCenter);
+
+  // 添加说明文字到地图容器下方
+  QLabel* hintLabel = new QLabel("点击对应区域按钮选择送货目的地", mapContainer);
+  hintLabel->setFont(QFont("Microsoft YaHei", 12));
+  hintLabel->setAlignment(Qt::AlignCenter);
+  mapLayout->addWidget(hintLabel);
+
+  mainLayout->addWidget(mapContainer);
+
+  // 创建按钮容器
+  QWidget* buttonContainer = new QWidget(ui->destinationPage);
+  QHBoxLayout* buttonLayout = new QHBoxLayout(buttonContainer);
+  buttonLayout->setSpacing(15);  // 按钮之间的间距
+
+  // 创建区域按钮
+  QStringList areas = {"A区", "B区", "C区", "D区", "E区", "F区", "G区"};
+  for (const QString& area : areas) {
+    QPushButton* button = new QPushButton(area, buttonContainer);
+    button->setMinimumSize(100, 60);
+    button->setFont(QFont("Microsoft YaHei", 14, QFont::Bold));
+    button->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #4A90E2;"
+        "    color: white;"
+        "    border-radius: 8px;"
+        "    padding: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #357ABD;"
+        "}"
+        "QPushButton:pressed {"
+        "    background-color: #2A5A8E;"
+        "}"
+    );
+
+    connect(button, &QPushButton::clicked, this, [this, &area, areas]() {
+      int index = areas.indexOf(area);
+      if (index != -1) {
+        handleDestinationSelect(index + 1);
+      }
+    });
+
+    buttonLayout->addWidget(button);
+  }
+
+  mainLayout->addWidget(buttonContainer);
+
+  // 设置布局的拉伸因子
+  mainLayout->setStretchFactor(mapContainer, 3);
+  mainLayout->setStretchFactor(buttonContainer, 1);
+
+  // 更新界面
+  ui->destinationPage->update();
+}
+
+void MainWindow::createDestinationMarkers()
+{
+  // 清除之前的标记
+  qDeleteAll(destinationMarkers);  // 使用 qDeleteAll 代替手动循环删除
+  destinationMarkers.clear();
+  destinationPositions.clear();
+
+  // 计算标记的位置（在一行中均匀分布）
+  int mapWidth = ui->mapLabel->width();
+  int mapHeight = ui->mapLabel->height();
+  int spacing = mapWidth / (NUM_DESTINATIONS + 1);
+  int y = mapHeight / 2;
+
+  for (int i = 0; i < NUM_DESTINATIONS; i++) {
+    int x = spacing * (i + 1);
+    QPoint pos(x, y);
+
+    // 创建并保存标记
+    QLabel* marker = createStarMarker(pos);
+    marker->setParent(ui->mapLabel);
+    marker->show();
+
+    // 为标记添加鼠标事件
+    marker->installEventFilter(this);
+    marker->setObjectName(QString("destination_%1").arg(i));
+
+    destinationMarkers.append(marker);
+    destinationPositions.append(pos);
+  }
+}
+
+QLabel* MainWindow::createStarMarker(const QPoint& pos)
+{
+  QLabel* marker = new QLabel(ui->mapLabel);
+
+  // 创建一个五角星SVG图像
+  QString svgContent = QString(
+      "<svg width='30' height='30'>"
+      "<path d='M15,0 L18.5,10.5 L30,10.5 L21,17 L24.5,27.5 L15,21 L5.5,27.5 L9,17 L0,10.5 L11.5,10.5 Z' "
+      "fill='red' stroke='black' stroke-width='1'/>"
+      "</svg>"
+  );
+
+  QSvgRenderer renderer(svgContent.toUtf8());
+  QPixmap pixmap(30, 30);
+  pixmap.fill(Qt::transparent);
+  QPainter painter(&pixmap);
+  renderer.render(&painter);
+
+  marker->setPixmap(pixmap);
+  marker->setGeometry(pos.x() - 15, pos.y() - 15, 30, 30);  // 居中显示
+  marker->setCursor(Qt::PointingHandCursor);  // 鼠标悬停时显示手型光标
+
+  return marker;
+}
+
+bool MainWindow::eventFilter(QObject* obj, QEvent* event)
+{
+  // 处理标记的点击事件
+  for (int i = 0; i < destinationMarkers.size(); i++) {
+    if (obj == destinationMarkers[i]) {
+      if (event->type() == QEvent::MouseButtonPress) {
+        handleDestinationSelect(i + 1);  // 使用 i+1 作为目的地ID
+        return true;
+      }
+    }
+  }
+
+  return QObject::eventFilter(obj, event);
+}
+
+void MainWindow::switchToDestination()
+{
+  currentPage = DESTINATION_PAGE;
+  ui->stackedWidget->setCurrentWidget(ui->destinationPage);
+  setupDestinationPage();
+}
+
 
 void MainWindow::switchToPickupMode()
 {
@@ -325,12 +493,8 @@ void MainWindow::switchToBoxSelection()
 {
   currentPage = BOX_SELECTION_PAGE;
   ui->stackedWidget->setCurrentWidget(ui->boxSelectionPage);
-}
-
-void MainWindow::switchToDestination()
-{
-  currentPage = DESTINATION_PAGE;
-  ui->stackedWidget->setCurrentWidget(ui->destinationPage);
+//  TODO: Just for test
+  handleDoorStateChange(false, 1);
 }
 
 void MainWindow::switchToBoxOpen()
@@ -362,7 +526,7 @@ void MainWindow::handlePhoneNumberSubmit()
 {
   if (currentPage == DELIVERY_PHONE_PAGE) {
     QString phone = ui->deliveryPhoneEdit->text();
-    if (validatePhoneNumber(phone)) {
+    if (validatePhoneNumber(phone, false)) {
       lastPhoneNumber = phone;  // 存储手机号
       // TODO: 验证手机号是否在服务器记录中
       switchToNextPage();
@@ -398,25 +562,36 @@ void MainWindow::handleDestinationSelect(int destination)
 void MainWindow::handleDoorStateChange(bool isOpen, int boxId)
 {
   updateDoorStatus(boxId, isOpen);
-  if (!isOpen) {
-    emit boxClosed(boxId);
+  if (!isOpen) {  // 门已关闭
+    if (currentMode == DELIVERY) {
+      // 寄件模式：门关闭后跳转到选择目的地
+      switchToDestination();
+    } else {
+      // 取件模式：门关闭后跳转到感谢页面
+      switchToDoorClosed();
+    }
   }
 }
 
 void MainWindow::updateDoorStatus(int boxId, bool isOpen)
 {
+  isOpen = false;
   // TODO: 更新箱门状态显示
 }
 
 bool MainWindow::validatePhoneNumber(const QString& phone, bool isShortPhone)
 {
+  QRegExp rx("[0-9]+");
+  if (!rx.exactMatch(phone)) {
+    return false;
+  }
+
   if (isShortPhone) {
-    return phone.length() == 4 && phone.toInt() != 0;
+    return phone.length() == 4;
   } else {
-    return phone.length() == 11 && phone.toInt() != 0;
+    return phone.length() == 11 && phone.startsWith("1");
   }
 }
-
 void MainWindow::showErrorMessage(const QString& message)
 {
   QMessageBox::warning(widget_, "错误", message);

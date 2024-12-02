@@ -4,6 +4,13 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QTimer>
+#include <QLabel>
+#include <QVector>
+#include <QPoint>
+#include <QDebug>
+#include <QtSvg/QSvgRenderer>
+#include <QPainter>
+#include <QPixmap>
 //#include "serial_node.h"
 
 namespace Ui {
@@ -26,6 +33,9 @@ public:
                             qt_gui_cpp::Settings& instance_settings) const;
   virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
                                const qt_gui_cpp::Settings& instance_settings);
+
+protected:
+  bool eventFilter(QObject* obj, QEvent* event) override;
 
 private slots:
   // 页面切换相关槽函数
@@ -77,7 +87,6 @@ private:
   void setupConnections();  // 设置信号槽连接
   void initializePages();   // 初始化所有页面
   void setupBoxButtons();   // 设置箱子按钮
-  void setupDestinationButtons(); // 设置目的地按钮
   void updateDoorStatus(int boxId, bool isOpen); // 更新箱门状态显示
 
   bool validatePhoneNumber(const QString& phone, bool isShortPhone = false);
@@ -87,6 +96,14 @@ private:
   DeliveryMode currentMode; // 当前模式（取件/寄件）
   QString lastPhoneNumber;  // 存储寄件人手机号
   int selectedBoxId;        // 当前选中的箱子ID
+
+  void setupDestinationPage();  // 设置目的地选择页面
+  void createDestinationMarkers();  // 创建目的地标记
+  QLabel* createStarMarker(const QPoint& pos);  // 创建星形标记
+
+  QVector<QLabel*> destinationMarkers;  // 存储目的地标记
+  QVector<QPoint> destinationPositions;  // 存储目的地位置
+  static const int NUM_DESTINATIONS = 7;  // 目的地数量
 };
 
 } // namespace gbx_delivery_rqt
