@@ -51,11 +51,18 @@ set(${PROJECT_NAME}_UIS
         resources/main_window.ui
 )
 
+set(${PROJECT_NAME}_RESOURCES
+        resources/resources.qrc
+)
+qt5_add_resources(${PROJECT_NAME}_RESOURCES_RCC ${${PROJECT_NAME}_RESOURCES})
+
+
 # 添加库
 add_library(${PROJECT_NAME}
         ${${PROJECT_NAME}_SRCS}
         ${${PROJECT_NAME}_HDRS}
         ${${PROJECT_NAME}_UIS}
+        ${${PROJECT_NAME}_RESOURCES_RCC}
 )
 
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
