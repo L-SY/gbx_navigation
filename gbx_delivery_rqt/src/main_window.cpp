@@ -51,23 +51,66 @@ void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
 
 void MainWindow::setupUi()
 {
-  // 创建返回按钮
-  for (auto* page : {ui->deliveryPhonePage, ui->pickupPhonePage}) {
-    QPushButton* returnButton = new QPushButton(widget_);
-    returnButton->setText("返回主页");
-    returnButton->setMinimumSize(120, 60);  // 设置一个合适的大小
-    returnButton->setFont(QFont("Arial", 16, QFont::Bold));
-    returnButton->setStyleSheet("QPushButton { background-color: #FF9933; color: white; border-radius: 5px; }");
+  // 为每个页面添加返回按钮
+  QMap<QWidget*, QPair<QWidget*, QString>> pageNavigation;  // <当前页面, <上一页面, 页面标题>>
 
-    // 获取页面的垂直布局
-    QVBoxLayout* layout = qobject_cast<QVBoxLayout*>(page->layout());
-    if (layout) {
-      // 在底部添加返回按钮
-      layout->addWidget(returnButton);
+  // 设置页面导航关系
+  pageNavigation[ui->deliveryPhonePage] = qMakePair(ui->mainPage, QString("寄件手机号输入"));
+  pageNavigation[ui->pickupPhonePage] = qMakePair(ui->mainPage, QString("取件手机号输入"));
+  pageNavigation[ui->boxSelectionPage] = qMakePair((QWidget*)nullptr, QString("选择快递柜"));
+  pageNavigation[ui->destinationPage] = qMakePair(ui->boxSelectionPage, QString("选择目的地"));
+  pageNavigation[ui->boxOpenPage] = qMakePair((QWidget*)nullptr, QString("箱门操作"));
+  pageNavigation[ui->doorClosedPage] = qMakePair(ui->boxOpenPage, QString("完成"));
+
+  // 为每个页面添加导航按钮
+  for (auto it = pageNavigation.begin(); it != pageNavigation.end(); ++it) {
+    QWidget* currentPage = it.key();
+    QWidget* previousPage = it.value().first;
+
+    // 创建水平布局来放置导航按钮
+    QHBoxLayout* navLayout = new QHBoxLayout();
+
+    // 创建返回主页按钮
+    QPushButton* homeButton = new QPushButton(QString("返回主页"), widget_);
+    homeButton->setMinimumSize(120, 50);
+    homeButton->setFont(QFont("Arial", 14, QFont::Bold));
+    homeButton->setStyleSheet("QPushButton { background-color: #FF9933; color: white; border-radius: 5px; }");
+    connect(homeButton, &QPushButton::clicked, this, &MainWindow::switchToMainPage);
+    navLayout->addWidget(homeButton);
+
+    // 如果存在上一页且不是主页，添加返回上一页按钮
+    if (previousPage != nullptr && previousPage != ui->mainPage) {
+      QPushButton* backButton = new QPushButton(QString("返回上一步"), widget_);
+      backButton->setMinimumSize(120, 50);
+      backButton->setFont(QFont("Arial", 14, QFont::Bold));
+      backButton->setStyleSheet("QPushButton { background-color: #4A90E2; color: white; border-radius: 5px; }");
+
+      // 特殊处理箱子选择页面和箱门操作页面的返回逻辑
+      if (currentPage == ui->boxSelectionPage || currentPage == ui->boxOpenPage) {
+        connect(backButton, &QPushButton::clicked, this, [this]() {
+          if (currentMode == DELIVERY) {
+            ui->stackedWidget->setCurrentWidget(ui->deliveryPhonePage);
+          } else {
+            ui->stackedWidget->setCurrentWidget(ui->pickupPhonePage);
+          }
+        });
+      } else {
+        connect(backButton, &QPushButton::clicked, this, [this, previousPage]() {
+          ui->stackedWidget->setCurrentWidget(previousPage);
+        });
+      }
+      navLayout->addWidget(backButton);
     }
 
-    // 连接返回按钮的点击信号
-    connect(returnButton, &QPushButton::clicked, this, &MainWindow::switchToMainPage);
+    // 添加一个弹簧来推动按钮到左侧
+    navLayout->addStretch();
+
+    // 获取页面的垂直布局
+    QVBoxLayout* pageLayout = qobject_cast<QVBoxLayout*>(currentPage->layout());
+    if (pageLayout) {
+      // 在最上方插入导航按钮布局
+      pageLayout->insertLayout(0, navLayout);
+    }
   }
 
   // 创建数字键盘的按钮
@@ -79,14 +122,16 @@ void MainWindow::setupUi()
 
     if (i < 9) {
       button->setText(QString::number(i + 1));
+      button->setStyleSheet("QPushButton { background-color: #F0F0F0; border-radius: 5px; }");
     } else if (i == 9) {
-      button->setText(tr("删除"));
-      button->setStyleSheet("QPushButton { background-color: #FF6B6B; color: white; }");
+      button->setText(QString("删除"));
+      button->setStyleSheet("QPushButton { background-color: #FF6B6B; color: white; border-radius: 5px; }");
     } else if (i == 10) {
-      button->setText("0");
+      button->setText(QString("0"));
+      button->setStyleSheet("QPushButton { background-color: #F0F0F0; border-radius: 5px; }");
     } else {  // i == 11, 确认按钮
-      button->setText(tr("确认"));
-      button->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; }");
+      button->setText(QString("确认"));
+      button->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; border-radius: 5px; }");
     }
 
     numButtons.append(button);
@@ -109,7 +154,7 @@ void MainWindow::setupUi()
       connect(button, &QPushButton::clicked, this, &MainWindow::handlePhoneNumberSubmit);
     } else { // 数字按钮
       connect(button, &QPushButton::clicked, this, [this, i]() {
-        QString num = (i == 10) ? "0" : QString::number(i + 1);
+        QString num = (i == 10) ? QString("0") : QString::number(i + 1);
         QLineEdit* currentEdit = nullptr;
         if (ui->stackedWidget->currentWidget() == ui->deliveryPhonePage) {
           currentEdit = ui->deliveryPhoneEdit;
@@ -161,7 +206,7 @@ void MainWindow::setupUi()
       connect(cloneButton, &QPushButton::clicked, this, &MainWindow::handlePhoneNumberSubmit);
     } else { // 数字按钮
       connect(cloneButton, &QPushButton::clicked, this, [this, i]() {
-        QString num = (i == 10) ? "0" : QString::number(i + 1);
+        QString num = (i == 10) ? QString("0") : QString::number(i + 1);
         QLineEdit* currentEdit = nullptr;
         if (ui->stackedWidget->currentWidget() == ui->deliveryPhonePage) {
           currentEdit = ui->deliveryPhoneEdit;
