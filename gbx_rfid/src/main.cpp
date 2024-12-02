@@ -25,6 +25,12 @@ public:
     tag_pub_ = nh.advertise<std_msgs::String>("/rfid/status", 10);
     single_content_pub_ = nh.advertise<navigation_msgs::CabinetContentArray>("/cabinet/content", 10);
     all_content_pub_ = nh.advertise<navigation_msgs::CabinetContentArray>("/cabinet/contents", 10);
+
+    // 初始化6个柜子的内容
+    for (int i = 1; i <= 6; ++i) {
+      std::string cabinet_id = "cabinet_" + std::to_string(i);
+      cabinet_contents_[cabinet_id] = std::set<std::string>();
+    }
   }
 
   ~RfidMonitor() {
@@ -33,12 +39,12 @@ public:
   bool init() {
     bool success = true;
     std::vector<std::string> initialized_readers;
-    
+
     for (auto& config : reader_configs_) {
       auto rfid = std::make_unique<gbx_rfid::GbxRfid>();
-      ROS_INFO("Attempting to initialize reader %s on port %s", 
+      ROS_INFO("Attempting to initialize reader %s on port %s",
                config.id.c_str(), config.port.c_str());
-      
+
       if (!rfid->init(config.port, config.baudrate)) {
         ROS_ERROR("Failed to initialize RFID reader %s on port %s - initialization failed",
                   config.id.c_str(), config.port.c_str());
@@ -83,7 +89,7 @@ public:
   void run() {
     ros::Rate rate(scan_rate_);
     while (ros::ok()) {
-      if (was_door_open_ || just_closed_) {
+      if (was_door_open_) {
         updateAllRfidData();
       }
       ros::spinOnce();
@@ -147,10 +153,8 @@ private:
     ros::Time start_time = ros::Time::now();
     bool any_tags_found = false;
 
-    // 清空现有的系统标签
     system_tags_.clear();
 
-    // 持续扫描指定时间
     while (ros::ok() && (ros::Time::now() - start_time).toSec() < init_scan_duration_) {
       for (const auto& reader_pair : readers_) {
         if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
@@ -160,7 +164,7 @@ private:
         gbx_rfid::RfidData data;
         if (reader_pair.second->getLatestData(data)) {
           std::string ascii_epc = convertEpcToAscii(data.epc);
-          system_tags_.insert(ascii_epc);  // 将系统标签添加到共享集合中
+          system_tags_.insert(ascii_epc);
           any_tags_found = true;
         }
       }
@@ -169,7 +173,6 @@ private:
       scan_rate.sleep();
     }
 
-    // 打印扫描结果
     if (!system_tags_.empty()) {
       ROS_INFO_STREAM("Found " << system_tags_.size() << " system tags:");
       for (const auto& tag : system_tags_) {
@@ -183,7 +186,10 @@ private:
   }
 
   void processTagChanges() {
-    // 处理单个柜子的变化并发布
+    // 获取当前打开的柜门ID对应的柜子ID
+    std::string cabinet_id = "cabinet_" + last_open_door_id_.substr(5);
+
+    // 处理单个柜子的变化
     for (const auto& reader_pair : readers_) {
       const std::string& reader_id = reader_pair.first;
       std::set<std::string> current_set = current_tags_[reader_id];
@@ -196,51 +202,46 @@ private:
 
       if (!added_tags.empty()) {
         // 发布单个柜子的内容变化
-        publishSingleCabinetContent(last_open_door_id_, added_tags, reader_id);
-        ROS_INFO_STREAM("Detected " << added_tags.size() << " new items in cabinet "
-                                    << last_open_door_id_);
+        navigation_msgs::CabinetContentArray single_msg;
+        single_msg.header.stamp = ros::Time::now();
+
+        for (const auto& tag : added_tags) {
+          navigation_msgs::CabinetContent content;
+          content.cabinet_id = cabinet_id;
+          content.box.box_id = tag;
+          single_msg.cabinets.push_back(content);
+        }
+
+        if (!single_msg.cabinets.empty()) {
+          single_content_pub_.publish(single_msg);
+          ROS_INFO_STREAM("Published " << added_tags.size() << " new items in cabinet " << cabinet_id);
+        }
 
         // 更新总体内容记录
-        cabinet_contents_[last_open_door_id_].insert(
-            added_tags.begin(), added_tags.end());
+        cabinet_contents_[cabinet_id].insert(added_tags.begin(), added_tags.end());
       }
     }
 
     // 发布所有柜子的内容
     publishAllCabinetContents();
-
-    just_closed_ = false;
-  }
-
-  void publishSingleCabinetContent(const std::string& cabinet_id,
-                                                const std::set<std::string>& tags,
-                                                const std::string& reader_id) {
-    navigation_msgs::CabinetContentArray msg;
-    msg.header.stamp = ros::Time::now();
-
-    navigation_msgs::CabinetContent content;
-    content.cabinet_id = cabinet_id;
-    for (const auto& tag : tags) {
-      content.box.box_id = tag;
-      msg.cabinets.push_back(content);
-    }
-
-    single_content_pub_.publish(msg);
   }
 
   void publishAllCabinetContents() {
     navigation_msgs::CabinetContentArray msg;
     msg.header.stamp = ros::Time::now();
 
-    for (const auto& door : last_door_states_) {
-      std::string cabinet_id = "cabinet_" + door.id.substr(5);
+    // 遍历所有6个柜子
+    for (int i = 1; i <= 6; ++i) {
+      std::string cabinet_id = "cabinet_" + std::to_string(i);
 
-      navigation_msgs::CabinetContent content;
-      content.cabinet_id = cabinet_id;
-
-      for (const auto& tag : cabinet_contents_[cabinet_id]) {
-        content.box.box_id = tag;
-        msg.cabinets.push_back(content);
+      // 只有当柜子中有内容时才添加到消息中
+      if (!cabinet_contents_[cabinet_id].empty()) {
+        for (const auto& tag : cabinet_contents_[cabinet_id]) {
+          navigation_msgs::CabinetContent content;
+          content.cabinet_id = cabinet_id;
+          content.box.box_id = tag;
+          msg.cabinets.push_back(content);
+        }
       }
     }
 
@@ -249,7 +250,6 @@ private:
 
   void doorStateCallback(const navigation_msgs::CabinetDoorArray::ConstPtr& msg) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    auto previous_tags = current_tags_;
 
     bool any_door_open = false;
     std::string newly_opened_door;
@@ -269,22 +269,19 @@ private:
 
     if (any_door_open) {
       if (!was_door_open_) {
+        auto previous_tags = current_tags_;
         tags_before_open_ = previous_tags;
         was_door_open_ = true;
-        just_closed_ = false;
         open_door_id_ = newly_opened_door;
+        last_open_door_id_ = newly_opened_door;
         ROS_INFO("Door %s opened", newly_opened_door.c_str());
       }
     } else if (was_door_open_) {
       was_door_open_ = false;
-      just_closed_ = true;
-      last_open_door_id_ = open_door_id_;
-      open_door_id_ = "";
-
       processTagChanges();
+      open_door_id_ = "";
     }
   }
-
 
   void updateAllRfidData() {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -339,7 +336,6 @@ private:
     return ascii_epc.substr(0, 8);
   }
 
-  // 系统标签管理接口
   void addSystemTag(const std::string& tag) {
     std::lock_guard<std::mutex> lock(data_mutex_);
     system_tags_.insert(tag);
