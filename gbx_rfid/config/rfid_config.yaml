@@ -5,3 +5,24 @@ readers:
   - id: "reader2"
     port: "/dev/ttyUSB1"
     baudrate: 115200
+  - id: "reader3"
+    port: "/dev/ttyUSB2"
+    baudrate: 115200
+  - id: "reader4"
+    port: "/dev/ttyUSB3"
+    baudrate: 115200
+  - id: "reader5"
+    port: "/dev/ttyUSB4"
+    baudrate: 115200
+  - id: "reader6"
+    port: "/dev/ttyUSB5"
+    baudrate: 115200
+
+# 初始扫描配置
+init_scan_duration: 3    # 初始系统标签扫描持续时间(秒)
+init_scan_rate: 20      # 初始扫描频率(Hz)
+scan_rate: 10          # 正常运行时的扫描频率(Hz)
+
+# RFID读取参数配置
+rssi_threshold: -70    # RSSI信号强度阈值，低于此值的读取将被忽略
+min_consecutive_reads: 3  # 最小连续读取次数，超过此值才认为标签有效

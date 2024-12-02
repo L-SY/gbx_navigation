@@ -6,6 +6,7 @@
 #include <ros/ros.h>
 #include <set>
 #include <std_msgs/String.h>
+#include <mutex>
 
 class RfidMonitor {
 public:
@@ -37,13 +38,20 @@ public:
       ROS_INFO("Initialized RFID reader %s on port %s",
                config.id.c_str(), config.port.c_str());
     }
+
+    if (success) {
+      success = scanSystemTags();
+    }
+
     return success;
   }
 
   void run() {
-    ros::Rate rate(10);  // 10Hz
+    ros::Rate rate(scan_rate_);
     while (ros::ok()) {
-      updateAllRfidData();
+      if (was_door_open_ || just_closed_) {
+        updateAllRfidData();
+      }
       ros::spinOnce();
       rate.sleep();
     }
@@ -54,6 +62,13 @@ private:
     std::string id;
     std::string port;
     int baudrate;
+  };
+
+  struct TagReading {
+    std::string epc;
+    int rssi;
+    ros::Time last_seen;
+    int consecutive_reads;
   };
 
   bool loadRfidConfig(ros::NodeHandle& nh) {
@@ -67,6 +82,13 @@ private:
       ROS_ERROR("readers parameter should be an array!");
       return false;
     }
+
+    // 加载配置参数
+    nh.param("init_scan_duration", init_scan_duration_, 3);
+    nh.param("init_scan_rate", init_scan_rate_, 20);
+    nh.param("scan_rate", scan_rate_, 10);
+    nh.param("rssi_threshold", rssi_threshold_, -70);
+    nh.param("min_consecutive_reads", min_consecutive_reads_, 3);
 
     for (int i = 0; i < readers.size(); ++i) {
       ReaderConfig config;
@@ -84,65 +106,145 @@ private:
     return !reader_configs_.empty();
   }
 
+  bool scanSystemTags() {
+    ROS_INFO("Starting initial system tags scan...");
+
+    ros::Rate scan_rate(init_scan_rate_);
+    ros::Time start_time = ros::Time::now();
+
+    // 清空现有的系统标签
+    system_tags_.clear();
+
+    // 持续扫描指定时间
+    while (ros::ok() && (ros::Time::now() - start_time).toSec() < init_scan_duration_) {
+      for (const auto& reader_pair : readers_) {
+        if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
+          continue;
+        }
+
+        gbx_rfid::RfidData data;
+        if (reader_pair.second->getLatestData(data)) {
+          std::string ascii_epc = convertEpcToAscii(data.epc);
+          system_tags_[reader_pair.first].insert(ascii_epc);
+        }
+      }
+
+      ros::spinOnce();
+      scan_rate.sleep();
+    }
+
+    // 打印扫描结果
+    for (const auto& reader_tags : system_tags_) {
+      ROS_INFO_STREAM("Reader " << reader_tags.first << " found "
+                                << reader_tags.second.size() << " system tags");
+      for (const auto& tag : reader_tags.second) {
+        ROS_DEBUG_STREAM("System tag: " << tag);
+      }
+    }
+
+    return true;
+  }
+
   void doorStateCallback(const navigation_msgs::CabinetDoorArray::ConstPtr& msg) {
-    // 记录开门前的标签状态
+    std::lock_guard<std::mutex> lock(data_mutex_);
     auto previous_tags = current_tags_;
 
-    // 更新门的状态
-    open_door_id_ = "";
+    bool any_door_open = false;
+    std::string newly_opened_door;
+
     for (const auto& door : msg->doors) {
       if (door.is_open) {
-        open_door_id_ = door.id;
+        any_door_open = true;
         if (!was_door_open_) {
-          // 门刚打开，记录打开时的标签
-          tags_before_open_ = previous_tags;
-          was_door_open_ = true;
+          newly_opened_door = door.id;
         }
         break;
       }
     }
 
-    // 如果所有门都关闭了
-    if (open_door_id_.empty() && was_door_open_) {
-      was_door_open_ = false;
-      // 检查每个读取器的标签变化
-      for (const auto& reader_pair : readers_) {
-        std::set<std::string> current_set = current_tags_[reader_pair.first];
-        std::set<std::string> previous_set = tags_before_open_[reader_pair.first];
-
-        std::set<std::string> added_tags;
-        std::set_difference(current_set.begin(), current_set.end(),
-                            previous_set.begin(), previous_set.end(),
-                            std::inserter(added_tags, added_tags.begin()));
-
-        if (!added_tags.empty()) {
-          publishCabinetContents(last_open_door_id_, added_tags, reader_pair.first);
-        }
+    if (any_door_open) {
+      if (!was_door_open_) {
+        // 门刚被打开
+        tags_before_open_ = previous_tags;
+        was_door_open_ = true;
+        just_closed_ = false;
+        open_door_id_ = newly_opened_door;
+        ROS_INFO("Door %s opened", newly_opened_door.c_str());
       }
-    }
-
-    if (!open_door_id_.empty()) {
+    } else if (was_door_open_) {
+      // 门刚被关闭
+      was_door_open_ = false;
+      just_closed_ = true;
       last_open_door_id_ = open_door_id_;
+      open_door_id_ = "";
+
+      // 处理关门后的标签变化
+      processTagChanges();
     }
   }
 
-  void updateAllRfidData() {
+  void processTagChanges() {
     for (const auto& reader_pair : readers_) {
+      const std::string& reader_id = reader_pair.first;
+      std::set<std::string> current_set = current_tags_[reader_id];
+      std::set<std::string> previous_set = tags_before_open_[reader_id];
+
+      std::set<std::string> added_tags;
+      std::set_difference(current_set.begin(), current_set.end(),
+                          previous_set.begin(), previous_set.end(),
+                          std::inserter(added_tags, added_tags.begin()));
+
+      if (!added_tags.empty()) {
+        publishCabinetContents(last_open_door_id_, added_tags, reader_id);
+        ROS_INFO_STREAM("Detected " << added_tags.size() << " new items in cabinet "
+                                    << last_open_door_id_);
+      }
+    }
+    just_closed_ = false;  // 处理完标签变化后重置状态
+  }
+
+  void updateAllRfidData() {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+
+    for (const auto& reader_pair : readers_) {
+      const std::string& reader_id = reader_pair.first;
+
       if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
+        ROS_WARN_THROTTLE(1.0, "Failed to start reading from reader %s",
+                          reader_id.c_str());
         continue;
       }
 
       gbx_rfid::RfidData data;
       if (reader_pair.second->getLatestData(data)) {
-        std::string ascii_epc = convertEpcToAscii(data.epc);
-        current_tags_[reader_pair.first].insert(ascii_epc);
+        if (data.rssi < rssi_threshold_) {
+          continue;  // RSSI太低，忽略
+        }
 
-        // 发布RFID状态
-        std_msgs::String msg;
-        msg.data = "Reader " + reader_pair.first +
-                   " detected - EPC: " + ascii_epc +
-                   ", RSSI: " + std::to_string(data.rssi);
-        tag_pub_.publish(msg);
+        std::string ascii_epc = convertEpcToAscii(data.epc);
+
+        // 检查是否为系统标签
+        if (system_tags_[reader_id].find(ascii_epc) !=
+            system_tags_[reader_id].end()) {
+          continue;  // 是系统标签，跳过
+        }
+
+        // 更新标签读取记录
+        auto& tag_reading = tag_readings_[reader_id][ascii_epc];
+        tag_reading.epc = ascii_epc;
+        tag_reading.rssi = data.rssi;
+        tag_reading.last_seen = ros::Time::now();
+        tag_reading.consecutive_reads++;
+
+        // 只有连续读取次数达到阈值才认为是有效标签
+        if (tag_reading.consecutive_reads >= min_consecutive_reads_) {
+          current_tags_[reader_id].insert(ascii_epc);
+
+          std_msgs::String msg;
+          msg.data = "Reader " + reader_id +
+                     ", RSSI: " + std::to_string(data.rssi);
+          tag_pub_.publish(msg);
+        }
       }
     }
   }
@@ -172,10 +274,29 @@ private:
     return ascii_epc.substr(0, 8);
   }
 
+  // 系统标签管理接口
+  void addSystemTag(const std::string& reader_id, const std::string& tag) {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    system_tags_[reader_id].insert(tag);
+  }
+
+  void removeSystemTag(const std::string& reader_id, const std::string& tag) {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    system_tags_[reader_id].erase(tag);
+  }
+
+  bool isSystemTag(const std::string& reader_id, const std::string& tag) {
+    std::lock_guard<std::mutex> lock(data_mutex_);
+    return system_tags_[reader_id].find(tag) != system_tags_[reader_id].end();
+  }
+
+private:
   std::vector<ReaderConfig> reader_configs_;
   std::map<std::string, std::unique_ptr<gbx_rfid::GbxRfid>> readers_;
-  std::map<std::string, std::set<std::string>> current_tags_;  // reader_id -> tags
-  std::map<std::string, std::set<std::string>> tags_before_open_;
+  std::map<std::string, std::set<std::string>> current_tags_;     // reader_id -> tags
+  std::map<std::string, std::set<std::string>> system_tags_;      // reader_id -> system tags
+  std::map<std::string, std::set<std::string>> tags_before_open_; // 开门前的标签状态
+  std::map<std::string, std::map<std::string, TagReading>> tag_readings_; // 标签读取记录
 
   ros::Subscriber door_sub_;
   ros::Publisher tag_pub_;
@@ -184,6 +305,15 @@ private:
   std::string open_door_id_;
   std::string last_open_door_id_;
   bool was_door_open_{false};
+  bool just_closed_{false};  // 标记门是否刚刚关闭
+  std::mutex data_mutex_;    // 保护共享数据的互斥锁
+
+  // 配置参数
+  int init_scan_duration_{3};     // 初始扫描持续时间(秒)
+  int init_scan_rate_{20};        // 初始扫描频率(Hz)
+  int scan_rate_{10};             // 正常扫描频率(Hz)
+  int rssi_threshold_{-70};       // RSSI阈值
+  int min_consecutive_reads_{3};   // 最小连续读取次数
 };
 
 int main(int argc, char** argv) {
