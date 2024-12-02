@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix="/">
         <file>images/2F_whole.png</file>
+        <file>images/gbx_agv.png</file>
     </qresource>
 </RCC>

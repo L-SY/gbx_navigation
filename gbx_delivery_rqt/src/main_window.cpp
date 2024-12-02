@@ -604,7 +604,12 @@ void MainWindow::handleTimeout()
 
 void MainWindow::setupBackground()
 {
-  // TODO: 设置背景
+  QPixmap bgPixmap(":/images/gbx_agv.png");
+  if (!bgPixmap.isNull()) {
+    ui->mainPageBackground->setPixmap(bgPixmap.scaled(ui->mainPageBackground->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  } else {
+    qDebug() << "Failed to load background image from path:" << ":/images/gbx_agv.png";
+  }
 }
 
 void MainWindow::shutdownPlugin()
