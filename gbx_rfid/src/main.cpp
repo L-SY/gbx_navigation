@@ -27,8 +27,6 @@ public:
   }
 
   ~RfidMonitor() {
-    cleanup();
-    ros::Duration(0.5).sleep();  // 确保所有清理操作都完成
   }
 
   bool init() {
@@ -41,34 +39,23 @@ public:
                config.id.c_str(), config.port.c_str());
       
       if (!rfid->init(config.port, config.baudrate)) {
-        ROS_ERROR("Failed to initialize RFID reader on port %s", config.port.c_str());
+        ROS_ERROR("Failed to initialize RFID reader %s on port %s - initialization failed",
+                  config.id.c_str(), config.port.c_str());
         success = false;
-        // 清理之前初始化的读取器
-        for (const auto& reader_id : initialized_readers) {
-          if (readers_[reader_id]) {
-            readers_[reader_id]->stopReading();
-          }
-          readers_.erase(reader_id);
-        }
+        cleanup();
         return false;
       }
-      
+
       readers_[config.id] = std::move(rfid);
       initialized_readers.push_back(config.id);
-      ROS_INFO("Successfully initialized RFID reader %s on port %s",
-               config.id.c_str(), config.port.c_str());
+      ROS_INFO("Successfully initialized RFID reader %s on port %s with baudrate %d",
+               config.id.c_str(), config.port.c_str(), config.baudrate);
     }
 
     if (success) {
       success = scanSystemTags();
       if (!success) {
-        // 如果系统标签扫描失败，清理所有读取器
-        for (auto& reader_pair : readers_) {
-          if (reader_pair.second) {
-            reader_pair.second->stopReading();
-          }
-        }
-        readers_.clear();
+        cleanup();
       }
     }
 
@@ -76,28 +63,22 @@ public:
   }
 
   void cleanup() {
-    ROS_INFO("Starting cleanup of RFID monitor...");
-
-    // 按照与初始化相反的顺序清理读取器
-    std::vector<std::string> reader_ids;
-    for (const auto& reader : readers_) {
-      reader_ids.push_back(reader.first);
-    }
+    std::cout << "Starting cleanup of RFID monitor..." << std::endl;
 
     // 反向遍历读取器进行清理
-    for (auto it = reader_ids.rbegin(); it != reader_ids.rend(); ++it) {
-      if (readers_[*it]) {
-        ROS_INFO_STREAM("Cleaning up reader " << *it);
-        readers_[*it]->stopReading();
+    for (auto it = readers_.rbegin(); it != readers_.rend(); ++it) {
+      if (it->second) {
+        std::cout << "Cleaning up reader " << it->first << std::endl;
+        it->second->stopReading();
         ros::Duration(0.2).sleep();  // 给时间让停止命令生效
-        readers_[*it]->close();
+        it->second->close();
         ros::Duration(0.2).sleep();  // 给时间让关闭操作完成
       }
     }
 
     // 清空读取器映射
     readers_.clear();
-    ROS_INFO("RFID monitor cleanup completed");
+    std::cout << "RFID monitor cleanup completed" << std::endl;
   }
 
   void run() {
@@ -167,6 +148,7 @@ private:
 
     ros::Rate scan_rate(init_scan_rate_);
     ros::Time start_time = ros::Time::now();
+    bool any_tags_found = false;
 
     // 清空现有的系统标签
     system_tags_.clear();
@@ -182,6 +164,7 @@ private:
         if (reader_pair.second->getLatestData(data)) {
           std::string ascii_epc = convertEpcToAscii(data.epc);
           system_tags_[reader_pair.first].insert(ascii_epc);
+          any_tags_found = true;
         }
       }
 
@@ -191,14 +174,23 @@ private:
 
     // 打印扫描结果
     for (const auto& reader_tags : system_tags_) {
-      ROS_INFO_STREAM("Reader " << reader_tags.first << " found "
-                                << reader_tags.second.size() << " system tags");
-      for (const auto& tag : reader_tags.second) {
-        ROS_DEBUG_STREAM("System tag: " << tag);
+      size_t tag_count = reader_tags.second.size();
+      if (tag_count > 0) {
+        ROS_INFO_STREAM("Reader " << reader_tags.first << " found "
+                                  << tag_count << " system tags:");
+        for (const auto& tag : reader_tags.second) {
+          ROS_INFO_STREAM("  - System tag: " << tag);
+        }
+      } else {
+        ROS_WARN_STREAM("Reader " << reader_tags.first << " found no system tags");
       }
     }
 
-    return true;
+    if (!any_tags_found) {
+      ROS_WARN("No system tags were found during initialization scan");
+    }
+
+    return true;  // 即使没有找到系统标签也返回true，因为这不是错误状态
   }
 
   void doorStateCallback(const navigation_msgs::CabinetDoorArray::ConstPtr& msg) {
