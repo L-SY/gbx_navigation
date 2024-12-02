@@ -1,10 +1,12 @@
 #pragma once
 #define FRAME_HEAD 0xBB
 #define FRAME_END  0x7E
+
 #include <ros/ros.h>
 #include <serial/serial.h>
 #include <string>
 #include <vector>
+#include <mutex>
 
 namespace gbx_rfid
 {
@@ -32,10 +34,18 @@ enum READ_MODE {
   MULTI_MODE  = 1
 };
 
+struct SerialConfig {
+  int timeout;
+  int read_timeout;
+  int write_timeout;
+  int init_delay;
+};
+
 struct RfidData {
   std::string epc;
   int rssi;
   std::string timestamp;
+  SerialConfig serial_config;
 };
 
 class GbxRfid {
@@ -44,9 +54,10 @@ public:
   ~GbxRfid();
 
   bool init(const std::string& port = "/dev/ttyUSB0",
-            int baudrate = 115200);
+            int baudrate = 115200,
+            const SerialConfig& config = {500, 500, 500, 100});
 
-  bool initSerial(const std::string port, int baudrate);
+  bool initSerial(const std::string port, int baudrate, const SerialConfig& config);
   bool setRegion(uint8_t region);
   bool checkConnection();
   bool testCommunication();
@@ -69,10 +80,13 @@ private:
   std::vector<uint8_t> hexStringToBytes(const std::string& hex);
   std::string bytesToHexString(const std::vector<uint8_t>& bytes);
   std::string commandToHexString(const std::vector<uint8_t>& cmd);
+  bool waitForValidResponse(std::vector<uint8_t>& response, int timeout_ms);
 
   serial::Serial ser_;
   bool is_open_;
   std::mutex mutex_;
   RfidData latest_data_;
+  SerialConfig serial_config_;
 };
+
 } // namespace gbx_rfid

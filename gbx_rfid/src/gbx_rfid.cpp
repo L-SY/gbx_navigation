@@ -1,8 +1,10 @@
 #include "gbx_rfid/gbx_rfid.h"
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 namespace gbx_rfid {
+
 GbxRfid::GbxRfid() : is_open_(false) {}
 
 GbxRfid::~GbxRfid() {
@@ -11,74 +13,96 @@ GbxRfid::~GbxRfid() {
   }
 }
 
-bool GbxRfid::init(const std::string& port, int baudrate) {
+bool GbxRfid::init(const std::string& port, int baudrate, const SerialConfig& config) {
   try {
-    if(!initSerial(port, baudrate)) {
+    serial_config_ = config;
+    if(!initSerial(port, baudrate, config)) {
       return false;
     }
 
-    // 添加通信测试
+    // 初始化后等待设备稳定
+    ros::Duration(serial_config_.init_delay / 1000.0).sleep();
+
+    // 尝试通信测试
     if(!testCommunication()) {
       ROS_ERROR("Communication test failed");
       return false;
     }
 
+    // 设置区域
     if(!setRegion(CHINA_2_REGION)) {
       ROS_ERROR("Failed to set region to China 2");
       return false;
     }
 
-    if(!checkConnection()) {
-      return false;
-    }
-
     is_open_ = true;
 
+    // 设置功率
     std::vector<uint8_t> power_cmd = {
         0xBB, 0x00, 0xB6, 0x00, 0x02, 0x07, 0xD0, 0x8F, 0x7E
     };
     ROS_INFO_STREAM("Setting power command: " << commandToHexString(power_cmd));
-    sendCommand(power_cmd);
+    if (!sendCommand(power_cmd)) {
+      ROS_WARN("Failed to set power, but continuing initialization");
+    }
 
     ROS_INFO("Successfully initialized RFID reader");
     return true;
-  } catch(std::exception& e) {
+  } catch(const std::exception& e) {
     ROS_ERROR_STREAM("Exception in init: " << e.what());
     return false;
   }
 }
 
-bool GbxRfid::initSerial(const std::string port, int baudrate) {
+bool GbxRfid::initSerial(const std::string port, int baudrate, const SerialConfig& config) {
   try {
+    // 如果端口已经打开，先关闭
+    if (ser_.isOpen()) {
+      ser_.close();
+    }
+
     ser_.setPort(port);
     ser_.setBaudrate(baudrate);
-        
-    // 设置其他串口参数
+
+    // 设置串口参数
     ser_.setBytesize(serial::eightbits);
     ser_.setParity(serial::parity_none);
     ser_.setStopbits(serial::stopbits_one);
     ser_.setFlowcontrol(serial::flowcontrol_none);
-        
-    serial::Timeout to = serial::Timeout::simpleTimeout(1000);
+
+    // 设置超时
+    serial::Timeout to = serial::Timeout::simpleTimeout(config.timeout);
+    to.read_timeout_constant = config.read_timeout;
+    to.read_timeout_multiplier = 50;
+    to.write_timeout_constant = config.write_timeout;
+    to.write_timeout_multiplier = 50;
     ser_.setTimeout(to);
 
     ROS_INFO("Attempting to open port %s at %d baud", port.c_str(), baudrate);
     ser_.open();
-        
+
     if(ser_.isOpen()) {
       ROS_INFO("Serial port opened successfully");
-      // 清空缓冲区
+
+      // 清理缓冲区
       ser_.flush();
+      while(ser_.available()) {
+        ser_.read(ser_.available());
+      }
+
+      // 等待设备稳定
+      ros::Duration(config.init_delay / 1000.0).sleep();
+
       is_open_ = true;
       return true;
     } else {
       ROS_ERROR("Failed to open serial port");
       return false;
     }
-  } catch(serial::IOException& e) {
+  } catch(const serial::IOException& e) {
     ROS_ERROR_STREAM("Unable to open RFID serial port " << port << ". Error: " << e.what());
     return false;
-  } catch(std::exception& e) {
+  } catch(const std::exception& e) {
     ROS_ERROR_STREAM("Exception while opening port: " << e.what());
     return false;
   }
@@ -86,7 +110,7 @@ bool GbxRfid::initSerial(const std::string port, int baudrate) {
 
 bool GbxRfid::testCommunication() {
   ROS_INFO("Testing communication...");
-    
+
   // 发送获取功率的命令作为测试
   std::vector<uint8_t> test_cmd = {
       FRAME_HEAD,
@@ -97,28 +121,34 @@ bool GbxRfid::testCommunication() {
       0xB7,
       FRAME_END
   };
-    
+
   ROS_INFO_STREAM("Sending test command: " << commandToHexString(test_cmd));
-    
-  if(!sendCommand(test_cmd)) {
-    ROS_ERROR("Failed to send test command");
-    return false;
+
+  // 尝试三次
+  for (int i = 0; i < 3; ++i) {
+    if (i > 0) {
+      ROS_INFO("Retrying communication test attempt %d/3", i + 1);
+      ros::Duration(0.5).sleep();
+    }
+
+    if(!sendCommand(test_cmd)) {
+      continue;
+    }
+
+    std::vector<uint8_t> resp;
+    if (waitForValidResponse(resp, 2000)) {
+      ROS_INFO_STREAM("Test command successful, response: " << commandToHexString(resp));
+      return true;
+    }
   }
-    
-  std::vector<uint8_t> resp = readResponse(2000);  // 给更长的超时时间
-  if(resp.empty()) {
-    ROS_ERROR("No response to test command");
-    return false;
-  }
-    
-  ROS_INFO_STREAM("Test command response: " << commandToHexString(resp));
-    
-  return true;
+
+  ROS_ERROR("All communication test attempts failed");
+  return false;
 }
 
 bool GbxRfid::setRegion(uint8_t region) {
   ROS_INFO("Attempting to set region to: %d", region);
-    
+
   std::vector<uint8_t> cmd = {
       FRAME_HEAD,
       0x00,
@@ -130,89 +160,92 @@ bool GbxRfid::setRegion(uint8_t region) {
       FRAME_END
   };
 
-  uint8_t checksum = calculateChecksum(std::vector<uint8_t>(cmd.begin()+1, cmd.end()-2));
-  cmd[cmd.size()-2] = checksum;
+  // 计算校验和
+  cmd[6] = calculateChecksum(std::vector<uint8_t>(cmd.begin()+1, cmd.end()-2));
 
   ROS_INFO_STREAM("Sending region command: " << commandToHexString(cmd));
 
-  if(!sendCommand(cmd)) {
-    ROS_ERROR("Failed to send region command");
-    return false;
+  // 尝试三次
+  for (int i = 0; i < 3; ++i) {
+    if (i > 0) {
+      ROS_INFO("Retrying region setting attempt %d/3", i + 1);
+      ros::Duration(0.5).sleep();
+    }
+
+    if(!sendCommand(cmd)) {
+      continue;
+    }
+
+    std::vector<uint8_t> resp;
+    if (!waitForValidResponse(resp, 2000)) {
+      continue;
+    }
+
+    ROS_INFO_STREAM("Region setting response: " << commandToHexString(resp));
+
+    if (resp[0] != FRAME_HEAD || resp[2] != CMD_SET_REGION ||
+        resp[5] != RESP_OK || resp.back() != FRAME_END) {
+      ROS_ERROR("Invalid response format for region setting");
+      continue;
+    }
+
+    ROS_INFO("Successfully set region");
+    return true;
   }
 
-  std::vector<uint8_t> resp = readResponse();
-    
-  ROS_INFO_STREAM("Received region response: " << commandToHexString(resp));
-
-  if(resp.empty()) {
-    ROS_ERROR("No response received");
-    return false;
-  }
-
-  if(resp.size() < 8) {
-    ROS_ERROR("Response too short (size: %zu)", resp.size());
-    return false;
-  }
-
-  if(resp[0] != FRAME_HEAD) {
-    ROS_ERROR("Invalid frame head: 0x%02X", resp[0]);
-    return false;
-  }
-
-  if(resp[2] != CMD_SET_REGION) {
-    ROS_ERROR("Invalid command response: 0x%02X", resp[2]);
-    return false;
-  }
-
-  if(resp[5] != RESP_OK) {
-    ROS_ERROR("Region setting failed with response code: 0x%02X", resp[5]);
-    return false;
-  }
-
-  if(resp[7] != FRAME_END) {
-    ROS_ERROR("Invalid frame end: 0x%02X", resp[7]);
-    return false;
-  }
-
-  ROS_INFO("Successfully set region");
-  return true;
+  ROS_ERROR("Failed to set region after all attempts");
+  return false;
 }
 
-bool GbxRfid::checkConnection() {
-  std::vector<uint8_t> cmd = {
-      FRAME_HEAD,
-      0x00,
-      CMD_GET_POWER,
-      0x00,
-      0x00,
-      0xB7,
-      FRAME_END
-  };
+bool GbxRfid::waitForValidResponse(std::vector<uint8_t>& response, int timeout_ms) {
+  ros::Time start_time = ros::Time::now();
+  response.clear();
+  bool found_start = false;
 
-  ROS_INFO_STREAM("Sending connection check command: " << commandToHexString(cmd));
+  while(ros::Time::now() - start_time < ros::Duration(timeout_ms/1000.0)) {
+    if(ser_.available()) {
+      uint8_t byte;
+      ser_.read(&byte, 1);
 
-  if(!sendCommand(cmd)) {
-    ROS_ERROR("Failed to send connection check command");
-    return false;
+      // 寻找帧头
+      if(!found_start) {
+        if(byte == FRAME_HEAD) {
+          found_start = true;
+          response.push_back(byte);
+        }
+        continue;
+      }
+
+      response.push_back(byte);
+
+      // 检查是否是完整的帧
+      if(byte == FRAME_END && response.size() >= 7) {
+        // 验证校验和
+        uint8_t expected_checksum = calculateChecksum(
+            std::vector<uint8_t>(response.begin()+1, response.end()-2));
+        if(expected_checksum == response[response.size()-2]) {
+          return true;
+        } else {
+          ROS_WARN("Checksum mismatch: expected 0x%02X, got 0x%02X",
+                   expected_checksum, response[response.size()-2]);
+          // 重新开始
+          response.clear();
+          found_start = false;
+        }
+      }
+
+      // 如果数据太长，可能是错误的
+      if(response.size() > 100) {
+        ROS_WARN("Response too long, resetting");
+        response.clear();
+        found_start = false;
+      }
+    }
+    ros::Duration(0.001).sleep();
   }
 
-  std::vector<uint8_t> resp = readResponse();
-    
-  ROS_INFO_STREAM("Connection check response: " << commandToHexString(resp));
-
-  if(resp.size() < 9 || resp[0] != FRAME_HEAD || resp[2] != CMD_GET_POWER || resp[8] != FRAME_END) {
-    ROS_ERROR("Invalid response when checking connection");
-    return false;
-  }
-
-  return true;
-}
-
-void GbxRfid::close() {
-  if (is_open_) {
-    ser_.close();
-    is_open_ = false;
-  }
+  ROS_WARN_STREAM("Timeout waiting for valid response after " << timeout_ms << "ms");
+  return false;
 }
 
 bool GbxRfid::startReading(READ_MODE mode, int retry_count) {
@@ -249,13 +282,7 @@ bool GbxRfid::startReading(READ_MODE mode, int retry_count) {
   }
 
   ROS_DEBUG_STREAM("Sending read command: " << commandToHexString(cmd));
-
-  if(!sendCommand(cmd)) {
-    ROS_ERROR("Failed to send read command");
-    return false;
-  }
-
-  return true;
+  return sendCommand(cmd);
 }
 
 bool GbxRfid::stopReading() {
@@ -281,23 +308,18 @@ bool GbxRfid::parseResponse(const std::vector<uint8_t>& resp, RfidData& data) {
     return false;
   }
 
-  if(resp[0] != FRAME_HEAD) {
-    ROS_ERROR("Invalid frame head: 0x%02X", resp[0]);
+  if(resp[0] != FRAME_HEAD || resp.back() != FRAME_END) {
+    ROS_ERROR("Invalid frame markers");
     return false;
   }
 
-  if(resp.back() != FRAME_END) {
-    ROS_ERROR("Invalid frame end: 0x%02X", resp.back());
-    return false;
-  }
-
-  if(resp[2] == 0xFF && resp[5] == 0x15) {
+  if(resp[2] == 0xFF && resp[5] == RESP_NO_TAG) {
     ROS_DEBUG("No tag response detected");
     return false;
   }
 
   data.rssi = static_cast<int8_t>(resp[5]);
-  ROS_DEBUG("RSSI: %d", data.rssi);
+  data.serial_config = serial_config_;
 
   std::string epc;
   for(size_t i = 8; i < resp.size()-3; i++) {
@@ -305,30 +327,12 @@ bool GbxRfid::parseResponse(const std::vector<uint8_t>& resp, RfidData& data) {
     snprintf(hex, sizeof(hex), "%02X", resp[i]);
     epc += hex;
   }
-  ROS_DEBUG("Parsed EPC: %s", epc.c_str());
 
   data.epc = epc;
   data.timestamp = std::to_string(ros::Time::now().toSec());
 
+  ROS_DEBUG("Parsed EPC: %s, RSSI: %d", epc.c_str(), data.rssi);
   return true;
-}
-
-bool GbxRfid::getLatestData(RfidData& data) {
-  std::vector<uint8_t> resp = readResponse();
-  if(resp.empty()) {
-    ROS_DEBUG("No response received");
-    return false;
-  }
-
-  std::lock_guard<std::mutex> lock(mutex_);
-  if(parseResponse(resp, data)) {
-    ROS_DEBUG("Parsed tag data - EPC: %s, RSSI: %d", data.epc.c_str(), data.rssi);
-    latest_data_ = data;
-    return true;
-  }
-
-  ROS_DEBUG("Failed to parse response");
-  return false;
 }
 
 bool GbxRfid::sendCommand(const std::vector<uint8_t>& cmd) {
@@ -345,9 +349,18 @@ bool GbxRfid::sendCommand(const std::vector<uint8_t>& cmd) {
     }
 
     size_t written = ser_.write(cmd);
-    return written == cmd.size();
-  } catch(serial::IOException& e) {
+    bool success = (written == cmd.size());
+
+    if (!success) {
+      ROS_ERROR("Failed to write complete command");
+    }
+
+    return success;
+  } catch(const serial::IOException& e) {
     ROS_ERROR_STREAM("Failed to send command: " << e.what());
+    return false;
+  } catch(const std::exception& e) {
+    ROS_ERROR_STREAM("Exception while sending command: " << e.what());
     return false;
   }
 }
@@ -363,37 +376,10 @@ std::vector<uint8_t> GbxRfid::readResponse(int timeout_ms) {
   }
 
   std::vector<uint8_t> response;
-  ros::Time start_time = ros::Time::now();
-
-  while(ros::Time::now() - start_time < ros::Duration(timeout_ms/1000.0)) {
-    if(ser_.available()) {
-      uint8_t byte;
-      ser_.read(&byte, 1);
-      response.push_back(byte);
-
-      if(byte == FRAME_END && response.size() >= 7 && response[0] == FRAME_HEAD) {
-        // 检查是否有足够的数据和校验和是否正确
-        uint8_t expected_checksum = calculateChecksum(
-            std::vector<uint8_t>(response.begin()+1, response.end()-2));
-        if(expected_checksum == response[response.size()-2]) {
-          ROS_DEBUG_STREAM("Valid response received: " << commandToHexString(response));
-          return response;
-        } else {
-          ROS_WARN("Checksum mismatch: expected 0x%02X, got 0x%02X",
-                   expected_checksum, response[response.size()-2]);
-        }
-      }
-    }
-    ros::Duration(0.001).sleep();
+  if (!waitForValidResponse(response, timeout_ms)) {
+    return std::vector<uint8_t>();
   }
-
-  if(response.empty()) {
-    ROS_WARN("No response received within timeout period (%d ms)", timeout_ms);
-  } else {
-    ROS_WARN_STREAM("Incomplete response received: " << commandToHexString(response));
-  }
-
-  return std::vector<uint8_t>();
+  return response;
 }
 
 uint8_t GbxRfid::calculateChecksum(const std::vector<uint8_t>& data) {
@@ -410,12 +396,6 @@ std::vector<uint8_t> GbxRfid::hexStringToBytes(const std::string& hex) {
 
   // 移除所有空格
   hex_str.erase(std::remove(hex_str.begin(), hex_str.end(), ' '), hex_str.end());
-
-  // 确保字符串长度为偶数
-  if(hex_str.length() % 2 != 0) {
-    ROS_ERROR("Invalid hex string length");
-    return bytes;
-  }
 
   try {
     for(size_t i = 0; i < hex_str.length(); i += 2) {
@@ -460,6 +440,36 @@ std::string GbxRfid::commandToHexString(const std::vector<uint8_t>& cmd) {
   }
   ss << "]";
   return ss.str();
+}
+
+bool GbxRfid::getLatestData(RfidData& data) {
+  std::vector<uint8_t> resp = readResponse();
+  if(resp.empty()) {
+    ROS_DEBUG("No response received");
+    return false;
+  }
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  if(parseResponse(resp, data)) {
+    ROS_DEBUG("Parsed tag data - EPC: %s, RSSI: %d", data.epc.c_str(), data.rssi);
+    latest_data_ = data;
+    return true;
+  }
+
+  ROS_DEBUG("Failed to parse response");
+  return false;
+}
+
+void GbxRfid::close() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (is_open_) {
+    try {
+      ser_.close();
+    } catch(const std::exception& e) {
+      ROS_WARN_STREAM("Exception while closing port: " << e.what());
+    }
+    is_open_ = false;
+  }
 }
 
 } // namespace gbx_rfid
