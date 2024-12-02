@@ -65,18 +65,16 @@ public:
   void cleanup() {
     std::cout << "Starting cleanup of RFID monitor..." << std::endl;
 
-    // 反向遍历读取器进行清理
     for (auto it = readers_.rbegin(); it != readers_.rend(); ++it) {
       if (it->second) {
         std::cout << "Cleaning up reader " << it->first << std::endl;
         it->second->stopReading();
-        ros::Duration(0.2).sleep();  // 给时间让停止命令生效
+        ros::Duration(0.2).sleep();
         it->second->close();
-        ros::Duration(0.2).sleep();  // 给时间让关闭操作完成
+        ros::Duration(0.2).sleep();
       }
     }
 
-    // 清空读取器映射
     readers_.clear();
     std::cout << "RFID monitor cleanup completed" << std::endl;
   }
@@ -90,7 +88,6 @@ public:
       ros::spinOnce();
       rate.sleep();
     }
-    // 程序结束时进行清理
     cleanup();
   }
 
@@ -120,7 +117,6 @@ private:
       return false;
     }
 
-    // 加载配置参数
     nh.param("init_scan_duration", init_scan_duration_, 3);
     nh.param("init_scan_rate", init_scan_rate_, 20);
     nh.param("scan_rate", scan_rate_, 10);
@@ -163,7 +159,7 @@ private:
         gbx_rfid::RfidData data;
         if (reader_pair.second->getLatestData(data)) {
           std::string ascii_epc = convertEpcToAscii(data.epc);
-          system_tags_[reader_pair.first].insert(ascii_epc);
+          system_tags_.insert(ascii_epc);  // 将系统标签添加到共享集合中
           any_tags_found = true;
         }
       }
@@ -173,24 +169,16 @@ private:
     }
 
     // 打印扫描结果
-    for (const auto& reader_tags : system_tags_) {
-      size_t tag_count = reader_tags.second.size();
-      if (tag_count > 0) {
-        ROS_INFO_STREAM("Reader " << reader_tags.first << " found "
-                                  << tag_count << " system tags:");
-        for (const auto& tag : reader_tags.second) {
-          ROS_INFO_STREAM("  - System tag: " << tag);
-        }
-      } else {
-        ROS_WARN_STREAM("Reader " << reader_tags.first << " found no system tags");
+    if (!system_tags_.empty()) {
+      ROS_INFO_STREAM("Found " << system_tags_.size() << " system tags:");
+      for (const auto& tag : system_tags_) {
+        ROS_INFO_STREAM("  - System tag: " << tag);
       }
-    }
-
-    if (!any_tags_found) {
+    } else {
       ROS_WARN("No system tags were found during initialization scan");
     }
 
-    return true;  // 即使没有找到系统标签也返回true，因为这不是错误状态
+    return true;
   }
 
   void doorStateCallback(const navigation_msgs::CabinetDoorArray::ConstPtr& msg) {
@@ -212,7 +200,6 @@ private:
 
     if (any_door_open) {
       if (!was_door_open_) {
-        // 门刚被打开
         tags_before_open_ = previous_tags;
         was_door_open_ = true;
         just_closed_ = false;
@@ -220,13 +207,11 @@ private:
         ROS_INFO("Door %s opened", newly_opened_door.c_str());
       }
     } else if (was_door_open_) {
-      // 门刚被关闭
       was_door_open_ = false;
       just_closed_ = true;
       last_open_door_id_ = open_door_id_;
       open_door_id_ = "";
 
-      // 处理关门后的标签变化
       processTagChanges();
     }
   }
@@ -248,7 +233,7 @@ private:
                                     << last_open_door_id_);
       }
     }
-    just_closed_ = false;  // 处理完标签变化后重置状态
+    just_closed_ = false;
   }
 
   void updateAllRfidData() {
@@ -266,14 +251,13 @@ private:
       gbx_rfid::RfidData data;
       if (reader_pair.second->getLatestData(data)) {
         if (data.rssi < rssi_threshold_) {
-          continue;  // RSSI太低，忽略
+          continue;
         }
 
         std::string ascii_epc = convertEpcToAscii(data.epc);
 
         // 检查是否为系统标签
-        if (system_tags_[reader_id].find(ascii_epc) !=
-            system_tags_[reader_id].end()) {
+        if (system_tags_.find(ascii_epc) != system_tags_.end()) {
           continue;  // 是系统标签，跳过
         }
 
@@ -284,7 +268,6 @@ private:
         tag_reading.last_seen = ros::Time::now();
         tag_reading.consecutive_reads++;
 
-        // 只有连续读取次数达到阈值才认为是有效标签
         if (tag_reading.consecutive_reads >= min_consecutive_reads_) {
           current_tags_[reader_id].insert(ascii_epc);
 
@@ -323,26 +306,26 @@ private:
   }
 
   // 系统标签管理接口
-  void addSystemTag(const std::string& reader_id, const std::string& tag) {
+  void addSystemTag(const std::string& tag) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    system_tags_[reader_id].insert(tag);
+    system_tags_.insert(tag);
   }
 
-  void removeSystemTag(const std::string& reader_id, const std::string& tag) {
+  void removeSystemTag(const std::string& tag) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    system_tags_[reader_id].erase(tag);
+    system_tags_.erase(tag);
   }
 
-  bool isSystemTag(const std::string& reader_id, const std::string& tag) {
+  bool isSystemTag(const std::string& tag) {
     std::lock_guard<std::mutex> lock(data_mutex_);
-    return system_tags_[reader_id].find(tag) != system_tags_[reader_id].end();
+    return system_tags_.find(tag) != system_tags_.end();
   }
 
 private:
   std::vector<ReaderConfig> reader_configs_;
   std::map<std::string, std::unique_ptr<gbx_rfid::GbxRfid>> readers_;
   std::map<std::string, std::set<std::string>> current_tags_;     // reader_id -> tags
-  std::map<std::string, std::set<std::string>> system_tags_;      // reader_id -> system tags
+  std::set<std::string> system_tags_;                             // 共享的系统标签集合
   std::map<std::string, std::set<std::string>> tags_before_open_; // 开门前的标签状态
   std::map<std::string, std::map<std::string, TagReading>> tag_readings_; // 标签读取记录
 
@@ -353,15 +336,15 @@ private:
   std::string open_door_id_;
   std::string last_open_door_id_;
   bool was_door_open_{false};
-  bool just_closed_{false};  // 标记门是否刚刚关闭
-  std::mutex data_mutex_;    // 保护共享数据的互斥锁
+  bool just_closed_{false};
+  std::mutex data_mutex_;
 
   // 配置参数
-  int init_scan_duration_{3};     // 初始扫描持续时间(秒)
-  int init_scan_rate_{20};        // 初始扫描频率(Hz)
-  int scan_rate_{10};             // 正常扫描频率(Hz)
-  int rssi_threshold_{-70};       // RSSI阈值
-  int min_consecutive_reads_{3};   // 最小连续读取次数
+  int init_scan_duration_{3};
+  int init_scan_rate_{20};
+  int scan_rate_{10};
+  int rssi_threshold_{-70};
+  int min_consecutive_reads_{3};
 };
 
 int main(int argc, char** argv) {
