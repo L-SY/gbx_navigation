@@ -14,8 +14,19 @@ MainWindow::MainWindow()
       , returnTimer(new QTimer(this))
       , currentMode(NONE)
       , selectedBoxId(-1)
+      , infoHub(nullptr)  // 显式初始化 infoHub
 {
-  setObjectName("DeliveryRobotPlugin");
+  qDebug() << "MainWindow: Constructor starting...";
+  try {
+    setObjectName("DeliveryRobotPlugin");
+    qDebug() << "MainWindow: Constructor completed successfully";
+  } catch (const std::exception& e) {
+    qDebug() << "MainWindow: Exception in constructor:" << e.what();
+    throw;
+  } catch (...) {
+    qDebug() << "MainWindow: Unknown exception in constructor";
+    throw;
+  }
 }
 
 MainWindow::~MainWindow()
@@ -49,25 +60,62 @@ void MainWindow::setupInfoHub()
 
 void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
 {
-  widget_ = new QMainWindow();
-  ui->setupUi(widget_);
+  qDebug() << "MainWindow: initPlugin starting...";
 
-  setupUi();
-  setupBackground();
-  setupConnections();
-  setupBoxButtons();
-  setupInfoHub();
+  try {
+    // 创建主窗口
+    qDebug() << "MainWindow: Creating main window";
+    widget_ = new QMainWindow();
+    if (!widget_) {
+      throw std::runtime_error("Failed to create main window");
+    }
 
-  // 设置定时器
-  returnTimer->setInterval(5000);  // 5秒
-  returnTimer->setSingleShot(true);
-  connect(returnTimer, &QTimer::timeout, this, &MainWindow::switchToMainPage);
+    qDebug() << "MainWindow: Setting up UI";
+    ui->setupUi(widget_);
 
-  // 初始化页面
-  currentPage = MAIN_PAGE;
-  ui->stackedWidget->setCurrentWidget(ui->mainPage);
+    // 检查关键组件
+    if (!ui->stackedWidget) {
+      throw std::runtime_error("Failed to initialize stacked widget");
+    }
 
-  context.addWidget(widget_);
+    // 按顺序初始化各个组件
+    qDebug() << "MainWindow: Setting up basic UI components";
+    setupUi();
+
+    qDebug() << "MainWindow: Setting up background";
+    setupBackground();
+
+    qDebug() << "MainWindow: Setting up connections";
+    setupConnections();
+
+    qDebug() << "MainWindow: Setting up box buttons";
+    setupBoxButtons();
+
+    qDebug() << "MainWindow: Setting up InfoHub";
+    setupInfoHub();
+
+    // 设置定时器
+    qDebug() << "MainWindow: Setting up return timer";
+    returnTimer->setInterval(5000);  // 5秒
+    returnTimer->setSingleShot(true);
+    connect(returnTimer, &QTimer::timeout, this, &MainWindow::switchToMainPage);
+
+    // 初始化页面
+    qDebug() << "MainWindow: Initializing main page";
+    currentPage = MAIN_PAGE;
+    ui->stackedWidget->setCurrentWidget(ui->mainPage);
+
+    qDebug() << "MainWindow: Adding widget to context";
+    context.addWidget(widget_);
+
+    qDebug() << "MainWindow: initPlugin completed successfully";
+  } catch (const std::exception& e) {
+    qDebug() << "MainWindow: Exception in initPlugin:" << e.what();
+    throw;
+  } catch (...) {
+    qDebug() << "MainWindow: Unknown exception in initPlugin";
+    throw;
+  }
 }
 
 void MainWindow::setupUi()
