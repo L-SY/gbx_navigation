@@ -88,7 +88,7 @@ private:
   bool objectDetected;
 
   void setupInfoHub();
-  void updateBoxAvailability(const std::vector<navigation_msgs::CabinetContent>& contents);
+  void updateCabinetAvailability(const std::vector<navigation_msgs::CabinetContent>& contents);
   void handleDoorStateUpdate();
   void handleContentsUpdate();
   void handleTrajectoryResult(bool success, const QString& message);

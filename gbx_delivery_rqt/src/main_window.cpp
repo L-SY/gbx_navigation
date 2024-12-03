@@ -409,10 +409,10 @@ void MainWindow::handleContentsUpdate()
   if (!infoHub) return;
 
   const auto& contents = infoHub->getCurrentContents();
-  updateBoxAvailability(contents);
+  updateCabinetAvailability(contents);
 }
 
-void MainWindow::updateBoxAvailability(const std::vector<navigation_msgs::CabinetContent>& contents)
+void MainWindow::updateCabinetAvailability(const std::vector<navigation_msgs::CabinetContent>& contents)
 {
   // 首先将所有箱子设置为空闲状态（绿色）
   for (auto it = cabinetButtons.begin(); it != cabinetButtons.end(); ++it) {
@@ -421,16 +421,47 @@ void MainWindow::updateBoxAvailability(const std::vector<navigation_msgs::Cabine
 
   // 更新已占用的箱子状态（红色）
   for (const auto& content : contents) {
-    int boxId = std::stoi(content.box.box_id);
-    if (cabinetButtons.contains(boxId)) {
-      auto* button = cabinetButtons[boxId];
-      updateCabinetButtonStyle(button, false);
+    try {
+      // 检查 box_id 是否为空
+      if (content.box.box_id.empty()) {
+        continue;  // 跳过空的 box_id
+      }
+
+      // 尝试解析 box_id
+      int boxId = 0;
+      try {
+        boxId = std::stoi(content.box.box_id);
+      } catch (const std::exception& e) {
+        qDebug() << "Error parsing box_id:" << QString::fromStdString(content.box.box_id)
+                 << "Error:" << e.what();
+        continue;  // 跳过无效的 box_id
+      }
+
+      // 验证 boxId 的范围
+      if (boxId <= 0 || boxId > cabinetButtons.size()) {
+        qDebug() << "Invalid box_id range:" << boxId;
+        continue;
+      }
+
+      // 确保按钮存在
+      if (cabinetButtons.contains(boxId)) {
+        auto* button = cabinetButtons[boxId];
+        if (button) {
+          updateCabinetButtonStyle(button, false);
+        }
+      }
+    } catch (const std::exception& e) {
+      qDebug() << "Unexpected error in updateCabinetAvailability:" << e.what();
+      continue;  // 继续处理下一个内容
     }
   }
 }
 
+// 更新按钮样式的函数保持不变
 void MainWindow::updateCabinetButtonStyle(QPushButton* button, bool isEmpty)
 {
+  if (!button) return;  // 添加空指针检查
+
   if (isEmpty) {
     button->setEnabled(true);
     button->setStyleSheet(
