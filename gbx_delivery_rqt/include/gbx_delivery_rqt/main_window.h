@@ -53,7 +53,6 @@ private slots:
   void handlePhoneNumberSubmit();   // 处理手机号提交
   void handleBoxSelection(int box); // 处理箱子选择
   void handleDestinationSelect(int destination); // 处理目的地选择
-  void handleDoorStateChange(bool isOpen, int boxId); // 处理箱门状态变化
   void handleTimeout(); // 处理定时器超时
 
 signals:
@@ -83,7 +82,7 @@ private:
   gbx_rqt_interact::InformationHub* infoHub;
   QTimer* returnTimer;      // 用于自动返回主页的定时器
 
-  void updateBoxButtonStyle(QPushButton* button, bool isEmpty);
+  void updateCabinetButtonStyle(QPushButton* button, bool isEmpty);
   void startWaitForObjectDetection();
   QTimer* objectDetectionTimer;
   bool objectDetected;
@@ -94,13 +93,13 @@ private:
   void handleContentsUpdate();
   void handleTrajectoryResult(bool success, const QString& message);
 
-  QMap<int, QPushButton*> boxButtons;  // To store box button references
+  QMap<int, QPushButton*> cabinetButtons;  // To store box button references
 
   void setupUi();           // 设置UI
   void setupBackground();   // 设置背景
   void setupConnections();  // 设置信号槽连接
   void initializePages();   // 初始化所有页面
-  void setupBoxButtons();   // 设置箱子按钮
+  void setupCabinetButtons();   // 设置箱子按钮
   void updateDoorStatus(int boxId, bool isOpen); // 更新箱门状态显示
 
   bool validatePhoneNumber(const QString& phone, bool isShortPhone = false);
@@ -109,7 +108,7 @@ private:
   PageIndex currentPage;    // 当前页面索引
   DeliveryMode currentMode; // 当前模式（取件/寄件）
   QString lastPhoneNumber;  // 存储寄件人手机号
-  int selectedBoxId;        // 当前选中的箱子ID
+  int selectedCabinetId;        // 当前选中的箱子ID
 
   void setupDestinationPage();  // 设置目的地选择页面
   void createDestinationMarkers();  // 创建目的地标记

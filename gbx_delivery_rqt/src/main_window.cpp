@@ -14,7 +14,7 @@ MainWindow::MainWindow()
       , widget_(nullptr)
       , returnTimer(new QTimer(this))
       , currentMode(NONE)
-      , selectedBoxId(-1)
+      , selectedCabinetId(-1)
       , infoHub(nullptr)  // 显式初始化 infoHub
 {
   qDebug() << "MainWindow: Constructor starting...";
@@ -90,7 +90,7 @@ void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
     setupConnections();
 
     qDebug() << "MainWindow: Setting up box buttons";
-    setupBoxButtons();
+    setupCabinetButtons();
 
     qDebug() << "MainWindow: Setting up InfoHub";
     setupInfoHub();
@@ -306,7 +306,7 @@ void MainWindow::setupUi()
   ui->pickupPhoneEdit->setValidator(shortPhoneValidator);
 }
 
-void MainWindow::setupBoxButtons()
+void MainWindow::setupCabinetButtons()
 {
   QGridLayout* leftLayout = new QGridLayout();
   QGridLayout* rightLayout = new QGridLayout();
@@ -322,7 +322,7 @@ void MainWindow::setupBoxButtons()
       handleBoxSelection((i + 1) * 2);
     });
     leftLayout->addWidget(button, i, 0);
-    boxButtons.insert((i + 1) * 2, button);  // Store button reference
+    cabinetButtons.insert((i + 1) * 2, button);  // Store button reference
   }
 
   // 右侧 1,3,5
@@ -335,7 +335,7 @@ void MainWindow::setupBoxButtons()
       handleBoxSelection(i * 2 + 1);
     });
     rightLayout->addWidget(button, i, 0);
-    boxButtons.insert(i * 2 + 1, button);  // Store button reference
+    cabinetButtons.insert(i * 2 + 1, button);  // Store button reference
   }
 
   mainLayout->addLayout(leftLayout);
@@ -345,7 +345,7 @@ void MainWindow::setupBoxButtons()
 
 void MainWindow::handleBoxSelection(int box)
 {
-  selectedBoxId = box;
+  selectedCabinetId = box;
   if (infoHub) {
     infoHub->sendBoxCommand(box - 1);  // 发送开箱命令
     ui->boxOpenLabel->setText(QString("箱子%1已打开\n请放入物品").arg(box));
@@ -363,20 +363,26 @@ void MainWindow::startWaitForObjectDetection()
         const auto& contents = infoHub->getCurrentContents();
         bool found = false;
 
-        // 查找当前选中箱子的内容
+        QString targetCabinetId = QString("cabinet_%1").arg(selectedCabinetId);
+
+        // 遍历找到对应的 cabinet
         for (const auto& content : contents) {
-          int boxId = std::stoi(content.box.box_id);
-          if (boxId == selectedBoxId) {
-            found = true;
-            ui->boxOpenLabel->setText(QString("检测到物品已放入箱子%1中").arg(selectedBoxId));
-            QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
-            break;
+          if (content.cabinet_id == targetCabinetId.toStdString()) {
+            // 检查 box 是否为空
+            if (!content.box.box_id.empty()) {
+              found = true;
+              ui->boxOpenLabel->setText(QString("检测到物品已放入柜子%1中").arg(selectedCabinetId));
+              QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
+            } else {
+              ui->boxOpenLabel->setText(QString("未检测到物品，请确认是否放入柜子%1中").arg(selectedCabinetId));
+              // 继续检测
+              objectDetectionTimer->start(1000);  // 每秒检查一次
+            }
+            break;  // 找到对应的柜子就退出循环
           }
         }
 
         if (!found) {
-          ui->boxOpenLabel->setText(QString("未检测到物品，请确认是否放入箱子%1中").arg(selectedBoxId));
-          // 继续检测
           objectDetectionTimer->start(1000);  // 每秒检查一次
         }
       }
@@ -418,21 +424,21 @@ void MainWindow::handleContentsUpdate()
 void MainWindow::updateBoxAvailability(const std::vector<navigation_msgs::CabinetContent>& contents)
 {
   // 首先将所有箱子设置为空闲状态（绿色）
-  for (auto it = boxButtons.begin(); it != boxButtons.end(); ++it) {
-    updateBoxButtonStyle(it.value(), true);
+  for (auto it = cabinetButtons.begin(); it != cabinetButtons.end(); ++it) {
+    updateCabinetButtonStyle(it.value(), true);
   }
 
   // 更新已占用的箱子状态（红色）
   for (const auto& content : contents) {
     int boxId = std::stoi(content.box.box_id);
-    if (boxButtons.contains(boxId)) {
-      auto* button = boxButtons[boxId];
-      updateBoxButtonStyle(button, false);
+    if (cabinetButtons.contains(boxId)) {
+      auto* button = cabinetButtons[boxId];
+      updateCabinetButtonStyle(button, false);
     }
   }
 }
 
-void MainWindow::updateBoxButtonStyle(QPushButton* button, bool isEmpty)
+void MainWindow::updateCabinetButtonStyle(QPushButton* button, bool isEmpty)
 {
   if (isEmpty) {
     button->setEnabled(true);
@@ -468,11 +474,11 @@ void MainWindow::handleTrajectoryResult(bool success, const QString& message)
 void MainWindow::updateDoorStatus(int boxId, bool isOpen)
 {
   if (isOpen) {
-    if (boxId == selectedBoxId) {
+    if (boxId == selectedCabinetId) {
       emit boxOpened(boxId);
     }
   } else {
-    if (boxId == selectedBoxId) {
+    if (boxId == selectedCabinetId) {
       emit boxClosed(boxId);
     }
   }
@@ -724,15 +730,13 @@ void MainWindow::switchToBoxSelection()
 {
   currentPage = BOX_SELECTION_PAGE;
   ui->stackedWidget->setCurrentWidget(ui->boxSelectionPage);
-//  TODO: Just for test
-  handleDoorStateChange(false, 1);
 }
 
 void MainWindow::switchToBoxOpen()
 {
   currentPage = BOX_OPEN_PAGE;
   ui->stackedWidget->setCurrentWidget(ui->boxOpenPage);
-  ui->boxOpenLabel->setText(QString("箱子%1已打开\n取/放物品后请关门").arg(selectedBoxId));
+  ui->boxOpenLabel->setText(QString("箱子%1已打开\n取/放物品后请关门").arg(selectedCabinetId));
 }
 
 void MainWindow::switchToDoorClosed()
@@ -746,7 +750,7 @@ void MainWindow::switchToMainPage()
 {
   currentMode = NONE;
   currentPage = MAIN_PAGE;
-  selectedBoxId = -1;
+  selectedCabinetId = -1;
   ui->stackedWidget->setCurrentWidget(ui->mainPage);
   ui->deliveryPhoneEdit->clear();
   ui->pickupPhoneEdit->clear();
@@ -773,20 +777,6 @@ void MainWindow::handlePhoneNumberSubmit()
     } else {
       ui->pickupPhoneEdit->clear();
       showErrorMessage("手机号输入有误，请检查");
-    }
-  }
-}
-
-void MainWindow::handleDoorStateChange(bool isOpen, int boxId)
-{
-  updateDoorStatus(boxId, isOpen);
-  if (!isOpen) {  // 门已关闭
-    if (currentMode == DELIVERY) {
-      // 寄件模式：门关闭后跳转到选择目的地
-      switchToDestination();
-    } else {
-      // 取件模式：门关闭后跳转到感谢页面
-      switchToDoorClosed();
     }
   }
 }
