@@ -394,16 +394,6 @@ void MainWindow::startWaitForObjectDetection()
 //  objectDetectionTimer->start(1000);
 }
 
-void MainWindow::handleDestinationSelect(int destination)
-{
-  emit destinationSelected(destination);
-  if (infoHub) {
-    // Assuming path names are like "A", "B", "C" etc.
-    QString pathName = QString(QChar('A' + destination - 1));
-    infoHub->sendTrajectoryRequest(pathName);
-  }
-}
-
 void MainWindow::handleDoorStateUpdate()
 {
   if (!infoHub) return;
@@ -574,7 +564,8 @@ void MainWindow::setupDestinationPage()
 
   // 创建区域按钮
   QStringList areas = {"A区", "B区", "C区", "D区", "E区", "F区", "G区"};
-  for (const QString& area : areas) {
+  for (int i = 0; i < areas.size(); ++i) {
+    const QString& area = areas[i];
     QPushButton* button = new QPushButton(area, buttonContainer);
     button->setMinimumSize(100, 60);
     button->setFont(QFont("Microsoft YaHei", 14, QFont::Bold));
@@ -593,11 +584,9 @@ void MainWindow::setupDestinationPage()
         "}"
     );
 
-    connect(button, &QPushButton::clicked, this, [this, &area, areas]() {
-      int index = areas.indexOf(area);
-      if (index != -1) {
-        handleDestinationSelect(index + 1);
-      }
+    // 使用索引直接连接槽函数
+    connect(button, &QPushButton::clicked, this, [this, i]() {
+      handleDestinationSelect(i + 1);
     });
 
     buttonLayout->addWidget(button);
@@ -611,6 +600,17 @@ void MainWindow::setupDestinationPage()
 
   // 更新界面
   ui->destinationPage->update();
+}
+
+void MainWindow::handleDestinationSelect(int destination)
+{
+  emit destinationSelected(destination);
+  if (infoHub) {
+    // 使用 A-G 对应 1-7
+    QString pathName = QString(QChar('A' + destination - 1));
+    qDebug() << "Requesting trajectory for path:" << pathName;
+    infoHub->sendTrajectoryRequest(pathName);
+  }
 }
 
 void MainWindow::createDestinationMarkers()
