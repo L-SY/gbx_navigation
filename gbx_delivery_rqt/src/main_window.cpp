@@ -355,42 +355,43 @@ void MainWindow::handleBoxSelection(int box)
 
 void MainWindow::startWaitForObjectDetection()
 {
-  if (!objectDetectionTimer) {
-    objectDetectionTimer = new QTimer(this);
-    objectDetectionTimer->setSingleShot(true);
-    connect(objectDetectionTimer, &QTimer::timeout, this, [this]() {
-      if (infoHub) {
-        const auto& contents = infoHub->getCurrentContents();
-        bool found = false;
-
-        QString targetCabinetId = QString("cabinet_%1").arg(selectedCabinetId);
-
-        // 遍历找到对应的 cabinet
-        for (const auto& content : contents) {
-          if (content.cabinet_id == targetCabinetId.toStdString()) {
-            // 检查 box 是否为空
-            if (!content.box.box_id.empty()) {
-              found = true;
-              ui->boxOpenLabel->setText(QString("检测到物品已放入柜子%1中").arg(selectedCabinetId));
-              QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
-            } else {
-              ui->boxOpenLabel->setText(QString("未检测到物品，请确认是否放入柜子%1中").arg(selectedCabinetId));
-              // 继续检测
-              objectDetectionTimer->start(1000);  // 每秒检查一次
-            }
-            break;  // 找到对应的柜子就退出循环
-          }
-        }
-
-        if (!found) {
-          objectDetectionTimer->start(1000);  // 每秒检查一次
-        }
-      }
-    });
-  }
-
-  // 启动定时器开始检测
-  objectDetectionTimer->start(1000);
+  QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
+//  if (!objectDetectionTimer) {
+//    objectDetectionTimer = new QTimer(this);
+//    objectDetectionTimer->setSingleShot(true);
+//    connect(objectDetectionTimer, &QTimer::timeout, this, [this]() {
+//      if (infoHub) {
+//        const auto& contents = infoHub->getCurrentContents();
+//        bool found = false;
+//
+//        QString targetCabinetId = QString("cabinet_%1").arg(selectedCabinetId);
+//
+//        // 遍历找到对应的 cabinet
+//        for (const auto& content : contents) {
+//          if (content.cabinet_id == targetCabinetId.toStdString()) {
+//            // 检查 box 是否为空
+//            if (!content.box.box_id.empty()) {
+//              found = true;
+//              ui->boxOpenLabel->setText(QString("检测到物品已放入柜子%1中").arg(selectedCabinetId));
+//              QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
+//            } else {
+//              ui->boxOpenLabel->setText(QString("未检测到物品，请确认是否放入柜子%1中").arg(selectedCabinetId));
+//              // 继续检测
+//              objectDetectionTimer->start(1000);  // 每秒检查一次
+//            }
+//            break;  // 找到对应的柜子就退出循环
+//          }
+//        }
+//
+//        if (!found) {
+//          objectDetectionTimer->start(1000);  // 每秒检查一次
+//        }
+//      }
+//    });
+//  }
+//
+//  // 启动定时器开始检测
+//  objectDetectionTimer->start(1000);
 }
 
 void MainWindow::handleDestinationSelect(int destination)
