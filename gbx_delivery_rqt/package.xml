@@ -26,6 +26,7 @@
   <exec_depend>libqt5-gui</exec_depend>
   <exec_depend>libqt5-widgets</exec_depend>
 
+  <depend>navigation_msgs</depend>
   <export>
     <rqt_gui plugin="${prefix}/plugin.xml"/>
   </export>

@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
         rqt_gui
         rqt_gui_cpp
         std_msgs
+        navigation_msgs
 )
 
 if(CMAKE_VERSION VERSION_LESS "3.1.0")
@@ -23,12 +24,12 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets SerialPort)
 
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES ${PROJECT_NAME}
-        CATKIN_DEPENDS roscpp rqt_gui rqt_gui_cpp std_msgs
+        CATKIN_DEPENDS roscpp rqt_gui rqt_gui_cpp std_msgs navigation_msgs
 )
 
 include_directories(
@@ -41,10 +42,12 @@ include_directories(
 # 创建源文件列表
 set(${PROJECT_NAME}_SRCS
         src/main_window.cpp
+        src/information_hub.cpp
 )
 
 set(${PROJECT_NAME}_HDRS
         include/${PROJECT_NAME}/main_window.h
+        include/${PROJECT_NAME}/information_hub.h
 )
 
 set(${PROJECT_NAME}_UIS
@@ -70,6 +73,7 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 target_link_libraries(${PROJECT_NAME}
         ${catkin_LIBRARIES}
         Qt5::Widgets
+        Qt5::SerialPort
 )
 
 # 安装目标
