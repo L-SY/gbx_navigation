@@ -237,21 +237,37 @@ void MainWindow::setupUi()
 
 void MainWindow::setupBoxButtons()
 {
-  // 创建9个箱子按钮
-  for (int i = 0; i < 9; i++) {
+  QGridLayout* leftLayout = new QGridLayout();
+  QGridLayout* rightLayout = new QGridLayout();
+  QHBoxLayout* mainLayout = new QHBoxLayout();
+
+  // 左侧 2,4,6
+  for (int i = 0; i < 3; i++) {
     QPushButton* button = new QPushButton(widget_);
-    button->setText(QString("箱子 %1").arg(i + 1));
+    button->setText(QString("箱子 %1").arg((i + 1) * 2));
     button->setMinimumSize(120, 80);
     button->setFont(QFont("Arial", 16, QFont::Bold));
-
     connect(button, &QPushButton::clicked, this, [this, i]() {
-      handleBoxSelection(i + 1);
+      handleBoxSelection((i + 1) * 2);
     });
-
-    int row = i / 3;
-    int col = i % 3;
-    ui->boxButtonsLayout->addWidget(button, row, col);
+    leftLayout->addWidget(button, i, 0);
   }
+
+  // 右侧 1,3,5
+  for (int i = 0; i < 3; i++) {
+    QPushButton* button = new QPushButton(widget_);
+    button->setText(QString("箱子 %1").arg(i * 2 + 1));
+    button->setMinimumSize(120, 80);
+    button->setFont(QFont("Arial", 16, QFont::Bold));
+    connect(button, &QPushButton::clicked, this, [this, i]() {
+      handleBoxSelection(i * 2 + 1);
+    });
+    rightLayout->addWidget(button, i, 0);
+  }
+
+  mainLayout->addLayout(leftLayout);
+  mainLayout->addLayout(rightLayout);
+  ui->boxButtonsLayout->addLayout(mainLayout, 0, 0); // 在(0,0)位置添加布局
 }
 
 void MainWindow::setupConnections()
