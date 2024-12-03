@@ -26,6 +26,27 @@ MainWindow::~MainWindow()
   }
 }
 
+void MainWindow::setupInfoHub()
+{
+  infoHub = new gbx_rqt_interact::InformationHub(this);
+
+  // Connect signals from InformationHub
+  connect(infoHub, &gbx_rqt_interact::InformationHub::doorStateChanged,
+          this, &MainWindow::handleDoorStateUpdate);
+  connect(infoHub, &gbx_rqt_interact::InformationHub::contentStateChanged,
+          this, &MainWindow::handleContentsUpdate);
+  connect(infoHub, &gbx_rqt_interact::InformationHub::trajectoryRequestResult,
+          this, &MainWindow::handleTrajectoryResult);
+
+  infoHub->init();
+  infoHub->start();  // Start the QThread
+
+  // Try to open serial port
+  if (!infoHub->openSerialPort()) {
+    showErrorMessage("无法打开串口，部分功能可能不可用");
+  }
+}
+
 void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   widget_ = new QMainWindow();
@@ -35,6 +56,7 @@ void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
   setupBackground();
   setupConnections();
   setupBoxButtons();
+  setupInfoHub();
 
   // 设置定时器
   returnTimer->setInterval(5000);  // 5秒
@@ -251,6 +273,7 @@ void MainWindow::setupBoxButtons()
       handleBoxSelection((i + 1) * 2);
     });
     leftLayout->addWidget(button, i, 0);
+    boxButtons.insert((i + 1) * 2, button);  // Store button reference
   }
 
   // 右侧 1,3,5
@@ -263,11 +286,95 @@ void MainWindow::setupBoxButtons()
       handleBoxSelection(i * 2 + 1);
     });
     rightLayout->addWidget(button, i, 0);
+    boxButtons.insert(i * 2 + 1, button);  // Store button reference
   }
 
   mainLayout->addLayout(leftLayout);
   mainLayout->addLayout(rightLayout);
-  ui->boxButtonsLayout->addLayout(mainLayout, 0, 0); // 在(0,0)位置添加布局
+  ui->boxButtonsLayout->addLayout(mainLayout, 0, 0);
+}
+
+void MainWindow::handleBoxSelection(int box)
+{
+  selectedBoxId = box;
+  if (infoHub) {
+    infoHub->sendBoxCommand(box - 1);  // Convert to 0-based index
+  }
+  emit boxOpened(box);
+}
+
+void MainWindow::handleDestinationSelect(int destination)
+{
+  emit destinationSelected(destination);
+  if (infoHub) {
+    // Assuming path names are like "A", "B", "C" etc.
+    QString pathName = QString(QChar('A' + destination - 1));
+    infoHub->sendTrajectoryRequest(pathName);
+  }
+}
+
+void MainWindow::handleDoorStateUpdate()
+{
+  if (!infoHub) return;
+
+  const uint8_t* states = infoHub->getDoorStates();
+  for (int i = 0; i < 6; i++) {
+    updateDoorStatus(i + 1, states[i + 1] == 1);
+  }
+}
+
+void MainWindow::handleContentsUpdate()
+{
+  if (!infoHub) return;
+
+  const auto& contents = infoHub->getCurrentContents();
+  updateBoxAvailability(contents);
+}
+
+void MainWindow::updateBoxAvailability(const std::vector<navigation_msgs::CabinetContent>& contents)
+{
+  // Reset all buttons to available state
+  for (auto it = boxButtons.begin(); it != boxButtons.end(); ++it) {
+    it.value()->setEnabled(true);
+    it.value()->setStyleSheet("");
+  }
+
+  // Disable occupied boxes
+  for (const auto& content : contents) {
+    int boxId = std::stoi(content.box.box_id);
+    if (boxButtons.contains(boxId)) {
+      auto* button = boxButtons[boxId];
+      if (currentMode == DELIVERY) {
+        // 在寄件模式下，已占用的箱子不可用
+        button->setEnabled(false);
+        button->setStyleSheet("QPushButton { background-color: #cccccc; }");
+      }
+      // 在取件模式下，所有箱子都可见，但样式不同
+      if (currentMode == PICKUP) {
+        button->setStyleSheet("QPushButton { background-color: #4CAF50; }");  // 绿色表示有物品
+      }
+    }
+  }
+}
+
+void MainWindow::handleTrajectoryResult(bool success, const QString& message)
+{
+  if (!success) {
+    showErrorMessage("导航请求失败: " + message);
+  }
+}
+
+void MainWindow::updateDoorStatus(int boxId, bool isOpen)
+{
+  if (isOpen) {
+    if (boxId == selectedBoxId) {
+      emit boxOpened(boxId);
+    }
+  } else {
+    if (boxId == selectedBoxId) {
+      emit boxClosed(boxId);
+    }
+  }
 }
 
 void MainWindow::setupConnections()
@@ -562,19 +669,6 @@ void MainWindow::handlePhoneNumberSubmit()
   }
 }
 
-void MainWindow::handleBoxSelection(int box)
-{
-  selectedBoxId = box;
-  // TODO: 发送开门命令
-  emit boxOpened(box);
-}
-
-void MainWindow::handleDestinationSelect(int destination)
-{
-  emit destinationSelected(destination);
-  // TODO: 处理目的地选择，启动导航
-}
-
 void MainWindow::handleDoorStateChange(bool isOpen, int boxId)
 {
   updateDoorStatus(boxId, isOpen);
@@ -587,12 +681,6 @@ void MainWindow::handleDoorStateChange(bool isOpen, int boxId)
       switchToDoorClosed();
     }
   }
-}
-
-void MainWindow::updateDoorStatus(int boxId, bool isOpen)
-{
-  isOpen = false;
-  // TODO: 更新箱门状态显示
 }
 
 bool MainWindow::validatePhoneNumber(const QString& phone, bool isShortPhone)

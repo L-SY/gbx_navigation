@@ -1,17 +1,18 @@
 #pragma once
 
-#include <rqt_gui_cpp/plugin.h>
-#include <QMainWindow>
-#include <QStackedWidget>
-#include <QTimer>
-#include <QLabel>
-#include <QVector>
-#include <QPoint>
+#include "gbx_delivery_rqt/information_hub.h"
 #include <QDebug>
-#include <QtSvg/QSvgRenderer>
+#include <QLabel>
+#include <QMainWindow>
 #include <QPainter>
 #include <QPixmap>
-//#include "serial_node.h"
+#include <QPoint>
+#include <QPushButton>
+#include <QStackedWidget>
+#include <QTimer>
+#include <QVector>
+#include <QtSvg/QSvgRenderer>
+#include <rqt_gui_cpp/plugin.h>
 
 namespace Ui {
 class MainWindow;
@@ -79,8 +80,16 @@ private:
 
   Ui::MainWindow* ui;
   QMainWindow* widget_;
-//  SerialNode* serialNode;
+  gbx_rqt_interact::InformationHub* infoHub;
   QTimer* returnTimer;      // 用于自动返回主页的定时器
+
+  void setupInfoHub();
+  void updateBoxAvailability(const std::vector<navigation_msgs::CabinetContent>& contents);
+  void handleDoorStateUpdate();
+  void handleContentsUpdate();
+  void handleTrajectoryResult(bool success, const QString& message);
+
+  QMap<int, QPushButton*> boxButtons;  // To store box button references
 
   void setupUi();           // 设置UI
   void setupBackground();   // 设置背景
