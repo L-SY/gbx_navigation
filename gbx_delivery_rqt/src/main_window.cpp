@@ -1,7 +1,8 @@
 #include "gbx_delivery_rqt/main_window.h"
 #include "ui_main_window.h"
-#include <QPushButton>
+#include <QGridLayout>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QRegExpValidator>
 #include <pluginlib/class_list_macros.h>
 
@@ -346,9 +347,44 @@ void MainWindow::handleBoxSelection(int box)
 {
   selectedBoxId = box;
   if (infoHub) {
-    infoHub->sendBoxCommand(box - 1);  // Convert to 0-based index
+    infoHub->sendBoxCommand(box - 1);  // 发送开箱命令
+    ui->boxOpenLabel->setText(QString("箱子%1已打开\n请放入物品").arg(box));
+    switchToBoxOpen();
   }
-  emit boxOpened(box);
+}
+
+void MainWindow::startWaitForObjectDetection()
+{
+  if (!objectDetectionTimer) {
+    objectDetectionTimer = new QTimer(this);
+    objectDetectionTimer->setSingleShot(true);
+    connect(objectDetectionTimer, &QTimer::timeout, this, [this]() {
+      if (infoHub) {
+        const auto& contents = infoHub->getCurrentContents();
+        bool found = false;
+
+        // 查找当前选中箱子的内容
+        for (const auto& content : contents) {
+          int boxId = std::stoi(content.box.box_id);
+          if (boxId == selectedBoxId) {
+            found = true;
+            ui->boxOpenLabel->setText(QString("检测到物品已放入箱子%1中").arg(selectedBoxId));
+            QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
+            break;
+          }
+        }
+
+        if (!found) {
+          ui->boxOpenLabel->setText(QString("未检测到物品，请确认是否放入箱子%1中").arg(selectedBoxId));
+          // 继续检测
+          objectDetectionTimer->start(1000);  // 每秒检查一次
+        }
+      }
+    });
+  }
+
+  // 启动定时器开始检测
+  objectDetectionTimer->start(1000);
 }
 
 void MainWindow::handleDestinationSelect(int destination)
@@ -381,27 +417,44 @@ void MainWindow::handleContentsUpdate()
 
 void MainWindow::updateBoxAvailability(const std::vector<navigation_msgs::CabinetContent>& contents)
 {
-  // Reset all buttons to available state
+  // 首先将所有箱子设置为空闲状态（绿色）
   for (auto it = boxButtons.begin(); it != boxButtons.end(); ++it) {
-    it.value()->setEnabled(true);
-    it.value()->setStyleSheet("");
+    updateBoxButtonStyle(it.value(), true);
   }
 
-  // Disable occupied boxes
+  // 更新已占用的箱子状态（红色）
   for (const auto& content : contents) {
     int boxId = std::stoi(content.box.box_id);
     if (boxButtons.contains(boxId)) {
       auto* button = boxButtons[boxId];
-      if (currentMode == DELIVERY) {
-        // 在寄件模式下，已占用的箱子不可用
-        button->setEnabled(false);
-        button->setStyleSheet("QPushButton { background-color: #cccccc; }");
-      }
-      // 在取件模式下，所有箱子都可见，但样式不同
-      if (currentMode == PICKUP) {
-        button->setStyleSheet("QPushButton { background-color: #4CAF50; }");  // 绿色表示有物品
-      }
+      updateBoxButtonStyle(button, false);
     }
+  }
+}
+
+void MainWindow::updateBoxButtonStyle(QPushButton* button, bool isEmpty)
+{
+  if (isEmpty) {
+    button->setEnabled(true);
+    button->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #4CAF50;"  // 绿色表示空箱
+        "    color: white;"
+        "    border-radius: 5px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #45a049;"
+        "}"
+    );
+  } else {
+    button->setEnabled(false);
+    button->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #f44336;"  // 红色表示有物品
+        "    color: white;"
+        "    border-radius: 5px;"
+        "}"
+    );
   }
 }
 
@@ -427,13 +480,20 @@ void MainWindow::updateDoorStatus(int boxId, bool isOpen)
 
 void MainWindow::setupConnections()
 {
-  // 基本页面切换
+  // 基本页面切
   connect(ui->pickupButton, &QPushButton::clicked, this, &MainWindow::switchToPickupMode);
   connect(ui->deliveryButton, &QPushButton::clicked, this, &MainWindow::switchToDeliveryMode);
 
   // 箱门状态变化
   connect(this, &MainWindow::boxOpened, this, &MainWindow::switchToBoxOpen);
-  connect(this, &MainWindow::boxClosed, this, &MainWindow::switchToDoorClosed);
+  connect(this, &MainWindow::boxClosed, this, [this](int boxId) {
+    if (currentMode == DELIVERY && currentPage == BOX_OPEN_PAGE) {
+      ui->boxOpenLabel->setText(QString("箱子%1已关闭\n正在检测物品...").arg(boxId));
+      startWaitForObjectDetection();
+    } else {
+      switchToDoorClosed();
+    }
+  });
 }
 
 void MainWindow::setupDestinationPage()

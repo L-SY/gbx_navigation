@@ -83,6 +83,11 @@ private:
   gbx_rqt_interact::InformationHub* infoHub;
   QTimer* returnTimer;      // 用于自动返回主页的定时器
 
+  void updateBoxButtonStyle(QPushButton* button, bool isEmpty);
+  void startWaitForObjectDetection();
+  QTimer* objectDetectionTimer;
+  bool objectDetected;
+
   void setupInfoHub();
   void updateBoxAvailability(const std::vector<navigation_msgs::CabinetContent>& contents);
   void handleDoorStateUpdate();
