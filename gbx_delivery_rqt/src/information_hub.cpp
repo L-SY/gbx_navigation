@@ -108,7 +108,7 @@ void InformationHub::initializeROS()
     nh_ = new ros::NodeHandle("~");
   }
 
-  trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/pub_trajectory");
+  trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/gbx_manual/pub_trajectory");
   door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
   cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,
                                         &InformationHub::cabinetContentCallback, this);
