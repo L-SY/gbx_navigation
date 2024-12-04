@@ -1,0 +1,10 @@
+# msg/IndoorDeliveryOrder.msg
+string Number
+string RFID
+string RFIDNumber
+string ReceiverPhone
+uint32 OrderNumber
+string ReceiverName
+string SenderName
+string Owner
+string Converted_RFID
