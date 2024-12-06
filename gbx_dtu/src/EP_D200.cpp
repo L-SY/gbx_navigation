@@ -58,11 +58,7 @@ void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& or
       {"services", json::array({service_item})}
   };
 
-  json service(result);
-  json services = json::array({service});
-  json root{{"services", services}};
-
-  std::string json_str = root.dump();
+  std::string json_str = result.dump();
   tx_buffer_.assign(json_str.begin(), json_str.end());
   send_flag_ = true;
 }
