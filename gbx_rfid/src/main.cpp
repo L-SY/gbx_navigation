@@ -306,12 +306,15 @@ private:
     all_msg.header.stamp = ros::Time::now();
 
     for (const auto& cabinet : cabinet_contents_) {
+      navigation_msgs::CabinetContent content;
+      content.cabinet_id = cabinet.first;
       if (!cabinet.second.empty()) {
-        navigation_msgs::CabinetContent content;
-        content.cabinet_id = cabinet.first;
         content.box.box_id = cabinet.second;
-        all_msg.cabinets.push_back(content);
       }
+      else{
+        content.box.box_id = "empty";
+      }
+      all_msg.cabinets.push_back(content);
     }
     all_content_pub_.publish(all_msg);
   }
