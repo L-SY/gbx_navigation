@@ -42,35 +42,14 @@ target_link_libraries(${PROJECT_NAME}_node
         nlohmann_json::nlohmann_json
 )
 
-if(CATKIN_ENABLE_TESTING)
-    find_package(rostest REQUIRED)
-
-    # 添加 gtest 单元测试
-    catkin_add_gtest(${PROJECT_NAME}_unittest
-            test/test_dtu.cpp
-    )
-
-    if(TARGET ${PROJECT_NAME}_unittest)
-        target_link_libraries(${PROJECT_NAME}_unittest
-                ${PROJECT_NAME}
-                ${catkin_LIBRARIES}
-                gtest
-        )
-    endif()
-
-    # 添加 rostest（使用 add_rostest 和 catkin_add_gtest 的组合替代 add_rostest_gtest）
-    add_rostest(test/test_dtu.launch)
-    catkin_add_gtest(${PROJECT_NAME}_test
-            test/test_dtu.cpp
-    )
-
-    if(TARGET ${PROJECT_NAME}_test)
-        target_link_libraries(${PROJECT_NAME}_test
-                ${PROJECT_NAME}
-                ${catkin_LIBRARIES}
-        )
-    endif()
-endif()
+add_executable(test_dtu
+        src/EP_D200.cpp
+        test/test_dtu.cpp)
+target_link_libraries(test_dtu
+        ${catkin_LIBRARIES}
+        gtest
+        gtest_main
+)
 
 ## Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}_node
