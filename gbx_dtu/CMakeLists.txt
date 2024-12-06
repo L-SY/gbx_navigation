@@ -59,7 +59,7 @@ if(CATKIN_ENABLE_TESTING)
     endif()
 
     # 添加 rostest（使用 add_rostest 和 catkin_add_gtest 的组合替代 add_rostest_gtest）
-#    add_rostest(test/test_dtu.launch)
+    add_rostest(test/test_dtu.launch)
     catkin_add_gtest(${PROJECT_NAME}_test
             test/test_dtu.cpp
     )

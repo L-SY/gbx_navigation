@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- 参数配置 -->
+    <arg name="serial_port" default="/dev/ttyUSB7"/>
+    <arg name="baudrate" default="115200"/>
+
+    <!-- 载入参数到参数服务器 -->
+    <param name="serial_port" value="$(arg serial_port)"/>
+    <param name="baudrate" value="$(arg baudrate)"/>
+
+    <!-- 加载测试依赖的其他节点（如果有的话）-->
+    <!-- <include file="$(find other_package)/launch/some_nodes.launch" /> -->
+
+    <!-- 这是我们的测试节点 -->
+    <node pkg="gbx_dtu" type="test_dtu" name="test_dtu" output="screen">
+        <param name="serial_port" value="$(arg serial_port)"/>
+        <param name="baudrate" value="$(arg baudrate)"/>
+        <!-- 其他测试相关的参数 -->
+        <param name="test_duration" value="10.0"/>  <!-- 测试持续时间（秒） -->
+    </node>
+</launch>
