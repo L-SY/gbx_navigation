@@ -187,7 +187,7 @@ bool SerialNode::hasContentsChanged() const
   }
 
   for (size_t i = 0; i < current_contents_.size(); ++i) {
-    if (current_contents_[i].box.box_id != last_contents_[i].box.box_id) {
+    if (current_contents_[i].box.ascii_epc != last_contents_[i].box.ascii_epc) {
       return true;
     }
   }
@@ -214,10 +214,10 @@ void SerialNode::updateButton(int index)
       buttons[index]->setStyleSheet("color: #091648;");
     }
 
-    if (it != current_contents_.end() && !it->box.box_id.empty()) {
+    if (it != current_contents_.end() && !it->box.ascii_epc.empty()) {
       buttonText = QString("Box %1\n%2")
                        .arg(index + 1)
-                       .arg(QString::fromStdString(it->box.box_id));
+                       .arg(QString::fromStdString(it->box.ascii_epc));
     } else {
       buttonText = QString("Box %1\n%2")
                        .arg(index + 1)
@@ -256,7 +256,6 @@ void SerialNode::publishDoorStates()
     navigation_msgs::CabinetDoor door;
     door.id = "door_" + std::to_string(i + 1);
     door.is_open = (box_fdb_state[i + 1] == 1);
-    door.status = door.is_open ? "open" : "closed";
     door.last_changed = ros::Time::now();
     msg.doors.push_back(door);
   }
