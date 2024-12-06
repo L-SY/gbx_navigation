@@ -13,6 +13,7 @@
 #include <navigation_msgs/IndoorDeliveryOrder.h>
 #include <navigation_msgs/CabinetContentArray.h>
 #include "gbx_dtu/cJSON.h"
+#include <navigation_msgs/OutputDelivery.h>
 
 class EP_D200 {
 public:
@@ -22,6 +23,7 @@ public:
   bool initializeSerial(const std::string& port, uint32_t baudrate);
   void updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& order);
   void updateFromCabinetContents(const navigation_msgs::CabinetContentArray& cabinets);
+  void updateOutputDelivery(const navigation_msgs::OutputDelivery& output);
   bool sendData();
 
 private:

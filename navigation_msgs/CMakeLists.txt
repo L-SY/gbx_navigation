@@ -23,6 +23,7 @@ add_message_files(
         CabinetDoor.msg
         CabinetDoorArray.msg
         IndoorDeliveryOrder.msg
+        OutputDelivery.msg
 )
 #
 #add_action_files(

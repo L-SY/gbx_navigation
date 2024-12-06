@@ -103,6 +103,81 @@ void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& or
   send_flag_ = true;
 }
 
+void EP_D200::updateOutputDelivery(const navigation_msgs::OutputDelivery& output) {
+  cJSON *root = cJSON_CreateObject();
+  if(!root) return;
+
+  cJSON *array = cJSON_CreateArray();
+  if(!array) {
+    cJSON_Delete(root);
+    return;
+  }
+
+  cJSON *obj = cJSON_CreateObject();
+  if(!obj) {
+    cJSON_Delete(root);
+    cJSON_Delete(array);
+    return;
+  }
+
+  cJSON *properties = cJSON_CreateObject();
+  if(!properties) {
+    cJSON_Delete(root);
+    cJSON_Delete(array);
+    cJSON_Delete(obj);
+    return;
+  }
+
+  if(!cJSON_AddItemToObject(root, "services", array) ||
+      !cJSON_AddStringToObject(obj, "service_id", "OutputDelivery") ||
+      !cJSON_AddItemToObject(obj, "properties", properties) ||
+      !cJSON_AddItemToArray(array, obj)) {
+    cJSON_Delete(root);
+    return;
+  }
+
+  bool success = true;
+  success &= cJSON_AddStringToObject(properties, "Owner", output.Owner.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "RFID", output.RFID.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "Converted_RFID", output.Converted_RFID.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "ReceiverPhone", output.ReceiverPhone.c_str()) != NULL;
+
+  if(!success) {
+    cJSON_Delete(root);
+    return;
+  }
+
+  char *json_data = cJSON_PrintUnformatted(root);
+  if(json_data) {
+    tx_buffer_.resize(512);
+    size_t i;
+    for(i = 0; json_data[i] && i < 512; i++) {
+      tx_buffer_[i] = json_data[i];
+    }
+    tx_buffer_.resize(i);
+    free(json_data);
+  }
+
+  cJSON_Delete(root);
+  send_flag_ = true;
+}
+
+bool EP_D200::sendData() {
+  if (!send_flag_ || tx_buffer_.empty()) {
+    return false;
+  }
+
+  try {
+    serial_port_->write(tx_buffer_);
+    tx_buffer_.clear();
+    send_flag_ = false;
+    return true;
+  } catch (const serial::IOException &e) {
+    ROS_ERROR_STREAM("Failed to send data: " << e.what());
+    return false;
+  }
+}
+
 void EP_D200::updateFromCabinetContents(const navigation_msgs::CabinetContentArray& cabinets) {
   json root;
   json services = json::array();
@@ -143,20 +218,4 @@ void EP_D200::updateFromCabinetContents(const navigation_msgs::CabinetContentArr
   ROS_DEBUG_STREAM("Sending cabinet status: " << json_str);
   tx_buffer_.assign(json_str.begin(), json_str.end());
   send_flag_ = true;
-}
-
-bool EP_D200::sendData() {
-  if (!send_flag_ || tx_buffer_.empty()) {
-    return false;
-  }
-
-  try {
-    serial_port_->write(tx_buffer_);
-    tx_buffer_.clear();
-    send_flag_ = false;
-    return true;
-  } catch (const serial::IOException &e) {
-    ROS_ERROR_STREAM("Failed to send data: " << e.what());
-    return false;
-  }
 }
