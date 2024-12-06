@@ -610,62 +610,6 @@ void MainWindow::handleDestinationSelect(int destination)
   }
 }
 
-void MainWindow::createDestinationMarkers()
-{
-  // 清除之前的标记
-  qDeleteAll(destinationMarkers);  // 使用 qDeleteAll 代替手动循环删除
-  destinationMarkers.clear();
-  destinationPositions.clear();
-
-  // 计算标记的位置（在一行中均匀分布）
-  int mapWidth = ui->mapLabel->width();
-  int mapHeight = ui->mapLabel->height();
-  int spacing = mapWidth / (NUM_DESTINATIONS + 1);
-  int y = mapHeight / 2;
-
-  for (int i = 0; i < NUM_DESTINATIONS; i++) {
-    int x = spacing * (i + 1);
-    QPoint pos(x, y);
-
-    // 创建并保存标记
-    QLabel* marker = createStarMarker(pos);
-    marker->setParent(ui->mapLabel);
-    marker->show();
-
-    // 为标记添加鼠标事件
-    marker->installEventFilter(this);
-    marker->setObjectName(QString("destination_%1").arg(i));
-
-    destinationMarkers.append(marker);
-    destinationPositions.append(pos);
-  }
-}
-
-QLabel* MainWindow::createStarMarker(const QPoint& pos)
-{
-  QLabel* marker = new QLabel(ui->mapLabel);
-
-  // 创建一个五角星SVG图像
-  QString svgContent = QString(
-      "<svg width='30' height='30'>"
-      "<path d='M15,0 L18.5,10.5 L30,10.5 L21,17 L24.5,27.5 L15,21 L5.5,27.5 L9,17 L0,10.5 L11.5,10.5 Z' "
-      "fill='red' stroke='black' stroke-width='1'/>"
-      "</svg>"
-  );
-
-  QSvgRenderer renderer(svgContent.toUtf8());
-  QPixmap pixmap(30, 30);
-  pixmap.fill(Qt::transparent);
-  QPainter painter(&pixmap);
-  renderer.render(&painter);
-
-  marker->setPixmap(pixmap);
-  marker->setGeometry(pos.x() - 15, pos.y() - 15, 30, 30);  // 居中显示
-  marker->setCursor(Qt::PointingHandCursor);  // 鼠标悬停时显示手型光标
-
-  return marker;
-}
-
 bool MainWindow::eventFilter(QObject* obj, QEvent* event)
 {
   // 处理标记的点击事件
