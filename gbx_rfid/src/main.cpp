@@ -126,7 +126,7 @@ private:
 
   bool scanSystemTags() {
     ROS_INFO("Starting initial system rfids scan...");
-    ros::Duration(1.0).sleep();  // 给系统标签扫描3秒时间
+    ros::Duration(3.0).sleep();  // 给系统标签扫描3秒时间
 
     for (const auto& reader_pair : readers_) {
       if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
@@ -199,7 +199,8 @@ private:
       while (reader_pair.second->getLatestData(data)) {
         if (data.rssi >= rssi_threshold_) {
           std::string ascii_epc = convertEpcToAscii(data.epc);
-          scanned_rfids[ascii_epc] = data.epc;
+          if (ascii_epc.find("GBX"))
+            scanned_rfids[ascii_epc] = data.epc;
         }
       }
     }
