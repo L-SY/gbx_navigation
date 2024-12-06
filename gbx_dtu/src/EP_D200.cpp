@@ -38,114 +38,69 @@ bool EP_D200::initializeSerial(const std::string& port, uint32_t baudrate) {
 }
 
 void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& order) {
-  delivery_order_ = order;
-
-//  cJSON *root = cJSON_CreateObject();
-//  cJSON *properties = cJSON_CreateObject();
-//  cJSON *array = cJSON_CreateArray();
-//  cJSON *obj = cJSON_CreateObject();
-//
-//  cJSON_AddItemToObject(root, "services", array);
-//  cJSON_AddStringToObject(obj, "service_id", "DroneState");
-//  cJSON_AddItemToObject(obj, "properties", properties);
-//  cJSON_AddItemToArray(array, obj);
-//
-//  std::string Altitude = std::to_string(drone_state.altitude);
-//  std::string Latitude = std::to_string(drone_state.latitude);
-//  std::string Longitude = std::to_string(drone_state.longitude);
-//  std::string Time = std::to_string(drone_state.time);
-//  std::string Vx = std::to_string(drone_state.vx);
-//  std::string Vy = std::to_string(drone_state.vy);
-//  std::string Vz = std::to_string(drone_state.vz);
-//
-//  cJSON_AddStringToObject(properties, "Altitude", Altitude.c_str());
-//  cJSON_AddStringToObject(properties, "Latitude", Latitude.c_str());
-//  cJSON_AddStringToObject(properties, "Longitude", Longitude.c_str());
-//  cJSON_AddStringToObject(properties, "State", drone_state.state.c_str());
-//  cJSON_AddStringToObject(properties, "Time", Time.c_str());
-//  cJSON_AddStringToObject(properties, "VelocityX", Vx.c_str());
-//  cJSON_AddStringToObject(properties, "VelocityY", Vy.c_str());
-//  cJSON_AddStringToObject(properties, "VelocityZ", Vz.c_str());
-//
-//  char *json_data = cJSON_PrintUnformatted(root);
-//
-//  for (size_t i = 0; i < 512; i++)
-//  {
-//    if (json_data[i] == '\0')
-//    {
-//      break;
-//    }
-//    tx_buffer[i] = json_data[i];
-//    tx_length++;
-//  }
-//
-//  cJSON_Delete(root);
-
   cJSON *root = cJSON_CreateObject();
+  if(!root) return;
+
   cJSON *array = cJSON_CreateArray();
-  cJSON *obj = cJSON_CreateObject();
-  cJSON *properties = cJSON_CreateObject();
-
-  // 添加基本结构
-  cJSON_AddItemToObject(root, "services", array);
-  cJSON_AddStringToObject(obj, "service_id", "IndoorDeliveryOrder");
-  cJSON_AddItemToObject(obj, "properties", properties);
-  cJSON_AddItemToArray(array, obj);
-
-  // 添加属性值
-  cJSON_AddStringToObject(properties, "Number", order.Number.c_str());
-  cJSON_AddStringToObject(properties, "Area", order.Area.c_str());
-  cJSON_AddStringToObject(properties, "RFID", order.RFID.c_str());
-  cJSON_AddStringToObject(properties, "Converted_RFID", order.Converted_RFID.c_str());
-  cJSON_AddStringToObject(properties, "ReceiverPhone", order.ReceiverPhone.c_str());
-  cJSON_AddStringToObject(properties, "OrderNumber", order.OrderNumber.c_str());
-  cJSON_AddStringToObject(properties, "ReceiverName", order.ReceiverName.c_str());
-  cJSON_AddStringToObject(properties, "SenderName", order.SenderName.c_str());
-  cJSON_AddStringToObject(properties, "Owner", order.Owner.c_str());
-
-  // 生成 JSON 字符串
-  char *json_data = cJSON_PrintUnformatted(root);
-
-  // 复制到发送缓冲区
-  size_t tx_length = 0;
-  for (size_t i = 0; i < 512; i++)
-  {
-    if (json_data[i] == '\0')
-    {
-      break;
-    }
-    tx_buffer_[i] = json_data[i];
-    tx_length++;
+  if(!array) {
+    cJSON_Delete(root);
+    return;
   }
 
-  // 清理内存
+  cJSON *obj = cJSON_CreateObject();
+  if(!obj) {
+    cJSON_Delete(root);
+    cJSON_Delete(array);
+    return;
+  }
+
+  cJSON *properties = cJSON_CreateObject();
+  if(!properties) {
+    cJSON_Delete(root);
+    cJSON_Delete(array);
+    cJSON_Delete(obj);
+    return;
+  }
+
+  // 添加基本结构
+  if(!cJSON_AddItemToObject(root, "services", array) ||
+      !cJSON_AddStringToObject(obj, "service_id", "IndoorDeliveryOrder") ||
+      !cJSON_AddItemToObject(obj, "properties", properties) ||
+      !cJSON_AddItemToArray(array, obj)) {
+    cJSON_Delete(root);
+    return;
+  }
+
+  // 添加属性值
+  bool success = true;
+  success &= cJSON_AddStringToObject(properties, "Number", order.Number.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "Area", order.Area.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "RFID", order.RFID.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "Converted_RFID", order.Converted_RFID.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "ReceiverPhone", order.ReceiverPhone.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "OrderNumber", order.OrderNumber.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "ReceiverName", order.ReceiverName.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "SenderName", order.SenderName.c_str()) != NULL;
+  success &= cJSON_AddStringToObject(properties, "Owner", order.Owner.c_str()) != NULL;
+
+  if(!success) {
+    cJSON_Delete(root);
+    return;
+  }
+
+  char *json_data = cJSON_PrintUnformatted(root);
+  if(json_data) {
+    tx_buffer_.resize(512);
+    size_t i;
+    for(i = 0; json_data[i] && i < 512; i++) {
+      tx_buffer_[i] = json_data[i];
+    }
+    tx_buffer_.resize(i); // 调整到实际大小
+    free(json_data);
+  }
+
   cJSON_Delete(root);
-  free(json_data);
-
   send_flag_ = true;
-
-//  nlohmann::ordered_json service_item = {
-//      {"service_id", "IndoorDeliveryOrder"},
-//      {"properties", {
-//                         {"Number", order.Number},
-//                         {"Area", order.Area},
-//                         {"RFID", order.RFID},
-//                         {"Converted_RFID", order.Converted_RFID},
-//                         {"ReceiverPhone", order.ReceiverPhone},
-//                         {"OrderNumber", order.OrderNumber},
-//                         {"ReceiverName", order.ReceiverName},
-//                         {"SenderName", order.SenderName},
-//                         {"Owner", order.Owner}
-//                     }}
-//  };
-//
-//  json result = {
-//      {"services", json::array({service_item})}
-//  };
-//
-//  std::string json_str = result.dump();
-//  tx_buffer_.assign(json_str.begin(), json_str.end());
-//  send_flag_ = true;
 }
 
 void EP_D200::updateFromCabinetContents(const navigation_msgs::CabinetContentArray& cabinets) {
