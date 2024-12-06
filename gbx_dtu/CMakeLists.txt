@@ -51,6 +51,12 @@ target_link_libraries(test_dtu
         gtest_main
 )
 
+add_executable(dtu_test_normal test/test_normal.cpp src/EP_D200.cpp)
+target_link_libraries(dtu_test_normal
+        ${catkin_LIBRARIES}
+        nlohmann_json::nlohmann_json
+)
+
 ## Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}_node
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
