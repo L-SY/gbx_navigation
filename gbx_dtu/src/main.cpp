@@ -17,6 +17,11 @@ void signalHandler(int sig) {
   g_running = false;
 }
 
+void cabinetContentsCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg) {
+  g_dtu->updateFromCabinetContents(*msg);
+  ROS_DEBUG("Updated cabinet contents, preparing to send via serial");
+}
+
 void deliveryOrderCallback(const navigation_msgs::IndoorDeliveryOrder::ConstPtr& msg) {
   g_dtu->updateDeliveryOrder(*msg);
 }
@@ -25,11 +30,6 @@ void systemStateCallback(const ranger_msgs::SystemState::ConstPtr& msg) {
   // Handle system state updates if needed
   ROS_DEBUG("Received system state: vehicle_state=%d, control_mode=%d, motion_mode=%d",
             msg->vehicle_state, msg->control_mode, msg->motion_mode);
-}
-
-void cabinetContentsCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg) {
-  // Handle cabinet contents updates if needed
-  ROS_DEBUG("Received cabinet contents update");
 }
 
 int main(int argc, char** argv) {

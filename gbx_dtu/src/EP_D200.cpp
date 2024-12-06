@@ -2,6 +2,7 @@
 // Created by lsy on 24-12-4.
 //
 
+// EP_D200.cpp
 #include "gbx_dtu/EP_D200.h"
 #include <ros/ros.h>
 
@@ -63,6 +64,46 @@ void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& or
   send_flag_ = true;
 }
 
+void EP_D200::updateFromCabinetContents(const navigation_msgs::CabinetContentArray& cabinets) {
+  json root;
+  json services = json::array();
+  json service;
+  service["service_id"] = "IndoorDeliveryOrder";
+
+  // 创建一个字符串来存储所有柜子的box_id
+  std::string all_boxes;
+
+  for (size_t i = 0; i < cabinets.cabinets.size(); ++i) {
+    const auto& cabinet = cabinets.cabinets[i];
+    std::string box_id = (cabinet.box.box_id.empty()) ? "empty" : cabinet.box.box_id;
+
+    all_boxes += box_id;
+    if (i < cabinets.cabinets.size() - 1) {
+      all_boxes += " ";
+    }
+  }
+
+  json properties;
+  properties["Number"] = all_boxes;
+  properties["RFID"] = all_boxes;
+  properties["RFIDNumber"] = 0;  // 默认值
+  properties["ReceiverPhone"] = "";
+  properties["OrderNumber"] = "all_cabinets";
+  properties["ReceiverName"] = "";
+  properties["SenderName"] = "";
+  properties["Owner"] = "cabinet_status";
+  properties["Converted_RFID"] = all_boxes;
+
+  service["properties"] = properties;
+  services.push_back(service);
+  root["services"] = services;
+
+  std::string json_str = root.dump();
+  ROS_DEBUG_STREAM("Sending cabinet status: " << json_str);
+  tx_buffer_.assign(json_str.begin(), json_str.end());
+  send_flag_ = true;
+}
+
 bool EP_D200::sendData() {
   if (!send_flag_ || tx_buffer_.empty()) {
     return false;
@@ -73,7 +114,7 @@ bool EP_D200::sendData() {
     tx_buffer_.clear();
     send_flag_ = false;
     return true;
-  } catch (const serial::IOException& e) {
+  } catch (const serial::IOException &e) {
     ROS_ERROR_STREAM("Failed to send data: " << e.what());
     return false;
   }
