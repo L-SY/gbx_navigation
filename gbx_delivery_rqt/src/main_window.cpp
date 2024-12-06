@@ -603,10 +603,23 @@ void MainWindow::handleDestinationSelect(int destination)
 {
   emit destinationSelected(destination);
   if (infoHub) {
-    // 使用 A-G 对应 1-7
     QString pathName = QString(QChar('A' + destination - 1));
     qDebug() << "Requesting trajectory for path:" << pathName;
-    infoHub->sendTrajectoryRequest(pathName);
+    if (infoHub->sendTrajectoryRequest(pathName))
+    {
+      auto cabinerInfo = infoHub->getCabinetInfo();
+      infoHub->publishIndoorDeliveryOrder(
+          "IndoorCar1",
+          cabinerInfo[selectedCabinetId].box.raw_epc,
+          cabinerInfo[selectedCabinetId].box.ascii_epc,
+          pathName.toStdString(),     // 目的地区域
+          "test", // TODO: get from ros
+          "IndoorCar1",  // 机器人ID作为owner
+          lastPhoneNumber.toStdString(), // 接收者电话
+          "",                         // 接收者姓名（可选）
+          ""                          // 发送者姓名（可选）
+      );
+    }
   }
 }
 

@@ -32,11 +32,14 @@ public:
   void publishIndoorDeliveryOrder(
     const std::string& carNumber,
     const std::string& rfid,
-    const std::string& area,
+    const std::string& converted_rfid,
     const std::string& owner,
+    const std::string& area,
+    const std::string& orderNumber,
     const std::string& receiverPhone,
     const std::string& receiverName,
     const std::string& senderName);
+  std::vector<navigation_msgs::CabinetContent> getCabinetInfo(){return current_contents_;}
 
 signals:
   void doorStateChanged();
@@ -77,7 +80,7 @@ private:
 public:
   // Public methods for controlling boxes and trajectories
   void sendDoorCommand(int boxIndex);
-  void sendTrajectoryRequest(const QString& path_name);
+  bool sendTrajectoryRequest(const QString& path_name);
   const uint8_t* getDoorStates() const { return door_state; }
   const std::vector<navigation_msgs::CabinetContent>& getCurrentContents() const { return current_contents_; }
 };

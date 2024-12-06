@@ -205,11 +205,11 @@ void InformationHub::cabinetContentCallback(const navigation_msgs::CabinetConten
 
 
 // ----------------------------Navigation Related Start----------------------------
-void InformationHub::sendTrajectoryRequest(const QString& path_name)
+bool InformationHub::sendTrajectoryRequest(const QString& path_name)
 {
   if (!nh_ || !trajectory_client_) {
     emit trajectoryRequestResult(false, "ROS service not available");
-    return;
+    return false;
   }
 
   navigation_msgs::pub_trajectory srv;
@@ -219,8 +219,10 @@ void InformationHub::sendTrajectoryRequest(const QString& path_name)
   if (trajectory_client_.call(srv)) {
     emit trajectoryRequestResult(srv.response.success,
                                  QString::fromStdString(srv.response.message));
+    return true;
   } else {
     emit trajectoryRequestResult(false, "Failed to call trajectory service");
+    return false;
   }
 }
 // ----------------------------Navigation Related End----------------------------
@@ -228,8 +230,10 @@ void InformationHub::sendTrajectoryRequest(const QString& path_name)
 void InformationHub::publishIndoorDeliveryOrder(
     const std::string& carNumber,
     const std::string& rfid,
-    const std::string& area,
+    const std::string& converted_rfid,
     const std::string& owner,
+    const std::string& area,
+    const std::string& orderNumber,
     const std::string& receiverPhone,
     const std::string& receiverName,
     const std::string& senderName)
@@ -241,9 +245,9 @@ void InformationHub::publishIndoorDeliveryOrder(
   msg.Owner = owner;                 // 箱子所有者
   msg.Area = area;                   // 区域位置
   msg.RFID = rfid;                  // 原始RFID
-  msg.Converted_RFID = rfid;        // 转换后的RFID（这里保持原值）
+  msg.Converted_RFID = converted_rfid;        // 转换后的RFID（这里保持原值）
   msg.ReceiverPhone = receiverPhone; // 接收者电话
-  msg.OrderNumber = 0;              // 订单号（默认为0）
+  msg.OrderNumber = orderNumber;     // 订单号（默认为0）
   msg.ReceiverName = receiverName;  // 接收者姓名
   msg.SenderName = senderName;      // 发送者姓名
 
