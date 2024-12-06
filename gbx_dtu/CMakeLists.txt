@@ -51,8 +51,8 @@ target_link_libraries(test_dtu
         gtest_main
 )
 
-add_executable(dtu_test_normal test/test_normal.cpp src/EP_D200.cpp)
-target_link_libraries(dtu_test_normal
+add_executable(test_json test/test_json.cpp src/EP_D200.cpp)
+target_link_libraries(test_json
         ${catkin_LIBRARIES}
         nlohmann_json::nlohmann_json
 )
