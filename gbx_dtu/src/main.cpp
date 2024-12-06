@@ -1,81 +1,75 @@
-#include "../include/SerialInterface.hpp"
-#include <fstream>
-#include <chrono>
+//
+// Created by lsy on 24-12-4.
+//
+
+// src/main.cpp
+#include "gbx_dtu/EP_D200.h"
 #include <ros/ros.h>
-#include <csignal>
-#include "dtu/UAVState.h"
-#include "dtu/UAVBoxState.h"
-#include "../include/DTU4G.hpp"
+#include <signal.h>
+#include <navigation_msgs/IndoorDeliveryOrder.h>
+#include <ranger_msgs/SystemState.h>
+#include <navigation_msgs/CabinetContentArray.h>
 
-bool update_flag = false;
+bool g_running = true;
+std::unique_ptr<EP_D200> g_dtu;
 
-SerialPort dtu4g_serial_port;
-
-DTU4G dtu4g;
-
-
-void DeviceInit()
-{
-    SerialPortConfig serial_port_config;
-
-    serial_port_config.baudrate = SerialPortBaudrate::Baudrate115200;
-    serial_port_config.time_out = 100;
-
-    serial_port_config.COM = "/dev/dtu4g";
-    serial_port_config.parity = SerialPortParity::ParityNone;
-    dtu4g_serial_port.Init(&serial_port_config);
+void signalHandler(int sig) {
+  g_running = false;
 }
 
-bool loop = true;
-
-void signal_handler(int signal)
-{
-    std::cout << "Captured signal: " << signal << std::endl;
-
-    loop = false;
+void deliveryOrderCallback(const navigation_msgs::IndoorDeliveryOrder::ConstPtr& msg) {
+  g_dtu->updateDeliveryOrder(*msg);
 }
 
-uint32_t uav_box_state = 0;
-
-
-void UAVBoxStateCallback(const dtu::UAVBoxState::ConstPtr &_msg)
-{
-
+void systemStateCallback(const ranger_msgs::SystemState::ConstPtr& msg) {
+  // Handle system state updates if needed
+  ROS_DEBUG("Received system state: vehicle_state=%d, control_mode=%d, motion_mode=%d",
+            msg->vehicle_state, msg->control_mode, msg->motion_mode);
 }
 
-uint8_t testbuffer[256] = {0};
-uint8_t rfid_buffer[256] = {0};
-uint32_t test_length = 0;
-uint32_t rsize = 0;
+void cabinetContentsCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg) {
+  // Handle cabinet contents updates if needed
+  ROS_DEBUG("Received cabinet contents update");
+}
 
+int main(int argc, char** argv) {
+  ros::init(argc, argv, "gbx_dtu_node");
+  ros::NodeHandle nh;
+  ros::NodeHandle pnh("~");
 
-bool dtu_send_flag = false;
+  // Get parameters
+  std::string serial_port;
+  int baudrate;
+  pnh.param<std::string>("serial_port", serial_port, "/dev/ttyUSB0");
+  pnh.param<int>("baudrate", baudrate, 115200);
 
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "dtu");
-    ros::NodeHandle ndtu;
+  // Initialize DTU4G
+  g_dtu = std::make_unique<EP_D200>();
+  if (!g_dtu->initializeSerial(serial_port, baudrate)) {
+    ROS_ERROR("Failed to initialize DTU4G serial port");
+    return 1;
+  }
 
-    ros::AsyncSpinner spinner(1);
+  ros::Publisher delivery_order_pub = nh.advertise<navigation_msgs::IndoorDeliveryOrder>("indoor_delivery_order",1);
 
-    ros::Subscriber UAV_box_sub = ndtu.subscribe<dtu::UAVBoxState>("UAVBoxState", 10, UAVBoxStateCallback);
+  // Set up ROS subscribers
+  ros::Subscriber system_state_sub = nh.subscribe<ranger_msgs::SystemState>(
+      "/ranger/state", 10, systemStateCallback);
 
-    DeviceInit();
+  ros::Subscriber cabinet_contents_sub = nh.subscribe<navigation_msgs::CabinetContentArray>(
+      "/cabinet/contents", 10, cabinetContentsCallback);
 
-    spinner.start();
+  // Set up signal handler
+  signal(SIGINT, signalHandler);
 
-    usleep(1000000);
-    std::signal(SIGINT, signal_handler);
+  ros::Rate rate(1); // 1 Hz update rate
 
-    while (loop)
-    {
-        dtu4g.UpdateDroneState();
+  while (g_running && ros::ok()) {
+    g_dtu->sendData();
 
-        dtu4g_serial_port.Send(dtu4g.tx_buffer, dtu4g.tx_length);
-        dtu4g.tx_length = 0;
+    ros::spinOnce();
+    rate.sleep();
+  }
 
-        sleep(1);
-    }
-
-    return 0;
+  return 0;
 }
