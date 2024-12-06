@@ -610,8 +610,8 @@ void MainWindow::handleDestinationSelect(int destination)
       auto cabinerInfo = infoHub->getCabinetInfo();
       infoHub->publishIndoorDeliveryOrder(
           "IndoorCar1",
-          cabinerInfo[selectedCabinetId].box.raw_epc,
-          cabinerInfo[selectedCabinetId].box.ascii_epc,
+          cabinerInfo[selectedCabinetId-1].box.raw_epc,
+          cabinerInfo[selectedCabinetId-1].box.ascii_epc,
           pathName.toStdString(),     // 目的地区域
           "test", // TODO: get from ros
           "IndoorCar1",  // 机器人ID作为owner

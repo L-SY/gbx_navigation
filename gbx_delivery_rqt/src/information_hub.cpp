@@ -69,7 +69,7 @@ void InformationHub::initializeROS()
 
   trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/gbx_manual/pub_trajectory");
   door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
-  indoor_delivery_pub_ = nh_->advertise<navigation_msgs::IndoorDeliveryOrder>("/IndoorDeliveryOrder", 1);
+  indoor_delivery_pub_ = nh_->advertise<navigation_msgs::IndoorDeliveryOrder>("/indoor_delivery_order", 1);
   cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,&InformationHub::cabinetContentCallback, this);
 }
 

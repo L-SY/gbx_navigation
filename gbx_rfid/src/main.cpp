@@ -28,14 +28,14 @@ public:
     door_sub_ = nh.subscribe("/cabinet/door_states", 1,
                              &RfidMonitor::doorStateCallback, this);
     rfid_pub_ = nh.advertise<std_msgs::String>("/rfid/status", 10);
-    single_content_pub_ = nh.advertise<navigation_msgs::CabinetContentArray>("/cabinet/content", 10);
+    single_content_pub_ = nh.advertise<navigation_msgs::CabinetContent>("/cabinet/content", 10);
     all_content_pub_ = nh.advertise<navigation_msgs::CabinetContentArray>("/cabinet/contents", 10);
 
     // 初始化6个柜子的内容
     for (int i = 1; i <= 6; ++i) {
       navigation_msgs::BoxInfo empty_box;
-      // empty_box.ascii_epc = "empty";
-      // empty_box.raw_epc = "empty";
+      empty_box.ascii_epc = "empty";
+      empty_box.raw_epc = "empty";
       empty_box.enter_time = ros::Time(0);
       empty_box.out_time = ros::Time(0);
       cabinet_contents_["cabinet" + std::to_string(i)] = empty_box;
@@ -127,19 +127,20 @@ private:
   bool scanSystemTags() {
     ROS_INFO("Starting initial system rfids scan...");
     ros::Duration(3.0).sleep();  // 给系统标签扫描3秒时间
-
-    for (const auto& reader_pair : readers_) {
-      if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
-        continue;
-      }
-
-      gbx_rfid::RfidData data;
-      if (reader_pair.second->getLatestData(data)) {
-        std::string ascii_epc = convertEpcToAscii(data.epc);
-        system_rfids_.insert(ascii_epc);
-      }
-    }
-
+    system_rfids_.insert("A0210004");
+    // for (const auto& reader_pair : readers_) {
+    //   if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
+    //     continue;
+    //   }
+    //
+    //   gbx_rfid::RfidData data;
+    //   if (reader_pair.second->getLatestData(data)) {
+    //     std::string ascii_epc = convertEpcToAscii(data.epc);
+    //     if (!ascii_epc.find("GBX"))
+    //       system_rfids_.insert(ascii_epc);
+    //   }
+    // }
+    //
     if (!system_rfids_.empty()) {
       ROS_INFO_STREAM("Found " << system_rfids_.size() << " system rfids");
       for (const auto& rfid : system_rfids_) {
@@ -199,13 +200,11 @@ private:
       while (reader_pair.second->getLatestData(data)) {
         if (data.rssi >= rssi_threshold_) {
           std::string ascii_epc = convertEpcToAscii(data.epc);
-          if (ascii_epc.find("GBX"))
-            scanned_rfids[ascii_epc] = data.epc;
+          scanned_rfids[ascii_epc] = data.epc;
         }
       }
     }
 
-    int count = 0;
     for (const auto& rfid_pair : scanned_rfids) {
       const std::string& ascii_epc = rfid_pair.first;
       const std::string& raw_epc = rfid_pair.second;
@@ -221,15 +220,14 @@ private:
         current_new_box_.raw_epc = raw_epc;
         break;
       }
-      count++;
     }
 
     std_msgs::String msg;
-    if (!current_new_box_.ascii_epc.empty()) {
+    if (current_new_box_.ascii_epc != "empty") {
       msg.data = current_new_box_.ascii_epc;
     } else {
       // 如果没有新的rfid，就尝试发布开的柜门内的rfid
-      std::string current_cabinet_id = "cabinet_" + open_door_id_.substr(5);
+      std::string current_cabinet_id = "cabinet" + open_door_id_.substr(5);
       std::string cabinet_rfid = cabinet_contents_[current_cabinet_id].ascii_epc;
       if (!cabinet_rfid.empty()) {
         msg.data = cabinet_rfid;
@@ -243,9 +241,13 @@ private:
   void processDoorClose() {
     std::string cabinet_id = "cabinet" + last_open_door_id_.substr(5);
     std::string current_box = cabinet_contents_[cabinet_id].ascii_epc;
-    bool had_box = !current_box.empty();
+    bool had_box;
+    if (current_box == "empty")
+      had_box = false;
+    else
+      had_box = true;
 
-    if (!current_new_box_.ascii_epc.empty()) {
+    if (current_new_box_.ascii_epc != "empty") {
       if (!had_box) {
         cabinet_contents_[cabinet_id].ascii_epc = current_new_box_.ascii_epc;
         cabinet_contents_[cabinet_id].raw_epc = current_new_box_.raw_epc;

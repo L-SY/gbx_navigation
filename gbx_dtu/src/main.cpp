@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
   // Get parameters
   std::string serial_port;
   int baudrate;
-  pnh.param<std::string>("serial_port", serial_port, "/dev/ttyUSB0");
+  pnh.param<std::string>("serial_port", serial_port, "/dev/ttyUSB6");
   pnh.param<int>("baudrate", baudrate, 115200);
 
   // Initialize DTU4G
