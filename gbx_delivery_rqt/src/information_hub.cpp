@@ -13,9 +13,9 @@ InformationHub::InformationHub(QObject *parent)
       updateTimer(nullptr),
       nh_(nullptr)
 {
-  memset(box_fdb_state, 0, sizeof(box_fdb_state));
-  memset(box_set_state, 0, sizeof(box_set_state));
-  memset(last_box_state, 0, sizeof(last_box_state));
+  memset(door_state, 0, sizeof(door_state));
+  memset(door_set_state, 0, sizeof(door_set_state));
+  memset(last_door_state, 0, sizeof(last_door_state));
 }
 
 InformationHub::~InformationHub()
@@ -34,6 +34,7 @@ InformationHub::~InformationHub()
   }
 }
 
+// ----------------------------Init Related Start----------------------------
 void InformationHub::init()
 {
   // Initialize serial port
@@ -55,6 +56,36 @@ void InformationHub::init()
   updateTimer->start();
 }
 
+void InformationHub::initializeROS()
+{
+  if (!ros::isInitialized()) {
+    int argc = 0;
+    char** argv = nullptr;
+    ros::init(argc, argv, "gbx_rqt_interact_node", ros::init_options::NoSigintHandler);
+  }
+  if (!nh_) {
+    nh_ = new ros::NodeHandle("~");
+  }
+
+  trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/gbx_manual/pub_trajectory");
+  door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
+  cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,
+                                        &InformationHub::cabinetContentCallback, this);
+}
+
+// ----------------------------Init Related End----------------------------
+
+void InformationHub::run()
+{
+  while (!isInterruptionRequested()) {
+    if (nh_) {
+      ros::spinOnce();
+    }
+    msleep(20); // Reduce thread frequency to 50Hz
+  }
+}
+
+// ----------------------------Serial(Door) Related Start----------------------------
 void InformationHub::initializeDevice()
 {
   if (!serial) {
@@ -97,33 +128,6 @@ bool InformationHub::isSerialPortOpen() const
   return serial && serial->isOpen();
 }
 
-void InformationHub::initializeROS()
-{
-  if (!ros::isInitialized()) {
-    int argc = 0;
-    char** argv = nullptr;
-    ros::init(argc, argv, "gbx_rqt_interact_node", ros::init_options::NoSigintHandler);
-  }
-  if (!nh_) {
-    nh_ = new ros::NodeHandle("~");
-  }
-
-  trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/gbx_manual/pub_trajectory");
-  door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
-  cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,
-                                        &InformationHub::cabinetContentCallback, this);
-}
-
-void InformationHub::run()
-{
-  while (!isInterruptionRequested()) {
-    if (nh_) {
-      ros::spinOnce();
-    }
-    msleep(20); // Reduce thread frequency to 50Hz
-  }
-}
-
 void InformationHub::processSerialData()
 {
   readSerialData();
@@ -136,31 +140,22 @@ void InformationHub::readSerialData()
     serial->read((char*)new_state, 8);
 
     // Check if data has changed
-    if (memcmp(new_state, box_fdb_state, 8) != 0) {
-      memcpy(box_fdb_state, new_state, 8);
+    if (memcmp(new_state, door_state, 8) != 0) {
+      memcpy(door_state, new_state, 8);
       emit doorStateChanged();
       publishDoorStates();
     }
   }
 }
 
-bool InformationHub::hasStateChanged() const
+void InformationHub::sendDoorCommand(int boxIndex)
 {
-  return memcmp(box_fdb_state, last_box_state, 8) != 0;
-}
-
-bool InformationHub::hasContentsChanged() const
-{
-  if (current_contents_.size() != last_contents_.size()) {
-    return true;
+  if (serial && serial->isOpen()) {
+    memset(door_set_state, 0, sizeof(door_set_state));
+    door_set_state[boxIndex] = 1;
+    serial->write((char*)door_set_state, 6);
+    qDebug() << "Opening Box" << (boxIndex + 1);
   }
-
-  for (size_t i = 0; i < current_contents_.size(); ++i) {
-    if (current_contents_[i].box.box_id != last_contents_[i].box.box_id) {
-      return true;
-    }
-  }
-  return false;
 }
 
 void InformationHub::publishDoorStates()
@@ -171,14 +166,36 @@ void InformationHub::publishDoorStates()
   for (int i = 0; i < 6; ++i) {
     navigation_msgs::CabinetDoor door;
     door.id = "door_" + std::to_string(i + 1);
-    door.is_open = (box_fdb_state[i + 1] == 1);
-    door.status = door.is_open ? "open" : "closed";
+    door.is_open = (door_state[i + 1] == 1);
     door.last_changed = ros::Time::now();
     msg.doors.push_back(door);
   }
 
   door_state_pub_.publish(msg);
 }
+// ----------------------------Serial(Door) Related End----------------------------
+
+
+bool InformationHub::hasStateChanged() const
+{
+  return memcmp(door_state, last_door_state, 8) != 0;
+}
+
+bool InformationHub::hasContentsChanged() const
+{
+  if (current_contents_.size() != last_contents_.size()) {
+    return true;
+  }
+
+  for (size_t i = 0; i < current_contents_.size(); ++i) {
+    if (current_contents_[i].box.ascii_epc != last_contents_[i].box.ascii_epc) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
 
 void InformationHub::cabinetContentCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg)
 {
@@ -186,16 +203,8 @@ void InformationHub::cabinetContentCallback(const navigation_msgs::CabinetConten
   emit contentStateChanged();
 }
 
-void InformationHub::sendBoxCommand(int boxIndex)
-{
-  if (serial && serial->isOpen()) {
-    memset(box_set_state, 0, sizeof(box_set_state));
-    box_set_state[boxIndex] = 1;
-    serial->write((char*)box_set_state, 6);
-    qDebug() << "Opening Box" << (boxIndex + 1);
-  }
-}
 
+// ----------------------------Navigation Related Start----------------------------
 void InformationHub::sendTrajectoryRequest(const QString& path_name)
 {
   if (!nh_ || !trajectory_client_) {
@@ -214,5 +223,6 @@ void InformationHub::sendTrajectoryRequest(const QString& path_name)
     emit trajectoryRequestResult(false, "Failed to call trajectory service");
   }
 }
+// ----------------------------Navigation Related End----------------------------
 
 } // namespace gbx_rqt_interact

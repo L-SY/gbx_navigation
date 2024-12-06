@@ -44,9 +44,9 @@ private:
   // Serial communication
   QSerialPort* serial;
   QTimer* updateTimer;
-  uint8_t box_fdb_state[8];
-  uint8_t box_set_state[8];
-  uint8_t last_box_state[8];
+  uint8_t door_state[8];
+  uint8_t door_set_state[8];
+  uint8_t last_door_state[8];
 
   // ROS related
   ros::NodeHandle* nh_;
@@ -67,9 +67,9 @@ private:
 
 public:
   // Public methods for controlling boxes and trajectories
-  void sendBoxCommand(int boxIndex);
+  void sendDoorCommand(int boxIndex);
   void sendTrajectoryRequest(const QString& path_name);
-  const uint8_t* getDoorStates() const { return box_fdb_state; }
+  const uint8_t* getDoorStates() const { return door_state; }
   const std::vector<navigation_msgs::CabinetContent>& getCurrentContents() const { return current_contents_; }
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gbx_delivery_rqt/information_hub.h"
+#include "navigation_msgs/IndoorDeliveryOrder.h"
 #include <QDebug>
 #include <QLabel>
 #include <QMainWindow>

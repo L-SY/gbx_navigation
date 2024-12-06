@@ -1,6 +1,7 @@
 #include "gbx_delivery_rqt/main_window.h"
 #include "ui_main_window.h"
 #include <QGridLayout>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QRegExpValidator>
@@ -15,7 +16,7 @@ MainWindow::MainWindow()
       , returnTimer(new QTimer(this))
       , currentMode(NONE)
       , selectedCabinetId(-1)
-      , infoHub(nullptr)  // 显式初始化 infoHub
+      , infoHub(nullptr)
 {
   qDebug() << "MainWindow: Constructor starting...";
   try {
@@ -347,7 +348,7 @@ void MainWindow::handleBoxSelection(int box)
 {
   selectedCabinetId = box;
   if (infoHub) {
-    infoHub->sendBoxCommand(box - 1);  // 发送开箱命令
+    infoHub->sendDoorCommand(box - 1);  // 发送开箱命令
     ui->boxOpenLabel->setText(QString("箱子%1已打开\n请放入物品").arg(box));
     switchToBoxOpen();
   }
@@ -355,43 +356,8 @@ void MainWindow::handleBoxSelection(int box)
 
 void MainWindow::startWaitForObjectDetection()
 {
+  // TODO: Add real detection
   QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
-//  if (!objectDetectionTimer) {
-//    objectDetectionTimer = new QTimer(this);
-//    objectDetectionTimer->setSingleShot(true);
-//    connect(objectDetectionTimer, &QTimer::timeout, this, [this]() {
-//      if (infoHub) {
-//        const auto& contents = infoHub->getCurrentContents();
-//        bool found = false;
-//
-//        QString targetCabinetId = QString("cabinet_%1").arg(selectedCabinetId);
-//
-//        // 遍历找到对应的 cabinet
-//        for (const auto& content : contents) {
-//          if (content.cabinet_id == targetCabinetId.toStdString()) {
-//            // 检查 box 是否为空
-//            if (!content.box.box_id.empty()) {
-//              found = true;
-//              ui->boxOpenLabel->setText(QString("检测到物品已放入柜子%1中").arg(selectedCabinetId));
-//              QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
-//            } else {
-//              ui->boxOpenLabel->setText(QString("未检测到物品，请确认是否放入柜子%1中").arg(selectedCabinetId));
-//              // 继续检测
-//              objectDetectionTimer->start(1000);  // 每秒检查一次
-//            }
-//            break;  // 找到对应的柜子就退出循环
-//          }
-//        }
-//
-//        if (!found) {
-//          objectDetectionTimer->start(1000);  // 每秒检查一次
-//        }
-//      }
-//    });
-//  }
-//
-//  // 启动定时器开始检测
-//  objectDetectionTimer->start(1000);
 }
 
 void MainWindow::handleDoorStateUpdate()
@@ -423,16 +389,16 @@ void MainWindow::updateCabinetAvailability(const std::vector<navigation_msgs::Ca
   for (const auto& content : contents) {
     try {
       // 检查 box_id 是否为空
-      if (content.box.box_id.empty()) {
+      if (content.box.ascii_epc.empty()) {
         continue;  // 跳过空的 box_id
       }
 
       // 尝试解析 box_id
       int boxId = 0;
       try {
-        boxId = std::stoi(content.box.box_id);
+        boxId = std::stoi(content.box.ascii_epc);
       } catch (const std::exception& e) {
-        qDebug() << "Error parsing box_id:" << QString::fromStdString(content.box.box_id)
+        qDebug() << "Error parsing box_id:" << QString::fromStdString(content.box.ascii_epc)
                  << "Error:" << e.what();
         continue;  // 跳过无效的 box_id
       }
