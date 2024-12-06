@@ -126,7 +126,7 @@ private:
 
   bool scanSystemTags() {
     ROS_INFO("Starting initial system rfids scan...");
-    ros::Duration(3.0).sleep();  // 给系统标签扫描3秒时间
+    ros::Duration(1.0).sleep();  // 给系统标签扫描3秒时间
 
     for (const auto& reader_pair : readers_) {
       if (!reader_pair.second->startReading(gbx_rfid::SINGLE_MODE)) {
@@ -146,6 +146,10 @@ private:
       for (const auto& rfid : system_rfids_) {
         ROS_INFO_STREAM("  - System rfid: " << rfid);
       }
+    }
+    else
+    {
+      ROS_INFO_STREAM("Do not found any system rfids");
     }
 
     return true;
@@ -237,7 +241,7 @@ private:
   }
 
   void processDoorClose() {
-    std::string cabinet_id = "cabinet_" + last_open_door_id_.substr(5);
+    std::string cabinet_id = "cabinet" + last_open_door_id_.substr(5);
     std::string current_box = cabinet_contents_[cabinet_id].ascii_epc;
     bool had_box = !current_box.empty();
 
