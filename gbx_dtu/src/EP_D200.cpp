@@ -84,14 +84,14 @@ void EP_D200::updateFromCabinetContents(const navigation_msgs::CabinetContentArr
   }
 
   json properties;
-  properties["Number"] = all_boxes;
+  properties["Number"] = "cabinet1 cabinet2 cabinet3 cabinet4 cabinet5 cabinet6";
   properties["RFID"] = all_boxes;
   properties["RFIDNumber"] = 0;  // 默认值
   properties["ReceiverPhone"] = "";
   properties["OrderNumber"] = "all_cabinets";
   properties["ReceiverName"] = "";
   properties["SenderName"] = "";
-  properties["Owner"] = "cabinet_status";
+  properties["Owner"] = "IndoorAGV";
   properties["Converted_RFID"] = all_boxes;
 
   service["properties"] = properties;
