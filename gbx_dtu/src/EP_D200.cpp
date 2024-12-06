@@ -39,7 +39,7 @@ bool EP_D200::initializeSerial(const std::string& port, uint32_t baudrate) {
 void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& order) {
   delivery_order_ = order;
 
-  std::vector<std::pair<std::string, json>> service_items = {
+  json service_item = {
       {"service_id", "IndoorDeliveryOrder"},
       {"properties", {
                          {"Number", order.Number},
@@ -54,7 +54,11 @@ void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& or
                      }}
   };
 
-  json service(service_items);
+  json result = {
+      {"services", json::array({service_item})}
+  };
+
+  json service(result);
   json services = json::array({service});
   json root{{"services", services}};
 
