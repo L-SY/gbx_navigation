@@ -132,6 +132,7 @@ void MainWindow::setupUi()
   pageNavigation[ui->destinationPage] = qMakePair(ui->boxSelectionPage, QString("选择目的地"));
   pageNavigation[ui->boxOpenPage] = qMakePair((QWidget*)nullptr, QString("箱门操作"));
   pageNavigation[ui->doorClosedPage] = qMakePair(ui->boxOpenPage, QString("完成"));
+  pageNavigation[ui->arrivalPage] = qMakePair(ui->destinationPage, QString("到达"));
 
   // 为每个页面添加导航按钮
   for (auto it = pageNavigation.begin(); it != pageNavigation.end(); ++it) {
@@ -477,7 +478,7 @@ void MainWindow::setupConnections()
   // 基本页面切
   connect(ui->pickupButton, &QPushButton::clicked, this, &MainWindow::switchToPickupMode);
   connect(ui->deliveryButton, &QPushButton::clicked, this, &MainWindow::switchToDeliveryMode);
-
+  connect(infoHub, &gbx_rqt_interact::InformationHub::navigationArrived, this, &MainWindow::handleNavigationArrival);
   // 箱门状态变化
   connect(this, &MainWindow::boxOpened, this, &MainWindow::switchToBoxOpen);
   connect(this, &MainWindow::boxClosed, this, [this](int boxId) {
@@ -621,6 +622,27 @@ void MainWindow::handleDestinationSelect(int destination)
       );
     }
   }
+}
+
+void MainWindow::handleNavigationArrival(bool arrived) {
+  if (!arrived) return;
+
+  if (infoHub) {
+    auto cabinetInfo = infoHub->getCabinetInfo();
+    {
+      infoHub->publishOutputDelivery(
+          "IndoorCar1_wait",
+          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
+          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
+          lastPhoneNumber.toStdString()
+      );
+    }
+  }
+
+  currentPage = ARRIVAL_PAGE;
+  // 切换到到达页面
+  ui->stackedWidget->setCurrentWidget(ui->arrivalPage);
+  returnTimer->start(); // 5秒后返回主页
 }
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* event)

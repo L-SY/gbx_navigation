@@ -178,6 +178,28 @@
                             </layout>
                         </widget>
 
+                        <widget class="QWidget" name="arrivalPage">
+                            <layout class="QVBoxLayout" name="verticalLayout">
+                                <item>
+                                    <widget class="QLabel" name="arrivalLabel">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>24</pointsize>
+                                                <weight>75</weight>
+                                                <bold>true</bold>
+                                            </font>
+                                        </property>
+                                        <property name="alignment">
+                                            <set>Qt::AlignCenter</set>
+                                        </property>
+                                        <property name="text">
+                                            <string>已到达目的地 请等待工作人员取件</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </widget>
+
                         <!-- Pickup Phone Page -->
                         <widget class="QWidget" name="pickupPhonePage">
                             <layout class="QVBoxLayout" name="pickupLayout">

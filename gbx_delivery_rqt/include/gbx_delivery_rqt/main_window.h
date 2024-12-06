@@ -49,7 +49,8 @@ private:
     DESTINATION_PAGE,      // 选择目的地
     PICKUP_PHONE_PAGE,     // 取件手机号输入
     BOX_OPEN_PAGE,        // 箱门打开提示
-    DOOR_CLOSED_PAGE      // 关门感谢页
+    DOOR_CLOSED_PAGE,      // 关门感谢页
+    ARRIVAL_PAGE
   };
 
   enum DeliveryMode {
@@ -95,6 +96,7 @@ private slots:
   void handleDoorStateUpdate();      // 处理门状态更新
   void handleContentsUpdate();       // 处理内容更新
   void handleTrajectoryResult(bool success, const QString& message);
+  void handleNavigationArrival(bool arrived);
 
 signals:
   void boxOpened(int boxId);            // 箱门打开信号

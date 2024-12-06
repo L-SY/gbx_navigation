@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
         rqt_gui_cpp
         std_msgs
         navigation_msgs
+        actionlib_msgs
 )
 
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets SerialPort)

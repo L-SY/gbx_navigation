@@ -71,6 +71,7 @@ void InformationHub::initializeROS()
   door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
   indoor_delivery_pub_ = nh_->advertise<navigation_msgs::IndoorDeliveryOrder>("/indoor_delivery_order", 1);
   cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,&InformationHub::cabinetContentCallback, this);
+  navigation_arrived_sub_ = nh_->subscribe("/move_base/status", 1, &InformationHub::navigationArrivedCallback, this);
 }
 
 // ----------------------------Init Related End----------------------------
@@ -259,4 +260,31 @@ void InformationHub::publishIndoorDeliveryOrder(
                    << " Area=" << area);
 }
 
+void InformationHub::publishOutputDelivery(
+    const std::string& owner,
+    const std::string& rfid,
+    const std::string& converted_rfid,
+    const std::string& receiverPhone)
+{
+  navigation_msgs::OutputDelivery msg;
+
+  msg.Owner = owner;
+  msg.RFID = rfid;
+  msg.Converted_RFID = converted_rfid;
+  msg.ReceiverPhone = receiverPhone;
+
+  output_delivery_pub_.publish(msg);
+  ROS_DEBUG_STREAM("Published OutputDelivery: "
+                   << "Owner=" << owner
+                   << " RFID=" << rfid);
+}
+
+void InformationHub::navigationArrivedCallback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg) {
+  for(const auto& status : msg->status_list) {
+    if(status.status == actionlib_msgs::GoalStatus::SUCCEEDED) {
+      emit navigationArrived(true);
+      break;
+    }
+  }
+}
 } // namespace gbx_rqt_interact
