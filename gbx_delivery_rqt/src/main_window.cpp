@@ -612,9 +612,9 @@ void MainWindow::handleDestinationSelect(int destination)
           "IndoorCar1",
           cabinerInfo[selectedCabinetId-1].box.raw_epc,
           cabinerInfo[selectedCabinetId-1].box.ascii_epc,
-          pathName.toStdString(),     // 目的地区域
-          "test", // TODO: get from ros
-          "IndoorCar1",  // 机器人ID作为owner
+          "IndoorCar1",
+          pathName.toStdString(), // TODO: get from ros
+          "No.1",  // 机器人ID作为owner
           lastPhoneNumber.toStdString(), // 接收者电话
           "",                         // 接收者姓名（可选）
           ""                          // 发送者姓名（可选）

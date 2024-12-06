@@ -42,20 +42,23 @@ void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& or
   json root;
   json services = json::array();
   json service;
-  service["service_id"] = "IndoorDeliveryOrder";
 
-  json properties;
-  properties["Number"] = order.Number;
-  properties["Area"] = order.Area;
-  properties["RFID"] = order.RFID;
-  properties["Converted_RFID"] = order.Converted_RFID;
-  properties["ReceiverPhone"] = order.ReceiverPhone;
-  properties["OrderNumber"] = order.OrderNumber;
-  properties["ReceiverName"] = order.ReceiverName;
-  properties["SenderName"] = order.SenderName;
-  properties["Owner"] = order.Owner;
+  // First add service_id to ensure it appears first
+  service = {
+      {"service_id", "IndoorDeliveryOrder"},
+      {"properties", {
+                         {"Number", order.Number},
+                         {"Area", order.Area},
+                         {"RFID", order.RFID},
+                         {"Converted_RFID", order.Converted_RFID},
+                         {"ReceiverPhone", order.ReceiverPhone},
+                         {"OrderNumber", order.OrderNumber},
+                         {"ReceiverName", order.ReceiverName},
+                         {"SenderName", order.SenderName},
+                         {"Owner", order.Owner}
+                     }}
+  };
 
-  service["properties"] = properties;
   services.push_back(service);
   root["services"] = services;
 
