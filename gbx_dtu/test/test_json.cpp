@@ -15,10 +15,6 @@ int main(int argc, char** argv) {
   // 配置串口参数
   ser.setPort("/dev/ttyUSB6");
   ser.setBaudrate(115200);
-  ser.setBytesize(serial::eightbits);
-  ser.setParity(serial::parity_none);
-  ser.setStopbits(serial::stopbits_one);
-  ser.setFlowcontrol(serial::flowcontrol_none);
   serial::Timeout timeout = serial::Timeout::simpleTimeout(1000);
   ser.setTimeout(timeout);
 

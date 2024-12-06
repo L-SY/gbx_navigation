@@ -24,7 +24,9 @@ bool EP_D200::initializeSerial(const std::string& port, uint32_t baudrate) {
     serial_port_->setBytesize(serial::eightbits);
     serial_port_->setParity(serial::parity_none);
     serial_port_->setStopbits(serial::stopbits_one);
-    serial_port_->setFlowcontrol(serial::flowcontrol_none);
+    // Must add Timeout!
+    serial::Timeout timeout = serial::Timeout::simpleTimeout(1000);
+    serial_port_->setTimeout(timeout);
     serial_port_->open();
     return true;
   } catch (const serial::IOException& e) {

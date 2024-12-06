@@ -14,7 +14,7 @@ protected:
   void SetUp() override {
     dtu_ = std::make_unique<EP_D200>();
     // 使用一个测试用的串口设备，你可能需要根据实际情况修改
-    ASSERT_TRUE(dtu_->initializeSerial("/dev/ttyUSB0", 115200));
+    ASSERT_TRUE(dtu_->initializeSerial("/dev/ttyUSB6", 115200));
   }
 
   void TearDown() override {

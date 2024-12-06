@@ -57,15 +57,14 @@ target_link_libraries(test_json
         nlohmann_json::nlohmann_json
 )
 
-add_executable(test_serial test/test_serial.cpp src/EP_D200.cpp)
+add_executable(test_serial
+
+
+        test/test_serial.cpp src/EP_D200.cpp)
 target_link_libraries(test_serial
         ${catkin_LIBRARIES}
 )
 
-add_executable(test_simple_json test/test_simple_json.cpp.cpp src/EP_D200.cpp)
-target_link_libraries(test_simple_json
-        ${catkin_LIBRARIES}
-)
 ## Mark executables and/or libraries for installation
 install(TARGETS ${PROJECT_NAME}_node
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

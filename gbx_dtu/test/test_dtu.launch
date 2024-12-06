@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <!-- 参数配置 -->
-    <arg name="serial_port" default="/dev/ttyUSB7"/>
+    <arg name="serial_port" default="/dev/ttyUSB6"/>
     <arg name="baudrate" default="115200"/>
 
     <!-- 载入参数到参数服务器 -->
