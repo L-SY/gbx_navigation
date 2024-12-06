@@ -34,11 +34,11 @@ public:
     // 初始化6个柜子的内容
     for (int i = 1; i <= 6; ++i) {
       navigation_msgs::BoxInfo empty_box;
-      empty_box.ascii_epc = "empty";
-      empty_box.raw_epc = "empty";
+      // empty_box.ascii_epc = "empty";
+      // empty_box.raw_epc = "empty";
       empty_box.enter_time = ros::Time(0);
       empty_box.out_time = ros::Time(0);
-      cabinet_contents_["cabinet_" + std::to_string(i)] = empty_box;
+      cabinet_contents_["cabinet" + std::to_string(i)] = empty_box;
     }
   }
 
@@ -136,8 +136,7 @@ private:
       gbx_rfid::RfidData data;
       if (reader_pair.second->getLatestData(data)) {
         std::string ascii_epc = convertEpcToAscii(data.epc);
-        if (ascii_epc.find("GBX") == std::string::npos)
-          system_rfids_.insert(ascii_epc);
+        system_rfids_.insert(ascii_epc);
       }
     }
 
@@ -279,7 +278,7 @@ private:
     }
 
     publishCabinetContents();
-    clearNewBoxInfo();
+    //clearNewBoxInfo();
   }
 
   bool isTagInAnyCabinet(const std::string& rfid) {
