@@ -39,30 +39,26 @@ bool EP_D200::initializeSerial(const std::string& port, uint32_t baudrate) {
 void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& order) {
   delivery_order_ = order;
 
-  json root;
-  json services = json::array();
-  json service;
+  json j = json::object({
+      {"services", json::array({
+                       {
+                           {"service_id", "IndoorDeliveryOrder"},
+                           {"properties", {
+                                              {"Number", order.Number},
+                                              {"Area", order.Area},
+                                              {"RFID", order.RFID},
+                                              {"Converted_RFID", order.Converted_RFID},
+                                              {"ReceiverPhone", order.ReceiverPhone},
+                                              {"OrderNumber", order.OrderNumber},
+                                              {"ReceiverName", order.ReceiverName},
+                                              {"SenderName", order.SenderName},
+                                              {"Owner", order.Owner}
+                                          }}
+                       }
+                   })}
+  });
 
-  // First add service_id to ensure it appears first
-  service = {
-      {"service_id", "IndoorDeliveryOrder"},
-      {"properties", {
-                         {"Number", order.Number},
-                         {"Area", order.Area},
-                         {"RFID", order.RFID},
-                         {"Converted_RFID", order.Converted_RFID},
-                         {"ReceiverPhone", order.ReceiverPhone},
-                         {"OrderNumber", order.OrderNumber},
-                         {"ReceiverName", order.ReceiverName},
-                         {"SenderName", order.SenderName},
-                         {"Owner", order.Owner}
-                     }}
-  };
-
-  services.push_back(service);
-  root["services"] = services;
-
-  std::string json_str = root.dump();
+  std::string json_str = j.dump();
   tx_buffer_.assign(json_str.begin(), json_str.end());
   send_flag_ = true;
 }
