@@ -610,7 +610,7 @@ void MainWindow::handleDestinationSelect(int destination)
       auto cabinerInfo = infoHub->getCabinetInfo();
       infoHub->publishIndoorDeliveryOrder(
           "IndoorCar1",
-          cabinerInfo[selectedCabinetId-1].box.raw_epc,
+          cabinerInfo[selectedCabinetId-1].box.ascii_epc,
           cabinerInfo[selectedCabinetId-1].box.ascii_epc,
           "IndoorCar1",
           pathName.toStdString(), // TODO: get from ros
