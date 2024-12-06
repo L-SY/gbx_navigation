@@ -1,10 +1,10 @@
 # msg/IndoorDeliveryOrder.msg
-string Number
+string Number # car number
+string Owner
+string Area # car position
 string RFID
-string RFIDNumber
+string Converted_RFID
 string ReceiverPhone
-uint32 OrderNumber
+string OrderNumber
 string ReceiverName
 string SenderName
-string Owner
-string Converted_RFID

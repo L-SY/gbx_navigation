@@ -10,6 +10,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QtSerialPort/QSerialPort>
+#include <navigation_msgs/IndoorDeliveryOrder.h>
 #include <navigation_msgs/CabinetContentArray.h>
 #include <navigation_msgs/CabinetDoorArray.h>
 #include <navigation_msgs/pub_trajectory.h>
@@ -28,6 +29,14 @@ public:
   bool openSerialPort(const QString& portName = "/dev/ttyACM0");
   void closeSerialPort();
   bool isSerialPortOpen() const;
+  void publishIndoorDeliveryOrder(
+    const std::string& carNumber,
+    const std::string& rfid,
+    const std::string& area,
+    const std::string& owner,
+    const std::string& receiverPhone,
+    const std::string& receiverName,
+    const std::string& senderName);
 
 signals:
   void doorStateChanged();
@@ -51,7 +60,7 @@ private:
   // ROS related
   ros::NodeHandle* nh_;
   ros::ServiceClient trajectory_client_;
-  ros::Publisher door_state_pub_;
+  ros::Publisher door_state_pub_, indoor_delivery_pub_;
   ros::Subscriber cabinet_content_sub_;
   std::vector<navigation_msgs::CabinetContent> current_contents_;
   std::vector<navigation_msgs::CabinetContent> last_contents_;

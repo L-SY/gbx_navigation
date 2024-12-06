@@ -46,14 +46,14 @@ void EP_D200::updateDeliveryOrder(const navigation_msgs::IndoorDeliveryOrder& or
 
   json properties;
   properties["Number"] = order.Number;
+  properties["Area"] = order.Area;
   properties["RFID"] = order.RFID;
-  properties["RFIDNumber"] = order.RFIDNumber;
+  properties["Converted_RFID"] = order.Converted_RFID;
   properties["ReceiverPhone"] = order.ReceiverPhone;
-  properties["OrderNumber"] = std::to_string(order.OrderNumber);
+  properties["OrderNumber"] = order.OrderNumber;
   properties["ReceiverName"] = order.ReceiverName;
   properties["SenderName"] = order.SenderName;
   properties["Owner"] = order.Owner;
-  properties["Converted_RFID"] = order.Converted_RFID;
 
   service["properties"] = properties;
   services.push_back(service);
@@ -71,28 +71,30 @@ void EP_D200::updateFromCabinetContents(const navigation_msgs::CabinetContentArr
   service["service_id"] = "IndoorDeliveryOrder";
 
   // 创建一个字符串来存储所有柜子的box_id
-  std::string all_boxes;
+  std::string all_converted_RFID, all_raw_RFID;
 
   for (size_t i = 0; i < cabinets.cabinets.size(); ++i) {
     const auto& cabinet = cabinets.cabinets[i];
-    std::string box_id = (cabinet.box.box_id.empty()) ? "empty" : cabinet.box.box_id;
+    std::string ascii_epc = (cabinet.box.ascii_epc.empty()) ? "empty" : cabinet.box.ascii_epc;
 
-    all_boxes += box_id;
+    all_converted_RFID += ascii_epc;
+    all_raw_RFID += cabinet.box.raw_epc;
     if (i < cabinets.cabinets.size() - 1) {
-      all_boxes += " ";
+      all_converted_RFID += " ";
+      all_raw_RFID += " ";
     }
   }
 
   json properties;
-  properties["Number"] = "cabinet1 cabinet2 cabinet3 cabinet4 cabinet5 cabinet6";
-  properties["RFID"] = all_boxes;
-  properties["RFIDNumber"] = 0;  // 默认值
-  properties["ReceiverPhone"] = "";
-  properties["OrderNumber"] = "all_cabinets";
-  properties["ReceiverName"] = "";
-  properties["SenderName"] = "";
-  properties["Owner"] = "IndoorAGV";
-  properties["Converted_RFID"] = all_boxes;
+  properties["Number"] = "IndoorCar1";
+  properties["Area"] = "unknown";
+  properties["RFIDNumber"] = all_raw_RFID;
+  properties["Converted_RFID"] = all_converted_RFID;
+  properties["ReceiverPhone"] = "unknown";
+  properties["OrderNumber"] = "unknown";
+  properties["ReceiverName"] = "unknown";
+  properties["SenderName"] = "unknown";
+  properties["Owner"] = "IndoorCar1";
 
   service["properties"] = properties;
   services.push_back(service);

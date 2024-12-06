@@ -29,8 +29,8 @@ TEST_F(DTUTest, TestDeliveryOrderUpdate) {
 
   // 填充测试数据
   test_order.Number = "TEST001";
+  test_order.Area = "E3_121";
   test_order.RFID = "RFID123456";
-  test_order.RFIDNumber = "RN789";
   test_order.ReceiverPhone = "13800138000";
   test_order.OrderNumber = 12345;
   test_order.ReceiverName = "测试接收者";

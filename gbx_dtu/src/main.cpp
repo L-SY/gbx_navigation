@@ -17,13 +17,14 @@ void signalHandler(int sig) {
   g_running = false;
 }
 
+void indoorDeliveryOrderCallback(const navigation_msgs::IndoorDeliveryOrder::ConstPtr& msg) {
+  g_dtu->updateDeliveryOrder(*msg);
+  ROS_DEBUG("Received indoor delivery order, preparing to send via serial");
+}
+
 void cabinetContentsCallback(const navigation_msgs::CabinetContentArray::ConstPtr& msg) {
   g_dtu->updateFromCabinetContents(*msg);
   ROS_DEBUG("Updated cabinet contents, preparing to send via serial");
-}
-
-void deliveryOrderCallback(const navigation_msgs::IndoorDeliveryOrder::ConstPtr& msg) {
-  g_dtu->updateDeliveryOrder(*msg);
 }
 
 void systemStateCallback(const ranger_msgs::SystemState::ConstPtr& msg) {
@@ -50,14 +51,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  ros::Publisher delivery_order_pub = nh.advertise<navigation_msgs::IndoorDeliveryOrder>("indoor_delivery_order",1);
-
   // Set up ROS subscribers
+  ros::Subscriber indoor_delivery_sub = nh.subscribe<navigation_msgs::IndoorDeliveryOrder>(
+      "/indoor_delivery_order", 10, indoorDeliveryOrderCallback);
+
   ros::Subscriber system_state_sub = nh.subscribe<ranger_msgs::SystemState>(
       "/ranger/state", 10, systemStateCallback);
 
-  ros::Subscriber cabinet_contents_sub = nh.subscribe<navigation_msgs::CabinetContentArray>(
-      "/cabinet/contents", 10, cabinetContentsCallback);
+//  ros::Subscriber cabinet_contents_sub = nh.subscribe<navigation_msgs::CabinetContentArray>(
+//      "/cabinet/contents", 10, cabinetContentsCallback);
 
   // Set up signal handler
   signal(SIGINT, signalHandler);

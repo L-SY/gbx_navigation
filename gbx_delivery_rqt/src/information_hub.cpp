@@ -69,8 +69,8 @@ void InformationHub::initializeROS()
 
   trajectory_client_ = nh_->serviceClient<navigation_msgs::pub_trajectory>("/gbx_manual/pub_trajectory");
   door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
-  cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,
-                                        &InformationHub::cabinetContentCallback, this);
+  indoor_delivery_pub_ = nh_->advertise<navigation_msgs::IndoorDeliveryOrder>("/IndoorDeliveryOrder", 1);
+  cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,&InformationHub::cabinetContentCallback, this);
 }
 
 // ----------------------------Init Related End----------------------------
@@ -224,5 +224,35 @@ void InformationHub::sendTrajectoryRequest(const QString& path_name)
   }
 }
 // ----------------------------Navigation Related End----------------------------
+
+void InformationHub::publishIndoorDeliveryOrder(
+    const std::string& carNumber,
+    const std::string& rfid,
+    const std::string& area,
+    const std::string& owner,
+    const std::string& receiverPhone,
+    const std::string& receiverName,
+    const std::string& senderName)
+{
+  navigation_msgs::IndoorDeliveryOrder msg;
+
+  // 设置所有字段
+  msg.Number = carNumber;            // 车号
+  msg.Owner = owner;                 // 箱子所有者
+  msg.Area = area;                   // 区域位置
+  msg.RFID = rfid;                  // 原始RFID
+  msg.Converted_RFID = rfid;        // 转换后的RFID（这里保持原值）
+  msg.ReceiverPhone = receiverPhone; // 接收者电话
+  msg.OrderNumber = 0;              // 订单号（默认为0）
+  msg.ReceiverName = receiverName;  // 接收者姓名
+  msg.SenderName = senderName;      // 发送者姓名
+
+  // 发布消息
+  indoor_delivery_pub_.publish(msg);
+  ROS_DEBUG_STREAM("Published IndoorDeliveryOrder: "
+                   << "CarNumber=" << carNumber
+                   << " RFID=" << rfid
+                   << " Area=" << area);
+}
 
 } // namespace gbx_rqt_interact
