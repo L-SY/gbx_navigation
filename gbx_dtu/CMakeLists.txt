@@ -34,6 +34,7 @@ include_directories(
 add_executable(${PROJECT_NAME}_node
         src/main.cpp
         src/EP_D200.cpp
+        src/cJSON.c
 )
 
 ## Specify libraries to link executable against
@@ -44,23 +45,22 @@ target_link_libraries(${PROJECT_NAME}_node
 
 add_executable(test_dtu
         src/EP_D200.cpp
-        test/test_dtu.cpp)
+        test/test_dtu.cpp
+        src/cJSON.c)
 target_link_libraries(test_dtu
         ${catkin_LIBRARIES}
         gtest
         gtest_main
 )
 
-add_executable(test_json test/test_json.cpp src/EP_D200.cpp)
+add_executable(test_json test/test_json.cpp src/EP_D200.cpp src/cJSON.c)
 target_link_libraries(test_json
         ${catkin_LIBRARIES}
         nlohmann_json::nlohmann_json
 )
 
 add_executable(test_serial
-
-
-        test/test_serial.cpp src/EP_D200.cpp)
+        test/test_serial.cpp src/EP_D200.cpp src/cJSON.c)
 target_link_libraries(test_serial
         ${catkin_LIBRARIES}
 )

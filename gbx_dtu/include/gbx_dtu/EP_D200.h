@@ -12,6 +12,7 @@
 #include <serial/serial.h>
 #include <navigation_msgs/IndoorDeliveryOrder.h>
 #include <navigation_msgs/CabinetContentArray.h>
+#include "gbx_dtu/cJSON.h"
 
 class EP_D200 {
 public:
