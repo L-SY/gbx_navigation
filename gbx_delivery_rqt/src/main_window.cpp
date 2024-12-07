@@ -480,7 +480,24 @@ void MainWindow::setupConnections()
   connect(ui->deliveryButton, &QPushButton::clicked, this, &MainWindow::switchToDeliveryMode);
   connect(infoHub, &gbx_rqt_interact::InformationHub::navigationArrived, this, &MainWindow::handleNavigationArrival);
   // 箱门状态变化
-  connect(this, &MainWindow::boxOpened, this, &MainWindow::switchToBoxOpen);
+
+  connect(this, &MainWindow::boxOpened, this, [this](int boxId) {
+    currentPage = BOX_OPEN_PAGE;
+    ui->stackedWidget->setCurrentWidget(ui->boxOpenPage);
+    ui->boxOpenLabel->setText(QString("箱子%1已打开\n取/放物品后请关门").arg(boxId));
+    if (currentMode == PICKUP)
+    {
+      auto cabinetInfo = infoHub->getCabinetInfo();
+      {
+        infoHub->publishOutputDelivery(
+            lastPhoneNumber.toStdString(),
+            cabinetInfo[selectedCabinetId-1].box.ascii_epc,
+            cabinetInfo[selectedCabinetId-1].box.ascii_epc,
+            lastPhoneNumber.toStdString()
+        );
+      }
+    }
+  });
   connect(this, &MainWindow::boxClosed, this, [this](int boxId) {
     if (currentMode == DELIVERY && currentPage == BOX_OPEN_PAGE) {
       ui->boxOpenLabel->setText(QString("箱子%1已关闭\n正在检测物品...").arg(boxId));
@@ -619,6 +636,15 @@ void MainWindow::handleDestinationSelect(int destination)
           lastPhoneNumber.toStdString(), // 接收者电话
           "",                         // 接收者姓名（可选）
           ""                          // 发送者姓名（可选）
+      );
+    }
+    auto cabinetInfo = infoHub->getCabinetInfo();
+    {
+      infoHub->publishOutputDelivery(
+          "IndoorCar1_wait",
+          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
+          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
+          lastPhoneNumber.toStdString()
       );
     }
   }
