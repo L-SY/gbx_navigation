@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <launch>
     <!-- 参数配置 -->
-    <arg name="serial_port" default="/dev/ttyUSB0"/>
+    <arg name="serial_port" default="/dev/ttyUSB6"/>
     <arg name="baudrate" default="115200"/>
 
     <!-- DTU 节点配置 -->
-    <node pkg="gbx_dtu" type="node" name="gbx_dtu_node" output="screen" respawn="true">
+    <node pkg="gbx_dtu" type="gbx_dtu_node" name="gbx_dtu_node" output="screen" respawn="true">
         <param name="serial_port" value="$(arg serial_port)"/>
         <param name="baudrate" value="$(arg baudrate)"/>
         <!-- 如果节点崩溃，等待 2 秒后重启 -->

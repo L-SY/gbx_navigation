@@ -129,7 +129,7 @@ void EP_D200::updateOutputDelivery(const navigation_msgs::OutputDelivery& output
   }
 
   if(!cJSON_AddItemToObject(root, "services", array) ||
-      !cJSON_AddStringToObject(obj, "service_id", "OutputDelivery") ||
+      !cJSON_AddStringToObject(obj, "service_id", "InputDelivery") ||
       !cJSON_AddItemToObject(obj, "properties", properties) ||
       !cJSON_AddItemToArray(array, obj)) {
     cJSON_Delete(root);
