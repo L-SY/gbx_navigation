@@ -565,7 +565,7 @@ void MainWindow::setupDestinationPage()
 
   // 设置地图
   QLabel* mapLabel = new QLabel(mapContainer);
-  QPixmap mapPixmap(":/images/2F_whole.png");
+  QPixmap mapPixmap(":/images/gbx_rviz.png");
   if (!mapPixmap.isNull()) {
     mapLabel->setPixmap(mapPixmap.scaled(800, 600, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     mapLabel->setAlignment(Qt::AlignCenter);
