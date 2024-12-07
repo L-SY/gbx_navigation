@@ -349,7 +349,13 @@ void MainWindow::handleBoxSelection(int box)
 {
   selectedCabinetId = box;
   if (infoHub) {
-    infoHub->sendDoorCommand(box - 1);  // 发送开箱命令
+    if (currentMode == DELIVERY) {
+      // 存储手机号后四位与柜子的对应关系
+      QString lastFourDigits = lastPhoneNumber.right(4);
+      phoneNumberToCabinet[lastFourDigits] = box;
+    }
+
+    infoHub->sendDoorCommand(box - 1);
     ui->boxOpenLabel->setText(QString("箱子%1已打开\n请放入物品").arg(box));
     switchToBoxOpen();
   }
@@ -368,6 +374,12 @@ void MainWindow::handleDoorStateUpdate()
   const uint8_t* states = infoHub->getDoorStates();
   for (int i = 0; i < 6; i++) {
     updateDoorStatus(i + 1, states[i + 1] == 1);
+  }
+
+  // 如果是取件模式且检测到关门，从记录中移除对应关系
+  if (currentMode == PICKUP && states[selectedCabinetId] == 0) {
+    QString lastFourDigits = ui->pickupPhoneEdit->text();
+    phoneNumberToCabinet.remove(lastFourDigits);
   }
 }
 
@@ -622,6 +634,9 @@ void MainWindow::handleDestinationSelect(int destination)
       );
     }
   }
+
+  QMessageBox::information(widget_, "提示", "轨迹已发送,机器人即将启动");
+  QTimer::singleShot(2000, this, &MainWindow::switchToMainPage);
 }
 
 void MainWindow::handleNavigationArrival(bool arrived) {
@@ -739,8 +754,7 @@ void MainWindow::handlePhoneNumberSubmit()
   if (currentPage == DELIVERY_PHONE_PAGE) {
     QString phone = ui->deliveryPhoneEdit->text();
     if (validatePhoneNumber(phone, false)) {
-      lastPhoneNumber = phone;  // 存储手机号
-      // TODO: 验证手机号是否在服务器记录中
+      lastPhoneNumber = phone;
       switchToNextPage();
     } else {
       ui->deliveryPhoneEdit->clear();
@@ -749,8 +763,20 @@ void MainWindow::handlePhoneNumberSubmit()
   } else if (currentPage == PICKUP_PHONE_PAGE) {
     QString shortPhone = ui->pickupPhoneEdit->text();
     if (validatePhoneNumber(shortPhone, true)) {
-      // TODO: 验证手机号后四位是否匹配
-      switchToNextPage();
+      // 验证手机号后四位是否匹配
+      if (phoneNumberToCabinet.contains(shortPhone)) {
+        // 找到对应的柜子
+        selectedCabinetId = phoneNumberToCabinet[shortPhone];
+        // 发送开门命令
+        if (infoHub) {
+          infoHub->sendDoorCommand(selectedCabinetId - 1);
+          ui->boxOpenLabel->setText(QString("箱子%1已打开\n请取出物品后关门").arg(selectedCabinetId));
+          switchToBoxOpen();
+        }
+      } else {
+        ui->pickupPhoneEdit->clear();
+        showErrorMessage("未找到对应的快递");
+      }
     } else {
       ui->pickupPhoneEdit->clear();
       showErrorMessage("手机号输入有误，请检查");
