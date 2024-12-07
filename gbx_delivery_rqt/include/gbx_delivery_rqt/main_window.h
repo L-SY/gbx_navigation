@@ -108,6 +108,7 @@ private:
   Ui::MainWindow* ui;
   QMainWindow* widget_;
   QMap<int, QPushButton*> cabinetButtons;    // 存储箱子按钮引用
+  QMap<QString, int> phoneNumberToCabinet;
   QVector<QLabel*> destinationMarkers;       // 存储目的地标记
 
   // 核心组件
