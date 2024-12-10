@@ -9,25 +9,7 @@
   <node pkg="rosbag" type="record" name="rosbag_record_ouster"
         args="record -o $(arg path)/$(arg bag_name)
               /ouster/imu
-              /ouster/nearir_image
-              /ouster/nearir_image/mouse_click
-              /ouster/os_nodelet_mgr/bond
               /ouster/points
-              /ouster/points_filtered
-              /ouster/points2
-              /ouster/range_image
-              /ouster/range_image/mouse_click
-              /ouster/range_image2
-              /ouster/range_image2/mouse_click
-              /ouster/reflec_image
-              /ouster/reflec_image2
-              /ouster/reflec_image2/mouse_click
-              /ouster/scan
-              /ouster/scan2
-              /ouster/signal_image
-              /ouster/signal_image/mouse_click
-              /ouster/signal_image2
-              /ouster/signal_image2/mouse_click
               /wit/imu">
     <param name="split" value="false"/>
   </node>

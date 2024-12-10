@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 echo "Starting serial port permission setup..."
 
 # USB串口设置
-for i in {0..6}
+for i in {0..7}
 do
     if [ -e "/dev/ttyUSB$i" ]; then
         sudo chmod 777 /dev/ttyUSB$i

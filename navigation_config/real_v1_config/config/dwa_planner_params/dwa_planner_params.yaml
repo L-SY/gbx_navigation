@@ -28,7 +28,7 @@ DWAPlannerROS:
   max_vel_trans: 10
   min_vel_trans: 0.05
 
-  sim_time: 6.0
+  sim_time: 3.0
   sim_granularity: 0.025
   vx_samples: 20
   vy_samples: 0
