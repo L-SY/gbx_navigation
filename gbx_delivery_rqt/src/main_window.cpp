@@ -490,7 +490,11 @@ void MainWindow::setupConnections()
   // 基本页面切
   connect(ui->pickupButton, &QPushButton::clicked, this, &MainWindow::switchToPickupMode);
   connect(ui->deliveryButton, &QPushButton::clicked, this, &MainWindow::switchToDeliveryMode);
-  connect(infoHub, &gbx_rqt_interact::InformationHub::navigationArrived, this, &MainWindow::handleNavigationArrival);
+  bool success = connect(infoHub, &gbx_rqt_interact::InformationHub::navigationArrived,
+                         this, &MainWindow::handleNavigationArrival);
+  if (!success) {
+    ROS_INFO_STREAM("Signal-slot connection failed!");
+  }
   // 箱门状态变化
 
   connect(this, &MainWindow::boxOpened, this, [this](int boxId) {
