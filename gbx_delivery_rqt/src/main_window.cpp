@@ -81,6 +81,9 @@ void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
     }
 
     // 按顺序初始化各个组件
+    qDebug() << "MainWindow: Setting up InfoHub";
+    setupInfoHub();
+
     qDebug() << "MainWindow: Setting up basic UI components";
     setupUi();
 
@@ -92,9 +95,6 @@ void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
 
     qDebug() << "MainWindow: Setting up box buttons";
     setupCabinetButtons();
-
-    qDebug() << "MainWindow: Setting up InfoHub";
-    setupInfoHub();
 
     // 设置定时器
     qDebug() << "MainWindow: Setting up return timer";
