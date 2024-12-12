@@ -128,8 +128,10 @@ void EP_D200::updateOutputDelivery(const navigation_msgs::OutputDelivery& output
     return;
   }
 
+  const char* service_id = (output.Owner != "IndoorCar") ? "OutputDelivery" : "InputDelivery";
+
   if(!cJSON_AddItemToObject(root, "services", array) ||
-      !cJSON_AddStringToObject(obj, "service_id", "InputDelivery") ||
+      !cJSON_AddStringToObject(obj, "service_id", service_id) ||
       !cJSON_AddItemToObject(obj, "properties", properties) ||
       !cJSON_AddItemToArray(array, obj)) {
     cJSON_Delete(root);
