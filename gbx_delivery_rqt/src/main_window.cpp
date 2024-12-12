@@ -664,16 +664,54 @@ void MainWindow::handleNavigationArrival(bool arrived) {
   if (!arrived) return;
 
   if (infoHub) {
+    ROS_INFO_STREAM("infoHub is valid.");
+
+    // 获取 cabinetInfo
     auto cabinetInfo = infoHub->getCabinetInfo();
-    {
-      infoHub->publishOutputDelivery(
-          "IndoorCar",
-          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
-          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
-          lastPhoneNumber.toStdString()
-      );
+    if (cabinetInfo.empty()) {
+      ROS_ERROR("Cabinet info is empty.");
+      return; // 退出函数，避免后续错误
     }
+    ROS_INFO_STREAM("Retrieved cabinet info. Number of cabinets: " << cabinetInfo.size());
+
+    // 确保 selectedCabinetId 在有效范围内
+    if (selectedCabinetId <= 0 || selectedCabinetId > cabinetInfo.size()) {
+      ROS_ERROR("Invalid selectedCabinetId: %d. It must be between 1 and %d.", selectedCabinetId, cabinetInfo.size());
+      return; // 退出函数，避免后续错误
+    }
+
+    // 获取当前箱子的 EPC
+    std::string epc = cabinetInfo[selectedCabinetId - 1].box.ascii_epc;
+    if (epc.empty()) {
+      ROS_ERROR("EPC is empty for selected cabinet ID: %d.", selectedCabinetId);
+      return; // 退出函数，避免后续错误
+    }
+    ROS_INFO_STREAM("EPC for cabinet " << selectedCabinetId << ": " << epc);
+
+    // 检查 lastPhoneNumber 是否有效
+    if (lastPhoneNumber.isEmpty()) {
+      ROS_ERROR("Last phone number is empty.");
+      return; // 退出函数，避免后续错误
+    }
+    std::string phoneNumber = lastPhoneNumber.toStdString();
+    ROS_INFO_STREAM("Last phone number: " << phoneNumber);
+
+    // 调用 publishOutputDelivery
+    infoHub->publishOutputDelivery(
+        "IndoorCar",
+        epc,
+        epc,
+        phoneNumber
+    );
+    ROS_INFO_STREAM("Published OutputDelivery: "
+                    << "Owner=IndoorCar, "
+                    << "RFID=" << epc
+                    << ", ReceiverPhone=" << phoneNumber);
   }
+  else {
+    ROS_ERROR("infoHub is null.");
+  }
+
 
   currentPage = ARRIVAL_PAGE;
   // 切换到到达页面

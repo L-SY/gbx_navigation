@@ -275,7 +275,7 @@ void InformationHub::publishOutputDelivery(
   msg.ReceiverPhone = receiverPhone;
 
   output_delivery_pub_.publish(msg);
-  ROS_DEBUG_STREAM("Published OutputDelivery: "
+  ROS_INFO_STREAM("Published OutputDelivery: "
                    << "Owner=" << owner
                    << " RFID=" << rfid);
 }
