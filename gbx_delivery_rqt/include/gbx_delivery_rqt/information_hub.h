@@ -18,6 +18,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <actionlib_msgs/GoalStatusArray.h>
+#include <move_base_msgs/MoveBaseActionResult.h>
 
 namespace gbx_rqt_interact {
 
@@ -79,7 +80,7 @@ private:
   std::vector<navigation_msgs::CabinetContent> last_contents_;
   ros::Subscriber navigation_arrived_sub_;
   bool navigation_arrived_ = false;
-  void navigationArrivedCallback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg);
+  void navigationArrivedCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg);
 
   // Helper functions
   void initializeDevice();

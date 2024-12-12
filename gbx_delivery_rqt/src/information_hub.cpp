@@ -72,7 +72,7 @@ void InformationHub::initializeROS()
   indoor_delivery_pub_ = nh_->advertise<navigation_msgs::IndoorDeliveryOrder>("/indoor_delivery_order", 1);
   output_delivery_pub_ = nh_->advertise<navigation_msgs::OutputDelivery>("/output_delivery", 1);
   cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,&InformationHub::cabinetContentCallback, this);
-  navigation_arrived_sub_ = nh_->subscribe("/move_base/status", 1, &InformationHub::navigationArrivedCallback, this);
+  navigation_arrived_sub_ = nh_->subscribe("/move_base/result", 1, &InformationHub::navigationArrivedCallback, this);
 }
 
 // ----------------------------Init Related End----------------------------
@@ -280,12 +280,11 @@ void InformationHub::publishOutputDelivery(
                    << " RFID=" << rfid);
 }
 
-void InformationHub::navigationArrivedCallback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg) {
-  for(const auto& status : msg->status_list) {
-    if(status.status == actionlib_msgs::GoalStatus::SUCCEEDED) {
-      emit navigationArrived(true);
-      break;
-    }
+void InformationHub::navigationArrivedCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg) {
+  if (msg->status.status == 3)
+  {
+    emit navigationArrived(true);
+    ROS_INFO_STREAM("ARRIVAL!!!!!!!");
   }
 }
 } // namespace gbx_rqt_interact

@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
         std_msgs
         navigation_msgs
         actionlib_msgs
+        move_base_msgs
 )
 
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets SerialPort)
@@ -30,7 +31,7 @@ endif()
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES ${PROJECT_NAME}
-        CATKIN_DEPENDS roscpp rqt_gui rqt_gui_cpp std_msgs navigation_msgs
+        CATKIN_DEPENDS roscpp rqt_gui rqt_gui_cpp std_msgs navigation_msgs move_base_msgs
 )
 
 # 先处理 UI 文件
