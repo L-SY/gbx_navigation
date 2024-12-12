@@ -639,24 +639,15 @@ void MainWindow::handleDestinationSelect(int destination)
     {
       auto cabinerInfo = infoHub->getCabinetInfo();
       infoHub->publishIndoorDeliveryOrder(
-          "IndoorCar1",
+          "IndoorCar",
           cabinerInfo[selectedCabinetId-1].box.ascii_epc,
           cabinerInfo[selectedCabinetId-1].box.ascii_epc,
-          "IndoorCar1",
-          pathName.toStdString(), // TODO: get from ros
+          "IndoorCar",
+          pathName.toStdString(),
           "No.1",  // 机器人ID作为owner
           lastPhoneNumber.toStdString(), // 接收者电话
           "",                         // 接收者姓名（可选）
           ""                          // 发送者姓名（可选）
-      );
-    }
-    auto cabinetInfo = infoHub->getCabinetInfo();
-    {
-      infoHub->publishOutputDelivery(
-          "IndoorCar1_wait",
-          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
-          cabinetInfo[selectedCabinetId-1].box.ascii_epc,
-          lastPhoneNumber.toStdString()
       );
     }
   }
@@ -672,7 +663,7 @@ void MainWindow::handleNavigationArrival(bool arrived) {
     auto cabinetInfo = infoHub->getCabinetInfo();
     {
       infoHub->publishOutputDelivery(
-          "IndoorCar1_wait",
+          "IndoorCar",
           cabinetInfo[selectedCabinetId-1].box.ascii_epc,
           cabinetInfo[selectedCabinetId-1].box.ascii_epc,
           lastPhoneNumber.toStdString()
