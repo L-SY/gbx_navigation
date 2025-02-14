@@ -6,13 +6,9 @@ local_path_topic: "/move_base/TebLocalPlannerROS/local_plan"
 velocity_cmd_topic: "/cmd_vel"
 
 story_trajectories:
-  - E3_121: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/E3_121.csv"
-  - E3_121_long: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/E3_121_long.csv"
-  - 2F_sl_go: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl_go.csv"
-  - 2F_sl_back: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl_back.csv"
-#  - A: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl_back.csv"
   - A: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl_C1W_3.csv"
   - 2F_sl_C1W_back: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl_C1W_4.csv"
+  - 2F_sl_dining: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2f_sl_dining.csv"
 
 delivery_point:
   - "1": [0.0, 0.0, 0.0]
