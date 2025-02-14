@@ -25,6 +25,6 @@
     <joint name="fixed_ouster_joint" type="fixed">
         <parent link="base_link"/>
         <child link="os_sensor"/>
-        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+        <origin xyz="0.0 0.0 0.0" rpy="0 0 3.14" />
     </joint>
 </robot>
