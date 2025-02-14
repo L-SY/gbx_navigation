@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
         actionlib_msgs
 )
 
+find_package(Boost REQUIRED COMPONENTS graph)
+
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 catkin_package(
@@ -40,7 +42,7 @@ catkin_package(
 
 add_library(regular_global_planner src/RegularGlobalPlanner.cpp)
 add_dependencies(regular_global_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(regular_global_planner ${catkin_LIBRARIES})
+target_link_libraries(regular_global_planner ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 install(
         DIRECTORY include/${PROJECT_NAME}/
