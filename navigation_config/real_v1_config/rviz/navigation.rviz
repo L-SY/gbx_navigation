@@ -767,8 +767,24 @@ Visualization Manager:
               Value: true
           Enabled: true
           Name: move_base
-      Enabled: true
+      Enabled: false
       Name: Deploy
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /move_base/RegularGlobalPlanner/planner_graph
+      Name: MarkerArray
+      Namespaces:
+        edges: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /move_base/RegularGlobalPlanner/planner_vertices
+      Name: MarkerArray
+      Namespaces:
+        vertices: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 136; 138; 133
@@ -806,10 +822,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 22.672988891601562
+      Scale: 4.29148006439209
       Target Frame: <Fixed Frame>
-      X: -7.0814056396484375
-      Y: -3.853175163269043
+      X: -65.4209213256836
+      Y: -21.569515228271484
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 25.267837524414062

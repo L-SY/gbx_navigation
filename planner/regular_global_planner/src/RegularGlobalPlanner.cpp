@@ -39,8 +39,8 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
 
   // 获取参数
   private_nh.param("csv_path", csv_path_, std::string(""));
-  private_nh.param("connection_radius", connection_radius_, 2.0);
-  private_nh.param("max_connections", max_connections_, 2);
+  private_nh.param("connection_radius", connection_radius_, 10.0);
+  private_nh.param("max_connections", max_connections_, 3);
 
   // 初始化发布者
   path_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
@@ -286,7 +286,7 @@ void RegularGlobalPlanner::visualizeVerticesAndGraph() {
   vertices_marker.type = visualization_msgs::Marker::POINTS;
   vertices_marker.action = visualization_msgs::Marker::ADD;
   vertices_marker.pose.orientation.w = 1.0;
-  vertices_marker.scale.x = 0.2;  // 点的大小
+  vertices_marker.scale.x = 1;  // 点的大小
   vertices_marker.scale.y = 0.2;
   vertices_marker.color.r = 1.0;  // 红色
   vertices_marker.color.a = 1.0;  // 不透明度
@@ -312,7 +312,7 @@ void RegularGlobalPlanner::visualizeVerticesAndGraph() {
   edges_marker.type = visualization_msgs::Marker::LINE_LIST;
   edges_marker.action = visualization_msgs::Marker::ADD;
   edges_marker.pose.orientation.w = 1.0;
-  edges_marker.scale.x = 0.05;  // 线的宽度
+  edges_marker.scale.x = 1;  // 线的宽度
   edges_marker.color.b = 1.0;   // 蓝色
   edges_marker.color.a = 0.6;   // 稍微透明
 

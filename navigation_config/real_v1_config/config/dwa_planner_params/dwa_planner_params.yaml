@@ -12,6 +12,7 @@
 RegularGlobalPlanner:
   epsilon: 0.3  # distance threshold for final waypoint
   waypoints_per_meter: 10  # number of waypoints per meter for the interpolation of the path
+  csv_path: /home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory_map/2F_whole.csv
 
 DWAPlannerROS:
   odom_topic: /ranger_base_node/odom
