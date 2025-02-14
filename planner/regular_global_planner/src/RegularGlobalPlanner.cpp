@@ -79,26 +79,42 @@ bool RegularGlobalPlanner::loadGraphFromCSV(const std::string& filename) {
 
   std::string line;
   std::getline(file, line); // 跳过表头
+  ROS_INFO("CSV header: %s", line.c_str());
 
   vertices_.clear();
   while (std::getline(file, line)) {
     std::stringstream ss(line);
     std::string value;
 
+    // 读取index
+    std::getline(ss, value, ',');
+    int index = std::stoi(value);
+
+    // 读取x
+    std::getline(ss, value, ',');
+    double x = std::stod(value);
+
+    // 读取y
+    std::getline(ss, value, ',');
+    double y = std::stod(value);
+
+    // 读取z（如果需要的话）
+    std::getline(ss, value, ',');
+    double z = std::stod(value);
+
     geometry_msgs::Point point;
-
-    std::getline(ss, value, ',');
-    point.x = std::stod(value);
-
-    std::getline(ss, value, ',');
-    point.y = std::stod(value);
-
-    point.z = 0.0;
+    point.x = x;
+    point.y = y;
+    point.z = z;  // 如果需要z坐标的话
 
     vertices_.push_back(point);
     boost::add_vertex(graph_);
+
+    // 打印读取的点信息
+    ROS_INFO("Loaded point %d: (%.3f, %.3f, %.3f)", index, x, y, z);
   }
 
+  ROS_INFO("Total loaded points: %lu", vertices_.size());
   return !vertices_.empty();
 }
 
