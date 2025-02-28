@@ -15,8 +15,7 @@ namespace regular_global_planner {
 
 RegularGlobalPlanner::RegularGlobalPlanner()
     : initialized_(false)
-      , connection_radius_(2.0)
-      , max_connections_(2) {
+      , connection_radius_(2.0) {
 }
 
 RegularGlobalPlanner::RegularGlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
@@ -38,9 +37,10 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
   frame_id_ = costmap_ros_->getGlobalFrameID();
 
   // 获取参数
-  private_nh.param("csv_path", csv_path_, std::string(""));
+  private_nh.param("csv_path_type1", csv_path_type1_, std::string(""));
+  private_nh.param("csv_path_type2", csv_path_type2_, std::string(""));
+  private_nh.param("csv_path_type3", csv_path_type3_, std::string(""));
   private_nh.param("connection_radius", connection_radius_, 10.0);
-  private_nh.param("max_connections", max_connections_, 3);
 
   // 初始化发布者
   path_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
@@ -56,21 +56,52 @@ void RegularGlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS
   );
 
   // 加载CSV并构建图
-  if (!csv_path_.empty()) {
-    if (loadGraphFromCSV(csv_path_)) {
-      buildGraphConnections();
-      // 添加可视化调用
-      visualizeVerticesAndGraph();
-      ROS_INFO("Successfully loaded CSV map and built graph");
-    } else {
-      ROS_WARN("Failed to load CSV map");
-    }
+  if (loadGraphFromCSVs()) {
+    buildGraphConnections();
+    visualizeVerticesAndGraph();
+    ROS_INFO("Successfully loaded CSV maps and built graph");
+  } else {
+    ROS_WARN("Failed to load CSV maps");
   }
 
   initialized_ = true;
 }
 
-bool RegularGlobalPlanner::loadGraphFromCSV(const std::string& filename) {
+bool RegularGlobalPlanner::loadGraphFromCSVs() {
+  bool success = true;
+
+  // 清空现有数据
+  vertices_.clear();
+  vertex_types_.clear();
+  graph_ = Graph();
+
+  // 加载所有三种CSV文件
+  if (!csv_path_type1_.empty()) {
+    if (!loadPointsFromCSV(csv_path_type1_, TYPE1)) {
+      ROS_ERROR("Failed to load Type 1 CSV: %s", csv_path_type1_.c_str());
+      success = false;
+    }
+  }
+
+  if (!csv_path_type2_.empty()) {
+    if (!loadPointsFromCSV(csv_path_type2_, TYPE2)) {
+      ROS_ERROR("Failed to load Type 2 CSV: %s", csv_path_type2_.c_str());
+      success = false;
+    }
+  }
+
+  if (!csv_path_type3_.empty()) {
+    if (!loadPointsFromCSV(csv_path_type3_, TYPE3)) {
+      ROS_ERROR("Failed to load Type 3 CSV: %s", csv_path_type3_.c_str());
+      success = false;
+    }
+  }
+
+  ROS_INFO("Total loaded points: %lu", vertices_.size());
+  return success && !vertices_.empty();
+}
+
+bool RegularGlobalPlanner::loadPointsFromCSV(const std::string& filename, int type) {
   std::ifstream file(filename);
   if (!file.is_open()) {
     ROS_ERROR("Cannot open CSV file: %s", filename.c_str());
@@ -79,9 +110,9 @@ bool RegularGlobalPlanner::loadGraphFromCSV(const std::string& filename) {
 
   std::string line;
   std::getline(file, line); // 跳过表头
-  ROS_INFO("CSV header: %s", line.c_str());
+  ROS_INFO("CSV header for Type %d: %s", type, line.c_str());
 
-  vertices_.clear();
+  int added_count = 0;
   while (std::getline(file, line)) {
     std::stringstream ss(line);
     std::string value;
@@ -105,33 +136,76 @@ bool RegularGlobalPlanner::loadGraphFromCSV(const std::string& filename) {
     geometry_msgs::Point point;
     point.x = x;
     point.y = y;
-    point.z = z;  // 如果需要z坐标的话
+    point.z = z;
 
     vertices_.push_back(point);
+    vertex_types_.push_back(type);
     boost::add_vertex(graph_);
-
-    // 打印读取的点信息
-    ROS_INFO("Loaded point %d: (%.3f, %.3f, %.3f)", index, x, y, z);
+    added_count++;
   }
 
-  ROS_INFO("Total loaded points: %lu", vertices_.size());
-  return !vertices_.empty();
+  ROS_INFO("Added %d points of Type %d from file: %s", added_count, type, filename.c_str());
+  return added_count > 0;
 }
 
 void RegularGlobalPlanner::buildGraphConnections() {
+  // 根据不同类型的顶点构建不同的连接方式
   for (size_t i = 0; i < vertices_.size(); ++i) {
-    for (size_t j = i + 1; j < vertices_.size(); ++j) {
+    int connections_needed = 0;
+    switch (vertex_types_[i]) {
+    case TYPE1:
+      connections_needed = 1;
+      break;
+    case TYPE2:
+      connections_needed = 2;
+      break;
+    case TYPE3:
+      connections_needed = 3;
+      break;
+    default:
+      ROS_WARN("Unknown vertex type: %d", vertex_types_[i]);
+      continue;
+    }
+
+    // 查找最近的点来连接
+    std::vector<std::pair<double, size_t>> nearby_points;
+    for (size_t j = 0; j < vertices_.size(); ++j) {
+      if (i == j) continue;
+
       double dist = calculateDistance(vertices_[i], vertices_[j]);
       if (dist <= connection_radius_) {
-        EdgeDescriptor edge;
-        bool added;
-        boost::tie(edge, added) = boost::add_edge(i, j, graph_);
-        if (added) {
-          boost::put(boost::edge_weight, graph_, edge, dist);
-        }
+        nearby_points.push_back(std::make_pair(dist, j));
       }
     }
+
+    // 按距离排序
+    std::sort(nearby_points.begin(), nearby_points.end());
+
+    // 只连接所需数量的点
+    int connections_made = 0;
+    for (const auto& point_pair : nearby_points) {
+      if (connections_made >= connections_needed) break;
+
+      size_t j = point_pair.second;
+      double dist = point_pair.first;
+
+      EdgeDescriptor edge;
+      bool added;
+      boost::tie(edge, added) = boost::add_edge(i, j, graph_);
+      if (added) {
+        boost::put(boost::edge_weight, graph_, edge, dist);
+        connections_made++;
+      }
+    }
+
+    if (connections_made < connections_needed) {
+      ROS_WARN("Vertex %lu (Type %d) only has %d connections of %d needed",
+               i, vertex_types_[i], connections_made, connections_needed);
+    }
   }
+
+  ROS_INFO("Graph built with %lu vertices and %lu edges",
+           boost::num_vertices(graph_), boost::num_edges(graph_));
 }
 
 bool RegularGlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start,
@@ -276,45 +350,75 @@ std::vector<VertexDescriptor> RegularGlobalPlanner::findPath(int start_idx, int 
 }
 
 void RegularGlobalPlanner::visualizeVerticesAndGraph() {
-  // 可视化所有顶点
   visualization_msgs::MarkerArray vertices_markers;
-  visualization_msgs::Marker vertices_marker;
-  vertices_marker.header.frame_id = frame_id_;
-  vertices_marker.header.stamp = ros::Time::now();
-  vertices_marker.ns = "vertices";
-  vertices_marker.id = 0;
-  vertices_marker.type = visualization_msgs::Marker::POINTS;
-  vertices_marker.action = visualization_msgs::Marker::ADD;
-  vertices_marker.pose.orientation.w = 1.0;
-  vertices_marker.scale.x = 1;  // 点的大小
-  vertices_marker.scale.y = 0.2;
-  vertices_marker.color.r = 1.0;  // 红色
-  vertices_marker.color.a = 1.0;  // 不透明度
 
-  // 添加所有顶点
-  for (const auto& vertex : vertices_) {
-    geometry_msgs::Point p;
-    p.x = vertex.x;
-    p.y = vertex.y;
-    p.z = 0.0;
-    vertices_marker.points.push_back(p);
+  // 创建三个不同类型的点标记，不同颜色
+  for (int type = 1; type <= 3; type++) {
+    visualization_msgs::Marker vertices_marker;
+    vertices_marker.header.frame_id = frame_id_;
+    vertices_marker.header.stamp = ros::Time::now();
+    vertices_marker.ns = "vertices_type" + std::to_string(type);
+    vertices_marker.id = type;
+    vertices_marker.type = visualization_msgs::Marker::POINTS;
+    vertices_marker.action = visualization_msgs::Marker::ADD;
+    vertices_marker.pose.orientation.w = 1.0;
+    vertices_marker.scale.x = 0.3;  // 点的大小
+    vertices_marker.scale.y = 0.3;
+
+    // 设置不同类型的颜色
+    switch (type) {
+    case TYPE1:  // 连接一个点: 红色
+      vertices_marker.color.r = 1.0;
+      vertices_marker.color.g = 0.0;
+      vertices_marker.color.b = 0.0;
+      break;
+    case TYPE2:  // 连接两个点: 绿色
+      vertices_marker.color.r = 0.0;
+      vertices_marker.color.g = 1.0;
+      vertices_marker.color.b = 0.0;
+      break;
+    case TYPE3:  // 连接三个点: 蓝色
+      vertices_marker.color.r = 0.0;
+      vertices_marker.color.g = 0.0;
+      vertices_marker.color.b = 1.0;
+      break;
+    }
+
+    vertices_marker.color.a = 1.0;  // 不透明度
+
+    vertices_markers.markers.push_back(vertices_marker);
   }
 
-  vertices_markers.markers.push_back(vertices_marker);
+  // 添加所有顶点到相应类型的标记中
+  for (size_t i = 0; i < vertices_.size(); ++i) {
+    int marker_idx = vertex_types_[i] - 1;  // 类型1,2,3对应索引0,1,2
+    if (marker_idx < 0 || marker_idx >= 3) continue;
+
+    geometry_msgs::Point p;
+    p.x = vertices_[i].x;
+    p.y = vertices_[i].y;
+    p.z = vertices_[i].z;
+    vertices_markers.markers[marker_idx].points.push_back(p);
+  }
+
+  // 发布所有顶点
   vertices_pub_.publish(vertices_markers);
 
   // 可视化图的边
+  visualization_msgs::MarkerArray graph_markers;
   visualization_msgs::Marker edges_marker;
   edges_marker.header.frame_id = frame_id_;
   edges_marker.header.stamp = ros::Time::now();
   edges_marker.ns = "edges";
-  edges_marker.id = 1;
+  edges_marker.id = 0;
   edges_marker.type = visualization_msgs::Marker::LINE_LIST;
   edges_marker.action = visualization_msgs::Marker::ADD;
   edges_marker.pose.orientation.w = 1.0;
-  edges_marker.scale.x = 1;  // 线的宽度
-  edges_marker.color.b = 1.0;   // 蓝色
-  edges_marker.color.a = 0.6;   // 稍微透明
+  edges_marker.scale.x = 0.1;  // 线的宽度
+  edges_marker.color.r = 0.5;  // 紫色边
+  edges_marker.color.g = 0.0;
+  edges_marker.color.b = 0.5;
+  edges_marker.color.a = 0.8;  // 稍微透明
 
   // 添加所有边
   boost::graph_traits<Graph>::edge_iterator ei, ei_end;
@@ -326,22 +430,22 @@ void RegularGlobalPlanner::visualizeVerticesAndGraph() {
     geometry_msgs::Point p1;
     p1.x = vertices_[source].x;
     p1.y = vertices_[source].y;
-    p1.z = 0.0;
+    p1.z = vertices_[source].z;
     edges_marker.points.push_back(p1);
 
     // 添加边的终点
     geometry_msgs::Point p2;
     p2.x = vertices_[target].x;
     p2.y = vertices_[target].y;
-    p2.z = 0.0;
+    p2.z = vertices_[target].z;
     edges_marker.points.push_back(p2);
   }
 
-  visualization_msgs::MarkerArray graph_markers;
   graph_markers.markers.push_back(edges_marker);
   graph_pub_.publish(graph_markers);
 
-  ROS_INFO("Published %lu vertices and their connections", vertices_.size());
+  ROS_INFO("Published visualization with %lu vertices in 3 types and %lu connections",
+           vertices_.size(), boost::num_edges(graph_));
 }
 
 } // namespace regular_global_planner

@@ -35,6 +35,12 @@ typedef boost::adjacency_list<
 typedef boost::graph_traits<Graph>::vertex_descriptor VertexDescriptor;
 typedef boost::graph_traits<Graph>::edge_descriptor EdgeDescriptor;
 
+enum VertexType {
+  TYPE1 = 1,  // 连接一个点
+  TYPE2 = 2,  // 连接两个点
+  TYPE3 = 3   // 连接三个点
+};
+
 class RegularGlobalPlanner : public nav_core::BaseGlobalPlanner {
 public:
   RegularGlobalPlanner();
@@ -47,7 +53,8 @@ public:
                 std::vector<geometry_msgs::PoseStamped>& plan);
 
 private:
-  bool loadGraphFromCSV(const std::string& filename);
+  bool loadGraphFromCSVs();
+  bool loadPointsFromCSV(const std::string& filename, int type);
   void buildGraphConnections();
   void visualizeVerticesAndGraph();
   int findNearestVertex(const geometry_msgs::Point& point) const;
@@ -64,13 +71,15 @@ private:
 private:
   bool initialized_;
   std::string frame_id_;
-  std::string csv_path_;
-    
+  std::string csv_path_type1_;  // 连接一个点的CSV
+  std::string csv_path_type2_;  // 连接两个点的CSV
+  std::string csv_path_type3_;  // 连接三个点的CSV
+
   // 路径规划相关
   Graph graph_;
-  std::vector<geometry_msgs::Point> vertices_;
+  std::vector<geometry_msgs::Point> vertices_;  // 所有顶点
+  std::vector<int> vertex_types_;               // 每个顶点的类型 (1, 2, 或 3)
   double connection_radius_;
-  int max_connections_;
     
   // ROS相关
   ros::NodeHandle nh_;
