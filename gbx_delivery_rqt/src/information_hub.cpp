@@ -57,7 +57,7 @@ void InformationHub::init()
     if (!loadTargetPoints(resourcePath.toStdString())) {
       qDebug() << "Failed to load target points from:" << resourcePath;
       // 尝试相对路径
-      if (!loadTargetPoints("resources/2F_whole_finalpoint.csv")) {
+      if (!loadTargetPoints("/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/gbx_delivery_rqt/resources/2F_whole_finalpoint.csv")) {
         qDebug() << "Failed to load target points from relative path";
       }
     }
