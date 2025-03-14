@@ -17,6 +17,7 @@ MainWindow::MainWindow()
       , currentMode(NONE)
       , selectedCabinetId(-1)
       , infoHub(nullptr)
+      , qrCodeLabel(nullptr)  // 初始化为 nullptr
 {
   qDebug() << "MainWindow: Constructor starting...";
   try {
@@ -385,78 +386,78 @@ void MainWindow::setupCabinetButtons()
 
 void MainWindow::setupQRCodePage()
 {
-  // 创建二维码页面（如果不存在）
-  QWidget* qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
-  if (!qrCodePage) {
-    qrCodePage = new QWidget();
-    qrCodePage->setObjectName("qrCodePage");
-    ui->stackedWidget->addWidget(qrCodePage);
-  }
+  try {
+    // 创建二维码页面（如果不存在）
+    QWidget* qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
+    if (!qrCodePage) {
+      qDebug() << "Creating new qrCodePage";
+      qrCodePage = new QWidget();
+      qrCodePage->setObjectName("qrCodePage");
+      ui->stackedWidget->addWidget(qrCodePage);
+    }
 
-  // 检查是否已有布局
-  if (qrCodePage->layout()) {
-    // 已有布局，只需更新二维码图片
-    qrCodeLabel = qrCodePage->findChild<QLabel*>("qrCodeImageLabel");
+    // 检查是否已有布局
+    QLayout* existingLayout = qrCodePage->layout();
+    if (existingLayout) {
+      qDebug() << "qrCodePage already has a layout, updating image only";
+      // 已有布局，查找现有的标签
+      qrCodeLabel = qrCodePage->findChild<QLabel*>("qrCodeImageLabel");
+    } else {
+      qDebug() << "Creating new layout for qrCodePage";
+      // 创建新布局
+      QVBoxLayout* layout = new QVBoxLayout(qrCodePage);
+
+      // 添加标题
+      QLabel* titleLabel = new QLabel("请扫描二维码取件", qrCodePage);
+      titleLabel->setFont(QFont("Arial", 20, QFont::Bold));
+      titleLabel->setAlignment(Qt::AlignCenter);
+      layout->addWidget(titleLabel);
+
+      // 创建二维码标签
+      qrCodeLabel = new QLabel(qrCodePage);
+      qrCodeLabel->setObjectName("qrCodeImageLabel");
+      qrCodeLabel->setAlignment(Qt::AlignCenter);
+      qrCodeLabel->setMinimumSize(300, 300);  // 确保有足够的空间显示图片
+      layout->addWidget(qrCodeLabel);
+
+      // 添加返回按钮
+      QPushButton* backButton = new QPushButton("返回主页", qrCodePage);
+      backButton->setMinimumSize(150, 60);
+      backButton->setFont(QFont("Arial", 16, QFont::Bold));
+      backButton->setStyleSheet("QPushButton { background-color: #4A90E2; color: white; border-radius: 8px; }");
+      connect(backButton, &QPushButton::clicked, this, &MainWindow::switchToMainPage);
+      layout->addWidget(backButton, 0, Qt::AlignCenter);
+
+      // 设置布局的间距和边距
+      layout->setSpacing(20);
+      layout->setContentsMargins(30, 30, 30, 30);
+    }
+
+    // 更新二维码图片
     if (qrCodeLabel) {
+      qDebug() << "Updating QR code image";
       QPixmap qrPixmap("resources/images/qrcode.png");
       if (qrPixmap.isNull()) {
-        // 尝试其他可能的路径
+        qDebug() << "Failed to load QR code from resources/images/qrcode.png, trying alternative path";
         qrPixmap.load(":/images/qrcode.png");
       }
 
       if (!qrPixmap.isNull()) {
+        qDebug() << "QR code image loaded successfully";
         qrCodeLabel->setPixmap(qrPixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
       } else {
+        qDebug() << "Failed to load QR code image from any path";
         qrCodeLabel->setText("二维码图片加载失败");
+        qrCodeLabel->setStyleSheet("QLabel { color: red; font-size: 18px; }");
       }
+    } else {
+      qDebug() << "ERROR: qrCodeLabel is null!";
     }
-    return;
+  } catch (const std::exception& e) {
+    qDebug() << "Exception in setupQRCodePage:" << e.what();
+  } catch (...) {
+    qDebug() << "Unknown exception in setupQRCodePage";
   }
-
-  // 创建新布局
-  QVBoxLayout* layout = new QVBoxLayout(qrCodePage);
-
-  // 添加标题
-  QLabel* titleLabel = new QLabel("请扫描二维码取件", qrCodePage);
-  titleLabel->setFont(QFont("Arial", 20, QFont::Bold));
-  titleLabel->setAlignment(Qt::AlignCenter);
-  layout->addWidget(titleLabel);
-
-  // 添加二维码图片
-  qrCodeLabel = new QLabel(qrCodePage);
-  qrCodeLabel->setObjectName("qrCodeImageLabel");
-  qrCodeLabel->setAlignment(Qt::AlignCenter);
-  QPixmap qrPixmap("resources/images/qrcode.png");
-  if (qrPixmap.isNull()) {
-    // 尝试其他可能的路径
-    qrPixmap.load(":/images/qrcode.png");
-  }
-
-  if (!qrPixmap.isNull()) {
-    qrCodeLabel->setPixmap(qrPixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-  } else {
-    qrCodeLabel->setText("二维码图片加载失败");
-    qrCodeLabel->setStyleSheet("QLabel { color: red; font-size: 18px; }");
-  }
-  layout->addWidget(qrCodeLabel);
-
-  // 添加说明文字
-  QLabel* instructionLabel = new QLabel("使用微信或支付宝扫描上方二维码\n系统将自动通知您取件", qrCodePage);
-  instructionLabel->setAlignment(Qt::AlignCenter);
-  instructionLabel->setFont(QFont("Arial", 14));
-  layout->addWidget(instructionLabel);
-
-  // 添加返回按钮
-  QPushButton* backButton = new QPushButton("返回主页", qrCodePage);
-  backButton->setMinimumSize(150, 60);
-  backButton->setFont(QFont("Arial", 16, QFont::Bold));
-  backButton->setStyleSheet("QPushButton { background-color: #4A90E2; color: white; border-radius: 8px; }");
-  connect(backButton, &QPushButton::clicked, this, &MainWindow::switchToMainPage);
-  layout->addWidget(backButton, 0, Qt::AlignCenter);
-
-  // 设置布局的间距和边距
-  layout->setSpacing(20);
-  layout->setContentsMargins(30, 30, 30, 30);
 }
 
 bool MainWindow::isBoxForDeliveryOrPickup(int boxId)
@@ -893,14 +894,29 @@ void MainWindow::switchToDestination()
 
 void MainWindow::switchToQRCodePage()
 {
-  currentPage = QR_CODE_PAGE;
-  QWidget* qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
-  if (qrCodePage) {
-    ui->stackedWidget->setCurrentWidget(qrCodePage);
-    returnTimer->start(); // 5秒后返回主页
-  } else {
-    qDebug() << "QR code page not found!";
-    switchToDoorClosed(); // 如果找不到二维码页面，就切换到关门感谢页面
+  try {
+    currentPage = QR_CODE_PAGE;
+    QWidget* qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
+    if (!qrCodePage) {
+      qDebug() << "QR code page not found, creating it now";
+      setupQRCodePage();
+      qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
+    }
+
+    if (qrCodePage) {
+      qDebug() << "Switching to QR code page";
+      ui->stackedWidget->setCurrentWidget(qrCodePage);
+      returnTimer->start(); // 5秒后返回主页
+    } else {
+      qDebug() << "QR code page still not found after setup!";
+      switchToDoorClosed(); // 如果找不到二维码页面，就切换到关门感谢页面
+    }
+  } catch (const std::exception& e) {
+    qDebug() << "Exception in switchToQRCodePage:" << e.what();
+    switchToDoorClosed(); // 出现异常时切换到关门感谢页面
+  } catch (...) {
+    qDebug() << "Unknown exception in switchToQRCodePage";
+    switchToDoorClosed(); // 出现异常时切换到关门感谢页面
   }
 }
 
