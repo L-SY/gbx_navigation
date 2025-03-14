@@ -19,8 +19,18 @@
 #include <std_msgs/Bool.h>
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <move_base_msgs/MoveBaseActionResult.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <fstream>
+#include <vector>
 
 namespace gbx_rqt_interact {
+
+struct TargetPoint {
+  int index;
+  double x;
+  double y;
+  double z;
+};
 
 class InformationHub : public QThread
 {
@@ -34,21 +44,23 @@ public:
   void closeSerialPort();
   bool isSerialPortOpen() const;
   void publishIndoorDeliveryOrder(
-    const std::string& carNumber,
-    const std::string& rfid,
-    const std::string& converted_rfid,
-    const std::string& owner,
-    const std::string& area,
-    const std::string& orderNumber,
-    const std::string& receiverPhone,
-    const std::string& receiverName,
-    const std::string& senderName);
+      const std::string& carNumber,
+      const std::string& rfid,
+      const std::string& converted_rfid,
+      const std::string& owner,
+      const std::string& area,
+      const std::string& orderNumber,
+      const std::string& receiverPhone,
+      const std::string& receiverName,
+      const std::string& senderName);
   std::vector<navigation_msgs::CabinetContent> getCabinetInfo(){return current_contents_;}
   void publishOutputDelivery(
       const std::string& owner,
       const std::string& rfid,
       const std::string& converted_rfid,
       const std::string& receiverPhone);
+  bool sendTargetPoint(int pointIndex);
+  bool loadTargetPoints(const std::string& csvPath);
 
 signals:
   void doorStateChanged();
@@ -74,13 +86,16 @@ private:
   // ROS related
   ros::NodeHandle* nh_;
   ros::ServiceClient trajectory_client_;
-  ros::Publisher door_state_pub_, indoor_delivery_pub_, output_delivery_pub_;
+  ros::Publisher door_state_pub_, indoor_delivery_pub_, output_delivery_pub_, goal_pub_;
   ros::Subscriber cabinet_content_sub_;
   std::vector<navigation_msgs::CabinetContent> current_contents_;
   std::vector<navigation_msgs::CabinetContent> last_contents_;
   ros::Subscriber navigation_arrived_sub_;
   bool navigation_arrived_ = false;
   void navigationArrivedCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg);
+
+  // Target points
+  std::vector<TargetPoint> target_points_;
 
   // Helper functions
   void initializeDevice();

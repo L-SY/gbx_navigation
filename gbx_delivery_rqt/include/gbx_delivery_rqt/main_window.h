@@ -50,13 +50,15 @@ private:
     PICKUP_PHONE_PAGE,     // 取件手机号输入
     BOX_OPEN_PAGE,        // 箱门打开提示
     DOOR_CLOSED_PAGE,      // 关门感谢页
-    ARRIVAL_PAGE
+    ARRIVAL_PAGE,         // 到达页面
+    QR_CODE_PAGE          // 二维码页面
   };
 
   enum DeliveryMode {
     NONE,
     PICKUP,
-    DELIVERY
+    DELIVERY,
+    RETURN_BOX
   };
 
   // UI初始化方法
@@ -65,10 +67,11 @@ private:
   void setupConnections();       // 设置信号槽连接
   void setupCabinetButtons();    // 设置箱子按钮
   void setupDestinationPage();   // 设置目的地选择页面
+  void setupQRCodePage();        // 设置二维码页面
   void setupInfoHub();           // 设置信息中心
 
   // UI更新方法
-  void updateCabinetButtonStyle(QPushButton* button, bool isCabinetEmpty);
+  void updateCabinetButtonStyle(QPushButton* button, bool isCabinetEmpty, bool isForDeliveryOrPickup);
   void updateDoorStatus(int boxId, bool isOpen);
   void updateCabinetAvailability(const std::vector<navigation_msgs::CabinetContent>& contents);
 
@@ -76,17 +79,20 @@ private:
   bool validatePhoneNumber(const QString& phone, bool isShortPhone = false);
   void showErrorMessage(const QString& message);
   void startWaitForObjectDetection();
+  bool isBoxForDeliveryOrPickup(int boxId);
 
 private slots:
   // 页面导航相关槽
   void switchToPickupMode();     // 切换到取件模式
   void switchToDeliveryMode();   // 切换到寄件模式
+  void switchToReturnBoxMode();  // 切换到还箱模式
   void switchToNextPage();       // 切换到下一页
   void switchToMainPage();       // 返回主页
   void switchToBoxSelection();   // 切换到选择箱子页面
   void switchToDestination();    // 切换到选择目的地页面
   void switchToBoxOpen();        // 切换到箱门打开提示页面
   void switchToDoorClosed();     // 切换到关门感谢页面
+  void switchToQRCodePage();     // 切换到二维码页面
 
   // 事件处理槽
   void handlePhoneNumberSubmit();    // 处理手机号提交
@@ -110,6 +116,7 @@ private:
   QMap<int, QPushButton*> cabinetButtons;    // 存储箱子按钮引用
   QMap<QString, int> phoneNumberToCabinet;
   QVector<QLabel*> destinationMarkers;       // 存储目的地标记
+  QLabel* qrCodeLabel;                       // 二维码标签
 
   // 核心组件
   gbx_rqt_interact::InformationHub* infoHub;
@@ -117,7 +124,7 @@ private:
 
   // 状态变量
   PageIndex currentPage;                     // 当前页面索引
-  DeliveryMode currentMode;                  // 当前模式（取件/寄件）
+  DeliveryMode currentMode;                  // 当前模式（取件/寄件/还箱）
   QString lastPhoneNumber;                   // 存储寄件人手机号
   int selectedCabinetId;                     // 当前选中的柜子ID
 };

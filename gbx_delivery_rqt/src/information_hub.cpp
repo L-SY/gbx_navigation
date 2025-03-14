@@ -4,6 +4,9 @@
 
 #include "gbx_delivery_rqt/information_hub.h"
 #include <QDebug>
+#include <QDir>
+#include <QCoreApplication>
+#include <sstream>
 
 namespace gbx_rqt_interact {
 
@@ -49,6 +52,15 @@ void InformationHub::init()
 
   try {
     initializeROS();
+    // 加载目标点数据
+    QString resourcePath = QCoreApplication::applicationDirPath() + "/resources/2F_whole_finalpoint.csv";
+    if (!loadTargetPoints(resourcePath.toStdString())) {
+      qDebug() << "Failed to load target points from:" << resourcePath;
+      // 尝试相对路径
+      if (!loadTargetPoints("resources/2F_whole_finalpoint.csv")) {
+        qDebug() << "Failed to load target points from relative path";
+      }
+    }
   } catch (const std::exception& e) {
     qDebug() << "ROS initialization failed, but continuing with other functions";
   }
@@ -71,6 +83,7 @@ void InformationHub::initializeROS()
   door_state_pub_ = nh_->advertise<navigation_msgs::CabinetDoorArray>("/cabinet/door_states", 1);
   indoor_delivery_pub_ = nh_->advertise<navigation_msgs::IndoorDeliveryOrder>("/indoor_delivery_order", 1);
   output_delivery_pub_ = nh_->advertise<navigation_msgs::OutputDelivery>("/output_delivery", 1);
+  goal_pub_ = nh_->advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
   cabinet_content_sub_ = nh_->subscribe("/cabinet/contents", 1,&InformationHub::cabinetContentCallback, this);
   navigation_arrived_sub_ = nh_->subscribe("/move_base/result", 1, &InformationHub::navigationArrivedCallback, this);
 }
@@ -227,6 +240,75 @@ bool InformationHub::sendTrajectoryRequest(const QString& path_name)
     return false;
   }
 }
+
+bool InformationHub::loadTargetPoints(const std::string& csvPath)
+{
+  std::ifstream file(csvPath);
+  if (!file.is_open()) {
+    qDebug() << "Failed to open CSV file:" << QString::fromStdString(csvPath);
+    return false;
+  }
+
+  target_points_.clear();
+  std::string line;
+  // 跳过标题行
+  std::getline(file, line);
+
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+    std::string token;
+    std::vector<std::string> tokens;
+
+    while (std::getline(ss, token, ',')) {
+      tokens.push_back(token);
+    }
+
+    if (tokens.size() >= 4) {
+      TargetPoint point;
+      try {
+        point.index = std::stoi(tokens[0]);
+        point.x = std::stod(tokens[1]);
+        point.y = std::stod(tokens[2]);
+        point.z = std::stod(tokens[3]);
+        target_points_.push_back(point);
+      } catch (const std::exception& e) {
+        qDebug() << "Error parsing point data:" << e.what();
+        continue;
+      }
+    }
+  }
+
+  qDebug() << "Loaded" << target_points_.size() << "target points";
+  return !target_points_.empty();
+}
+
+bool InformationHub::sendTargetPoint(int pointIndex)
+{
+  if (!nh_ || !goal_pub_) {
+    emit trajectoryRequestResult(false, "ROS publisher not available");
+    return false;
+  }
+
+  // 检查点索引是否有效
+  if (pointIndex < 0 || pointIndex >= static_cast<int>(target_points_.size())) {
+    emit trajectoryRequestResult(false, "Invalid point index");
+    return false;
+  }
+
+  const TargetPoint& point = target_points_[pointIndex];
+
+  geometry_msgs::PoseStamped goal;
+  goal.header.frame_id = "map";
+  goal.header.stamp = ros::Time::now();
+  goal.pose.position.x = point.x;
+  goal.pose.position.y = point.y;
+  goal.pose.position.z = point.z;
+  goal.pose.orientation.w = 1.0;  // 默认朝向
+
+  goal_pub_.publish(goal);
+  emit trajectoryRequestResult(true, "Goal published successfully");
+  return true;
+}
 // ----------------------------Navigation Related End----------------------------
 
 void InformationHub::publishIndoorDeliveryOrder(
@@ -276,8 +358,8 @@ void InformationHub::publishOutputDelivery(
 
   output_delivery_pub_.publish(msg);
   ROS_INFO_STREAM("Published OutputDelivery: "
-                   << "Owner=" << owner
-                   << " RFID=" << rfid);
+                  << "Owner=" << owner
+                  << " RFID=" << rfid);
 }
 
 void InformationHub::navigationArrivedCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg) {
