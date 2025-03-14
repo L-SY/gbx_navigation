@@ -1,19 +1,14 @@
-#pragma once
+#ifndef GBX_DELIVERY_RQT_MAIN_WINDOW_H
+#define GBX_DELIVERY_RQT_MAIN_WINDOW_H
 
-#include "gbx_delivery_rqt/information_hub.h"
-#include "navigation_msgs/IndoorDeliveryOrder.h"
 #include <QLabel>
 #include <QMainWindow>
-#include <QPainter>
-#include <QPixmap>
-#include <QPoint>
+#include <QMap>
 #include <QPushButton>
-#include <QStackedWidget>
 #include <QTimer>
-#include <QVector>
-#include <QtSvg/QSvgRenderer>
+#include <QWidget>
 #include <rqt_gui_cpp/plugin.h>
-#include <ros/console.h>
+#include "gbx_delivery_rqt/information_hub.h"
 
 namespace Ui {
 class MainWindow;
@@ -25,107 +20,98 @@ class MainWindow : public rqt_gui_cpp::Plugin {
   Q_OBJECT
 
 public:
-  // 构造和析构
   MainWindow();
   virtual ~MainWindow();
 
-  // RQT插件接口方法
   virtual void initPlugin(qt_gui_cpp::PluginContext& context);
   virtual void shutdownPlugin();
-  virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings,
-                            qt_gui_cpp::Settings& instance_settings) const;
-  virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
-                               const qt_gui_cpp::Settings& instance_settings);
+  virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const;
+  virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings);
 
-protected:
-  bool eventFilter(QObject* obj, QEvent* event) override;
+signals:
+  void boxOpened(int boxId);
+  void boxClosed(int boxId);
+  void destinationSelected(int destination);
 
 private:
-  // 枚举定义
-  enum PageIndex {
-    MAIN_PAGE = 0,         // 主页(取/寄选择)
-    DELIVERY_PHONE_PAGE,   // 寄件手机号输入
-    BOX_SELECTION_PAGE,    // 选择箱子
-    DESTINATION_PAGE,      // 选择目的地
-    PICKUP_PHONE_PAGE,     // 取件手机号输入
-    BOX_OPEN_PAGE,        // 箱门打开提示
-    DOOR_CLOSED_PAGE,      // 关门感谢页
-    ARRIVAL_PAGE,         // 到达页面
-    QR_CODE_PAGE          // 二维码页面
-  };
-
-  enum DeliveryMode {
+  enum Mode {
     NONE,
-    PICKUP,
     DELIVERY,
+    PICKUP,
     RETURN_BOX
   };
 
-  // UI初始化方法
-  void setupUi();                // 设置主UI
-  void setupBackground();        // 设置背景
-  void setupConnections();       // 设置信号槽连接
-  void setupCabinetButtons();    // 设置箱子按钮
-  void setupDestinationPage();   // 设置目的地选择页面
-  void setupQRCodePage();        // 设置二维码页面
-  void setupInfoHub();           // 设置信息中心
+  enum Page {
+    MAIN_PAGE,
+    DELIVERY_PHONE_PAGE,
+    PICKUP_PHONE_PAGE,
+    BOX_SELECTION_PAGE,
+    BOX_OPEN_PAGE,
+    DESTINATION_PAGE,
+    DOOR_CLOSED_PAGE,
+    ARRIVAL_PAGE,
+    QR_CODE_PAGE
+  };
 
-  // UI更新方法
-  void updateCabinetButtonStyle(QPushButton* button, bool isCabinetEmpty, bool isForDeliveryOrPickup);
-  void updateDoorStatus(int boxId, bool isOpen);
-  void updateCabinetAvailability(const std::vector<navigation_msgs::CabinetContent>& contents);
-
-  // 业务逻辑处理方法
-  bool validatePhoneNumber(const QString& phone, bool isShortPhone = false);
-  void showErrorMessage(const QString& message);
-  void startWaitForObjectDetection();
-  bool isBoxForDeliveryOrPickup(int boxId);
-
-private slots:
-  // 页面导航相关槽
-  void switchToPickupMode();     // 切换到取件模式
-  void switchToDeliveryMode();   // 切换到寄件模式
-  void switchToReturnBoxMode();  // 切换到还箱模式
-  void switchToNextPage();       // 切换到下一页
-  void switchToMainPage();       // 返回主页
-  void switchToBoxSelection();   // 切换到选择箱子页面
-  void switchToDestination();    // 切换到选择目的地页面
-  void switchToBoxOpen();        // 切换到箱门打开提示页面
-  void switchToDoorClosed();     // 切换到关门感谢页面
-  void switchToQRCodePage();     // 切换到二维码页面
-
-  // 事件处理槽
-  void handlePhoneNumberSubmit();    // 处理手机号提交
-  void handleBoxSelection(int box);  // 处理箱子选择
-  void handleDestinationSelect(int destination); // 处理目的地选择
-  void handleTimeout();              // 处理定时器超时
-  void handleDoorStateUpdate();      // 处理门状态更新
-  void handleContentsUpdate();       // 处理内容更新
-  void handleTrajectoryResult(bool success, const QString& message);
-  void handleNavigationArrival(bool arrived);
-
-signals:
-  void boxOpened(int boxId);            // 箱门打开信号
-  void boxClosed(int boxId);            // 箱门关闭信号
-  void destinationSelected(int destination); // 目的地选择信号
-
-private:
-  // UI组件
   Ui::MainWindow* ui;
   QMainWindow* widget_;
-  QMap<int, QPushButton*> cabinetButtons;    // 存储箱子按钮引用
-  QMap<QString, int> phoneNumberToCabinet;
-  QVector<QLabel*> destinationMarkers;       // 存储目的地标记
-
-  // 核心组件
+  QTimer* returnTimer;
+  Mode currentMode;
+  Page currentPage;
+  int selectedCabinetId;
+  QString lastPhoneNumber;
+  QMap<QString, int> phoneNumberToCabinet; // 手机号后四位到柜子ID的映射
+  QMap<int, QPushButton*> cabinetButtons;  // 柜子ID到按钮的映射
+  QVector<QLabel*> destinationMarkers;     // 目的地标记
   gbx_rqt_interact::InformationHub* infoHub;
-  QTimer* returnTimer;                       // 自动返回主页定时器
 
-  // 状态变量
-  PageIndex currentPage;                     // 当前页面索引
-  DeliveryMode currentMode;                  // 当前模式（取件/寄件/还箱）
-  QString lastPhoneNumber;                   // 存储寄件人手机号
-  int selectedCabinetId;                     // 当前选中的柜子ID
+  // 新增成员变量
+  QMap<int, QPushButton*> destinationButtons; // 目的地按钮映射
+  int selectedDestination;                    // 当前选择的目的地
+  QLabel* destinationInfoLabel;               // 目的地信息标签
+  QPushButton* destinationConfirmButton;      // 目的地确认按钮
+
+  void setupInfoHub();
+  void setupUi();
+  void setupBackground();
+  void setupConnections();
+  void setupCabinetButtons();
+  void setupQRCodePage();
+  void setupDestinationPage();
+
+  void updateCabinetAvailability(const std::vector<navigation_msgs::CabinetContent>& contents);
+  void updateCabinetButtonStyle(QPushButton* button, bool isEmpty, bool isForDeliveryOrPickup);
+  void updateDoorStatus(int boxId, bool isOpen);
+
+  void handleBoxSelection(int box);
+  void handlePhoneNumberSubmit();
+  void handleDoorStateUpdate();
+  void handleContentsUpdate();
+  void handleTrajectoryResult(bool success, const QString& message);
+  void handleNavigationArrival(bool arrived);
+  void handleDestinationSelect(int destination);
+  void confirmDestinationSelection(int destination); // 新增函数
+
+  void switchToMainPage();
+  void switchToDeliveryMode();
+  void switchToPickupMode();
+  void switchToReturnBoxMode();
+  void switchToNextPage();
+  void switchToBoxSelection();
+  void switchToBoxOpen();
+  void switchToDestination();
+  void switchToDoorClosed();
+  void switchToQRCodePage();
+
+  bool validatePhoneNumber(const QString& phone, bool isShortPhone);
+  bool isBoxForDeliveryOrPickup(int boxId);
+  void showErrorMessage(const QString& message);
+  void startWaitForObjectDetection();
+  void handleTimeout();
+
+  bool eventFilter(QObject* obj, QEvent* event) override;
 };
 
 } // namespace gbx_delivery_rqt
+
+#endif // GBX_DELIVERY_RQT_MAIN_WINDOW_H

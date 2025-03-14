@@ -323,6 +323,33 @@ void MainWindow::setupUi()
   ui->deliveryPhoneEdit->setValidator(fullPhoneValidator);
   ui->pickupPhoneEdit->setValidator(shortPhoneValidator);
 
+  // 修改主页面上的取件和寄件按钮样式为绿色
+  if (ui->pickupButton) {
+    ui->pickupButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #4CAF50;"  // 绿色
+        "    color: white;"
+        "    border-radius: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #45a049;"
+        "}"
+    );
+  }
+
+  if (ui->deliveryButton) {
+    ui->deliveryButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #4CAF50;"  // 绿色
+        "    color: white;"
+        "    border-radius: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #45a049;"
+        "}"
+    );
+  }
+
   // 添加还箱按钮到主页
   QPushButton* returnBoxButton = new QPushButton("还箱", widget_);
   returnBoxButton->setMinimumSize(200, 100);
@@ -405,7 +432,7 @@ void MainWindow::setupQRCodePage()
   QVBoxLayout* layout = new QVBoxLayout(qrCodePage);
 
   // 添加标题
-  QLabel* titleLabel = new QLabel("请扫描二维码取件", qrCodePage);
+  QLabel* titleLabel = new QLabel("取件后请还箱，添加客户微信了解返还押金5元", qrCodePage);
   titleLabel->setFont(QFont("Arial", 20, QFont::Bold));
   titleLabel->setAlignment(Qt::AlignCenter);
   layout->addWidget(titleLabel);
@@ -605,17 +632,17 @@ void MainWindow::updateCabinetButtonStyle(QPushButton* button, bool isEmpty, boo
   if (isEmpty) {
     button->setEnabled(true);
     if (isForDeliveryOrPickup) {
-      // 寄件和取件专用箱子用蓝色标识
+    // 寄件和取件专用箱子用蓝色标识
       button->setStyleSheet(
           "QPushButton {"
           "    background-color: #4A90E2;"  // 蓝色表示寄件取件专用
           "    color: white;"
           "    border-radius: 5px;"
           "}"
-          "QPushButton:hover {"
-          "    background-color: #3A80D2;"
-          "}"
-      );
+        "QPushButton:hover {"
+        "    background-color: #3A80D2;"
+        "}"
+    );
     } else {
       // 其他箱子用绿色标识
       button->setStyleSheet(
@@ -771,14 +798,20 @@ void MainWindow::setupDestinationPage()
 
   // 创建按钮容器
   QWidget* buttonContainer = new QWidget(ui->destinationPage);
-  QHBoxLayout* buttonLayout = new QHBoxLayout(buttonContainer);
+  QVBoxLayout* buttonContainerLayout = new QVBoxLayout(buttonContainer);
+
+  // 创建区域按钮的容器
+  QWidget* areaButtonsWidget = new QWidget(buttonContainer);
+  QHBoxLayout* buttonLayout = new QHBoxLayout(areaButtonsWidget);
   buttonLayout->setSpacing(15);  // 按钮之间的间距
 
   // 创建区域按钮
   QStringList areas = {"A区", "B区", "C区", "D区", "E区", "F区", "G区"};
+  selectedDestination = -1; // 重置选择的目的地
+
   for (int i = 0; i < areas.size(); ++i) {
     const QString& area = areas[i];
-    QPushButton* button = new QPushButton(area, buttonContainer);
+    QPushButton* button = new QPushButton(area, areaButtonsWidget);
     button->setMinimumSize(100, 60);
     button->setFont(QFont("Microsoft YaHei", 14, QFont::Bold));
     button->setStyleSheet(
@@ -796,13 +829,124 @@ void MainWindow::setupDestinationPage()
         "}"
     );
 
-    // 使用索引直接连接槽函数
-    connect(button, &QPushButton::clicked, this, [this, i]() {
-      handleDestinationSelect(i);
+    // 使用索引直接连接槽函数，但只是选择目的地，不立即发送
+    connect(button, &QPushButton::clicked, this, [this, i, button, areas]() {
+      // 重置所有按钮样式
+      for (auto it = destinationButtons.begin(); it != destinationButtons.end(); ++it) {
+        it.value()->setStyleSheet(
+            "QPushButton {"
+            "    background-color: #4A90E2;"
+            "    color: white;"
+            "    border-radius: 8px;"
+            "    padding: 10px;"
+            "}"
+            "QPushButton:hover {"
+            "    background-color: #357ABD;"
+            "}"
+            "QPushButton:pressed {"
+            "    background-color: #2A5A8E;"
+            "}"
+        );
+      }
+
+      // 设置选中按钮的样式
+      button->setStyleSheet(
+          "QPushButton {"
+          "    background-color: #FF9933;" // 橙色表示选中
+          "    color: white;"
+          "    border-radius: 8px;"
+          "    padding: 10px;"
+          "}"
+      );
+
+      selectedDestination = i;
+      destinationConfirmButton->setEnabled(true);
+      destinationInfoLabel->setText(QString("已选择: %1").arg(areas[i]));
     });
 
     buttonLayout->addWidget(button);
+    destinationButtons[i] = button; // 存储按钮引用
   }
+
+  buttonContainerLayout->addWidget(areaButtonsWidget);
+
+  // 添加信息标签
+  destinationInfoLabel = new QLabel("请选择一个目的地", buttonContainer);
+  destinationInfoLabel->setFont(QFont("Microsoft YaHei", 14));
+  destinationInfoLabel->setAlignment(Qt::AlignCenter);
+  buttonContainerLayout->addWidget(destinationInfoLabel);
+
+  // 添加确认和取消按钮
+  QWidget* confirmCancelWidget = new QWidget(buttonContainer);
+  QHBoxLayout* confirmCancelLayout = new QHBoxLayout(confirmCancelWidget);
+
+  // 取消按钮
+  QPushButton* cancelButton = new QPushButton("取消", confirmCancelWidget);
+  cancelButton->setMinimumSize(120, 50);
+  cancelButton->setFont(QFont("Microsoft YaHei", 14, QFont::Bold));
+  cancelButton->setStyleSheet(
+      "QPushButton {"
+      "    background-color: #FF6B6B;"
+      "    color: white;"
+      "    border-radius: 8px;"
+      "    padding: 10px;"
+      "}"
+      "QPushButton:hover {"
+      "    background-color: #E55555;"
+      "}"
+  );
+  connect(cancelButton, &QPushButton::clicked, this, [this]() {
+    // 重置选择
+    selectedDestination = -1;
+    for (auto it = destinationButtons.begin(); it != destinationButtons.end(); ++it) {
+      it.value()->setStyleSheet(
+          "QPushButton {"
+          "    background-color: #4A90E2;"
+          "    color: white;"
+          "    border-radius: 8px;"
+          "    padding: 10px;"
+          "}"
+          "QPushButton:hover {"
+          "    background-color: #357ABD;"
+          "}"
+          "QPushButton:pressed {"
+          "    background-color: #2A5A8E;"
+          "}"
+      );
+    }
+    destinationInfoLabel->setText("请选择一个目的地");
+    destinationConfirmButton->setEnabled(false);
+  });
+  confirmCancelLayout->addWidget(cancelButton);
+
+  // 确认按钮
+  destinationConfirmButton = new QPushButton("确认", confirmCancelWidget);
+  destinationConfirmButton->setMinimumSize(120, 50);
+  destinationConfirmButton->setFont(QFont("Microsoft YaHei", 14, QFont::Bold));
+  destinationConfirmButton->setStyleSheet(
+      "QPushButton {"
+      "    background-color: #4CAF50;"
+      "    color: white;"
+      "    border-radius: 8px;"
+      "    padding: 10px;"
+      "}"
+      "QPushButton:hover {"
+      "    background-color: #45a049;"
+      "}"
+      "QPushButton:disabled {"
+      "    background-color: #CCCCCC;"
+      "    color: #666666;"
+      "}"
+  );
+  destinationConfirmButton->setEnabled(false);
+  connect(destinationConfirmButton, &QPushButton::clicked, this, [this]() {
+    if (selectedDestination >= 0) {
+      confirmDestinationSelection(selectedDestination);
+    }
+  });
+  confirmCancelLayout->addWidget(destinationConfirmButton);
+
+  buttonContainerLayout->addWidget(confirmCancelWidget);
 
   mainLayout->addWidget(buttonContainer);
 
@@ -814,7 +958,7 @@ void MainWindow::setupDestinationPage()
   ui->destinationPage->update();
 }
 
-void MainWindow::handleDestinationSelect(int destination)
+void MainWindow::confirmDestinationSelection(int destination)
 {
   emit destinationSelected(destination);
   if (infoHub) {
@@ -842,6 +986,7 @@ void MainWindow::handleDestinationSelect(int destination)
   QMessageBox::information(widget_, "提示", "目标点已发送,机器人即将启动");
   QTimer::singleShot(2000, this, &MainWindow::switchToMainPage);
 }
+
 
 void MainWindow::handleNavigationArrival(bool arrived) {
   if (!arrived) return;
@@ -1088,3 +1233,4 @@ void MainWindow::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
 } // namespace gbx_delivery_rqt
 
 PLUGINLIB_EXPORT_CLASS(gbx_delivery_rqt::MainWindow, rqt_gui_cpp::Plugin)
+
