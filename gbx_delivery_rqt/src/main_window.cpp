@@ -417,10 +417,10 @@ void MainWindow::setupQRCodePage()
   qrLabel->setMinimumSize(300, 300);
 
   // 加载二维码图片
-  QPixmap qrPixmap("resources/images/qrcode.png");
+  QPixmap qrPixmap("resources/images/qrcode.jpg");
   if (qrPixmap.isNull()) {
-    ROS_WARN_STREAM("Failed to load QR code from resources/images/qrcode.png, trying alternative path");
-    qrPixmap.load(":/images/qrcode.png");
+    ROS_WARN_STREAM("Failed to load QR code from resources/images/qrcode.jpg, trying alternative path");
+    qrPixmap.load(":/images/qrcode.jpg");
   }
 
   if (!qrPixmap.isNull()) {

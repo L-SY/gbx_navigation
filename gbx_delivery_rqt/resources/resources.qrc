@@ -3,5 +3,7 @@
         <file>images/2F_whole.png</file>
         <file>images/gbx_agv.png</file>
         <file>images/gbx_rviz.png</file>
+        <file>images/qrcode.jpg</file>
+        <file>2F_whole_finalpoint.csv</file>
     </qresource>
 </RCC>
