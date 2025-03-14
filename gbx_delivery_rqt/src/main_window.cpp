@@ -17,17 +17,16 @@ MainWindow::MainWindow()
       , currentMode(NONE)
       , selectedCabinetId(-1)
       , infoHub(nullptr)
-      , qrCodeLabel(nullptr)  // 初始化为 nullptr
 {
-  qDebug() << "MainWindow: Constructor starting...";
+  ROS_INFO_STREAM("MainWindow: Constructor starting...");
   try {
     setObjectName("DeliveryRobotPlugin");
-    qDebug() << "MainWindow: Constructor completed successfully";
+    ROS_INFO_STREAM("MainWindow: Constructor completed successfully");
   } catch (const std::exception& e) {
-    qDebug() << "MainWindow: Exception in constructor:" << e.what();
+    ROS_ERROR_STREAM("MainWindow: Exception in constructor: " << e.what());
     throw;
   } catch (...) {
-    qDebug() << "MainWindow: Unknown exception in constructor";
+    ROS_ERROR_STREAM("MainWindow: Unknown exception in constructor");
     throw;
   }
 }
@@ -65,63 +64,65 @@ void MainWindow::setupInfoHub()
 
 void MainWindow::initPlugin(qt_gui_cpp::PluginContext& context)
 {
-  qDebug() << "MainWindow: initPlugin starting...";
+  ROS_INFO_STREAM("MainWindow: initPlugin starting...");
 
   try {
     // 创建主窗口
-    qDebug() << "MainWindow: Creating main window";
+    ROS_INFO_STREAM("MainWindow: Creating main window");
     widget_ = new QMainWindow();
     if (!widget_) {
+      ROS_ERROR_STREAM("Failed to create main window");
       throw std::runtime_error("Failed to create main window");
     }
 
-    qDebug() << "MainWindow: Setting up UI";
+    ROS_INFO_STREAM("MainWindow: Setting up UI");
     ui->setupUi(widget_);
 
     // 检查关键组件
-    if (!ui->stackedWidget) {
+    if (!ui || !ui->stackedWidget) {
+      ROS_ERROR_STREAM("UI components not initialized properly");
       throw std::runtime_error("Failed to initialize stacked widget");
     }
 
     // 按顺序初始化各个组件
-    qDebug() << "MainWindow: Setting up InfoHub";
+    ROS_INFO_STREAM("MainWindow: Setting up InfoHub");
     setupInfoHub();
 
-    qDebug() << "MainWindow: Setting up basic UI components";
+    ROS_INFO_STREAM("MainWindow: Setting up basic UI components");
     setupUi();
 
-    qDebug() << "MainWindow: Setting up background";
+    ROS_INFO_STREAM("MainWindow: Setting up background");
     setupBackground();
 
-    qDebug() << "MainWindow: Setting up connections";
+    ROS_INFO_STREAM("MainWindow: Setting up connections");
     setupConnections();
 
-    qDebug() << "MainWindow: Setting up box buttons";
+    ROS_INFO_STREAM("MainWindow: Setting up box buttons");
     setupCabinetButtons();
 
-    qDebug() << "MainWindow: Setting up QR code page";
+    ROS_INFO_STREAM("MainWindow: Setting up QR code page");
     setupQRCodePage();
 
     // 设置定时器
-    qDebug() << "MainWindow: Setting up return timer";
+    ROS_INFO_STREAM("MainWindow: Setting up return timer");
     returnTimer->setInterval(5000);  // 5秒
     returnTimer->setSingleShot(true);
     connect(returnTimer, &QTimer::timeout, this, &MainWindow::switchToMainPage);
 
     // 初始化页面
-    qDebug() << "MainWindow: Initializing main page";
+    ROS_INFO_STREAM("MainWindow: Initializing main page");
     currentPage = MAIN_PAGE;
     ui->stackedWidget->setCurrentWidget(ui->mainPage);
 
-    qDebug() << "MainWindow: Adding widget to context";
+    ROS_INFO_STREAM("MainWindow: Adding widget to context");
     context.addWidget(widget_);
 
-    qDebug() << "MainWindow: initPlugin completed successfully";
+    ROS_INFO_STREAM("MainWindow: initPlugin completed successfully");
   } catch (const std::exception& e) {
-    qDebug() << "MainWindow: Exception in initPlugin:" << e.what();
+    ROS_ERROR_STREAM("MainWindow: Exception in initPlugin: " << e.what());
     throw;
   } catch (...) {
-    qDebug() << "MainWindow: Unknown exception in initPlugin";
+    ROS_ERROR_STREAM("MainWindow: Unknown exception in initPlugin");
     throw;
   }
 }
@@ -386,78 +387,66 @@ void MainWindow::setupCabinetButtons()
 
 void MainWindow::setupQRCodePage()
 {
-  try {
-    // 创建二维码页面（如果不存在）
-    QWidget* qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
-    if (!qrCodePage) {
-      qDebug() << "Creating new qrCodePage";
-      qrCodePage = new QWidget();
-      qrCodePage->setObjectName("qrCodePage");
-      ui->stackedWidget->addWidget(qrCodePage);
-    }
+  ROS_INFO_STREAM("Setting up QR code page");
 
-    // 检查是否已有布局
-    QLayout* existingLayout = qrCodePage->layout();
-    if (existingLayout) {
-      qDebug() << "qrCodePage already has a layout, updating image only";
-      // 已有布局，查找现有的标签
-      qrCodeLabel = qrCodePage->findChild<QLabel*>("qrCodeImageLabel");
-    } else {
-      qDebug() << "Creating new layout for qrCodePage";
-      // 创建新布局
-      QVBoxLayout* layout = new QVBoxLayout(qrCodePage);
-
-      // 添加标题
-      QLabel* titleLabel = new QLabel("请扫描二维码取件", qrCodePage);
-      titleLabel->setFont(QFont("Arial", 20, QFont::Bold));
-      titleLabel->setAlignment(Qt::AlignCenter);
-      layout->addWidget(titleLabel);
-
-      // 创建二维码标签
-      qrCodeLabel = new QLabel(qrCodePage);
-      qrCodeLabel->setObjectName("qrCodeImageLabel");
-      qrCodeLabel->setAlignment(Qt::AlignCenter);
-      qrCodeLabel->setMinimumSize(300, 300);  // 确保有足够的空间显示图片
-      layout->addWidget(qrCodeLabel);
-
-      // 添加返回按钮
-      QPushButton* backButton = new QPushButton("返回主页", qrCodePage);
-      backButton->setMinimumSize(150, 60);
-      backButton->setFont(QFont("Arial", 16, QFont::Bold));
-      backButton->setStyleSheet("QPushButton { background-color: #4A90E2; color: white; border-radius: 8px; }");
-      connect(backButton, &QPushButton::clicked, this, &MainWindow::switchToMainPage);
-      layout->addWidget(backButton, 0, Qt::AlignCenter);
-
-      // 设置布局的间距和边距
-      layout->setSpacing(20);
-      layout->setContentsMargins(30, 30, 30, 30);
-    }
-
-    // 更新二维码图片
-    if (qrCodeLabel) {
-      qDebug() << "Updating QR code image";
-      QPixmap qrPixmap("resources/images/qrcode.png");
-      if (qrPixmap.isNull()) {
-        qDebug() << "Failed to load QR code from resources/images/qrcode.png, trying alternative path";
-        qrPixmap.load(":/images/qrcode.png");
-      }
-
-      if (!qrPixmap.isNull()) {
-        qDebug() << "QR code image loaded successfully";
-        qrCodeLabel->setPixmap(qrPixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-      } else {
-        qDebug() << "Failed to load QR code image from any path";
-        qrCodeLabel->setText("二维码图片加载失败");
-        qrCodeLabel->setStyleSheet("QLabel { color: red; font-size: 18px; }");
-      }
-    } else {
-      qDebug() << "ERROR: qrCodeLabel is null!";
-    }
-  } catch (const std::exception& e) {
-    qDebug() << "Exception in setupQRCodePage:" << e.what();
-  } catch (...) {
-    qDebug() << "Unknown exception in setupQRCodePage";
+  // 完全删除旧页面并创建新页面
+  QWidget* oldPage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
+  if (oldPage) {
+    ROS_INFO_STREAM("Removing old QR code page");
+    ui->stackedWidget->removeWidget(oldPage);
+    delete oldPage;
   }
+
+  // 创建全新的页面
+  QWidget* qrCodePage = new QWidget();
+  qrCodePage->setObjectName("qrCodePage");
+
+  // 创建布局
+  QVBoxLayout* layout = new QVBoxLayout(qrCodePage);
+
+  // 添加标题
+  QLabel* titleLabel = new QLabel("请扫描二维码取件", qrCodePage);
+  titleLabel->setFont(QFont("Arial", 20, QFont::Bold));
+  titleLabel->setAlignment(Qt::AlignCenter);
+  layout->addWidget(titleLabel);
+
+  // 创建二维码标签（不存储为成员变量）
+  QLabel* qrLabel = new QLabel(qrCodePage);
+  qrLabel->setObjectName("qrCodeImageLabel");
+  qrLabel->setAlignment(Qt::AlignCenter);
+  qrLabel->setMinimumSize(300, 300);
+
+  // 加载二维码图片
+  QPixmap qrPixmap("resources/images/qrcode.png");
+  if (qrPixmap.isNull()) {
+    ROS_WARN_STREAM("Failed to load QR code from resources/images/qrcode.png, trying alternative path");
+    qrPixmap.load(":/images/qrcode.png");
+  }
+
+  if (!qrPixmap.isNull()) {
+    ROS_INFO_STREAM("QR code image loaded successfully");
+    qrLabel->setPixmap(qrPixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  } else {
+    ROS_ERROR_STREAM("Failed to load QR code image from any path");
+    qrLabel->setText("二维码图片加载失败");
+    qrLabel->setStyleSheet("QLabel { color: red; font-size: 18px; }");
+  }
+  layout->addWidget(qrLabel);
+
+  // 添加返回按钮
+  QPushButton* backButton = new QPushButton("返回主页", qrCodePage);
+  backButton->setMinimumSize(150, 60);
+  backButton->setFont(QFont("Arial", 16, QFont::Bold));
+  backButton->setStyleSheet("QPushButton { background-color: #4A90E2; color: white; border-radius: 8px; }");
+  connect(backButton, &QPushButton::clicked, this, &MainWindow::switchToMainPage);
+  layout->addWidget(backButton, 0, Qt::AlignCenter);
+
+  // 设置布局的间距和边距
+  layout->setSpacing(20);
+  layout->setContentsMargins(30, 30, 30, 30);
+
+  // 添加到 stackedWidget
+  ui->stackedWidget->addWidget(qrCodePage);
 }
 
 bool MainWindow::isBoxForDeliveryOrPickup(int boxId)
@@ -552,14 +541,13 @@ void MainWindow::updateCabinetAvailability(const std::vector<navigation_msgs::Ca
       try {
         boxId = std::stoi(content.box.ascii_epc);
       } catch (const std::exception& e) {
-        qDebug() << "Error parsing box_id:" << QString::fromStdString(content.box.ascii_epc)
-                 << "Error:" << e.what();
+        ROS_ERROR_STREAM("Error parsing box_id: " << content.box.ascii_epc << " Error: " << e.what());
         continue;  // 跳过无效的 box_id
       }
 
       // 验证 boxId 的范围
       if (boxId <= 0 || boxId > cabinetButtons.size()) {
-        qDebug() << "Invalid box_id range:" << boxId;
+        ROS_ERROR_STREAM("Invalid box_id range: " << boxId);
         continue;
       }
 
@@ -572,7 +560,7 @@ void MainWindow::updateCabinetAvailability(const std::vector<navigation_msgs::Ca
         }
       }
     } catch (const std::exception& e) {
-      qDebug() << "Unexpected error in updateCabinetAvailability:" << e.what();
+      ROS_ERROR_STREAM("Unexpected error in updateCabinetAvailability: " << e.what());
       continue;  // 继续处理下一个内容
     }
   }
@@ -691,13 +679,15 @@ void MainWindow::setupConnections()
     if (currentMode == PICKUP)
     {
       auto cabinetInfo = infoHub->getCabinetInfo();
-      {
+      if (selectedCabinetId > 0 && selectedCabinetId <= static_cast<int>(cabinetInfo.size())) {
         infoHub->publishOutputDelivery(
             lastPhoneNumber.toStdString(),
             cabinetInfo[selectedCabinetId-1].box.ascii_epc,
             cabinetInfo[selectedCabinetId-1].box.ascii_epc,
             lastPhoneNumber.toStdString()
         );
+      } else {
+        ROS_ERROR_STREAM("Invalid cabinet ID: " << selectedCabinetId);
       }
     }
   });
@@ -765,7 +755,7 @@ void MainWindow::setupDestinationPage()
     mapLabel->setPixmap(mapPixmap.scaled(800, 600, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     mapLabel->setAlignment(Qt::AlignCenter);
   } else {
-    qDebug() << "Failed to load map image from path:" << ":/images/2F_whole.png";
+    ROS_ERROR_STREAM("Failed to load map image from path: :/images/2F_whole.png");
     mapLabel->setText("地图加载失败");
     mapLabel->setStyleSheet("QLabel { background-color: #f0f0f0; padding: 20px; }");
   }
@@ -831,17 +821,21 @@ void MainWindow::handleDestinationSelect(int destination)
     // 使用新的目标点发送方法
     if (infoHub->sendTargetPoint(destination)) {
       auto cabinerInfo = infoHub->getCabinetInfo();
-      infoHub->publishIndoorDeliveryOrder(
-          "IndoorCar",
-          cabinerInfo[selectedCabinetId-1].box.ascii_epc,
-          cabinerInfo[selectedCabinetId-1].box.ascii_epc,
-          "IndoorCar",
-          QString(QChar('A' + destination)).toStdString(),
-          "No.1",  // 机器人ID作为owner
-          lastPhoneNumber.toStdString(), // 接收者电话
-          "",                         // 接收者姓名（可选）
-          ""                          // 发送者姓名（可选）
-      );
+      if (selectedCabinetId > 0 && selectedCabinetId <= static_cast<int>(cabinerInfo.size())) {
+        infoHub->publishIndoorDeliveryOrder(
+            "IndoorCar",
+            cabinerInfo[selectedCabinetId-1].box.ascii_epc,
+            cabinerInfo[selectedCabinetId-1].box.ascii_epc,
+            "IndoorCar",
+            QString(QChar('A' + destination)).toStdString(),
+            "No.1",  // 机器人ID作为owner
+            lastPhoneNumber.toStdString(), // 接收者电话
+            "",                         // 接收者姓名（可选）
+            ""                          // 发送者姓名（可选）
+        );
+      } else {
+        ROS_ERROR_STREAM("Invalid cabinet ID for destination select: " << selectedCabinetId);
+      }
     }
   }
 
@@ -854,13 +848,15 @@ void MainWindow::handleNavigationArrival(bool arrived) {
 
   if (infoHub) {
     auto cabinetInfo = infoHub->getCabinetInfo();
-    if (selectedCabinetId > 0 && selectedCabinetId <= cabinetInfo.size()) {
+    if (selectedCabinetId > 0 && selectedCabinetId <= static_cast<int>(cabinetInfo.size())) {
       infoHub->publishOutputDelivery(
           "IndoorCar",
           cabinetInfo[selectedCabinetId-1].box.ascii_epc,
           cabinetInfo[selectedCabinetId-1].box.ascii_epc,
           lastPhoneNumber.toStdString()
       );
+    } else {
+      ROS_ERROR_STREAM("Invalid cabinet ID for navigation arrival: " << selectedCabinetId);
     }
   }
 
@@ -894,28 +890,28 @@ void MainWindow::switchToDestination()
 
 void MainWindow::switchToQRCodePage()
 {
+  ROS_INFO_STREAM("Switching to QR code page");
   try {
     currentPage = QR_CODE_PAGE;
-    QWidget* qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
-    if (!qrCodePage) {
-      qDebug() << "QR code page not found, creating it now";
-      setupQRCodePage();
-      qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
-    }
 
+    // 每次切换都重新创建二维码页面
+    setupQRCodePage();
+
+    // 查找新创建的页面
+    QWidget* qrCodePage = ui->stackedWidget->findChild<QWidget*>("qrCodePage");
     if (qrCodePage) {
-      qDebug() << "Switching to QR code page";
       ui->stackedWidget->setCurrentWidget(qrCodePage);
       returnTimer->start(); // 5秒后返回主页
+      ROS_INFO_STREAM("Successfully switched to QR code page");
     } else {
-      qDebug() << "QR code page still not found after setup!";
+      ROS_ERROR_STREAM("QR code page not found after setup");
       switchToDoorClosed(); // 如果找不到二维码页面，就切换到关门感谢页面
     }
   } catch (const std::exception& e) {
-    qDebug() << "Exception in switchToQRCodePage:" << e.what();
+    ROS_ERROR_STREAM("Exception in switchToQRCodePage: " << e.what());
     switchToDoorClosed(); // 出现异常时切换到关门感谢页面
   } catch (...) {
-    qDebug() << "Unknown exception in switchToQRCodePage";
+    ROS_ERROR_STREAM("Unknown exception in switchToQRCodePage");
     switchToDoorClosed(); // 出现异常时切换到关门感谢页面
   }
 }
@@ -1064,22 +1060,29 @@ void MainWindow::setupBackground()
   if (!bgPixmap.isNull()) {
     ui->mainPageBackground->setPixmap(bgPixmap.scaled(ui->mainPageBackground->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
   } else {
-    qDebug() << "Failed to load background image from path:" << ":/images/gbx_agv.png";
+    ROS_ERROR_STREAM("Failed to load background image from path: :/images/gbx_agv.png");
   }
 }
 
 void MainWindow::shutdownPlugin()
 {
+  ROS_INFO_STREAM("Shutting down plugin");
+  if (infoHub) {
+    infoHub->requestInterruption();
+    infoHub->wait();
+  }
 }
 
 void MainWindow::saveSettings(qt_gui_cpp::Settings& plugin_settings,
                               qt_gui_cpp::Settings& instance_settings) const
 {
+  // 保存设置
 }
 
 void MainWindow::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
                                  const qt_gui_cpp::Settings& instance_settings)
 {
+  // 恢复设置
 }
 
 } // namespace gbx_delivery_rqt

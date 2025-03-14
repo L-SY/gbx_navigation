@@ -2,7 +2,6 @@
 
 #include "gbx_delivery_rqt/information_hub.h"
 #include "navigation_msgs/IndoorDeliveryOrder.h"
-#include <QDebug>
 #include <QLabel>
 #include <QMainWindow>
 #include <QPainter>
@@ -14,6 +13,7 @@
 #include <QVector>
 #include <QtSvg/QSvgRenderer>
 #include <rqt_gui_cpp/plugin.h>
+#include <ros/console.h>
 
 namespace Ui {
 class MainWindow;
@@ -116,7 +116,6 @@ private:
   QMap<int, QPushButton*> cabinetButtons;    // 存储箱子按钮引用
   QMap<QString, int> phoneNumberToCabinet;
   QVector<QLabel*> destinationMarkers;       // 存储目的地标记
-  QLabel* qrCodeLabel;                       // 二维码标签
 
   // 核心组件
   gbx_rqt_interact::InformationHub* infoHub;

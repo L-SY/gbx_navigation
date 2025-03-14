@@ -16,6 +16,7 @@
 #include <navigation_msgs/CabinetDoorArray.h>
 #include <navigation_msgs/pub_trajectory.h>
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <std_msgs/Bool.h>
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <move_base_msgs/MoveBaseActionResult.h>

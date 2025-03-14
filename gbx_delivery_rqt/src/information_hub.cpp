@@ -3,7 +3,6 @@
 //
 
 #include "gbx_delivery_rqt/information_hub.h"
-#include <QDebug>
 #include <QDir>
 #include <QCoreApplication>
 #include <sstream>
@@ -55,14 +54,14 @@ void InformationHub::init()
     // 加载目标点数据
     QString resourcePath = QCoreApplication::applicationDirPath() + "/resources/2F_whole_finalpoint.csv";
     if (!loadTargetPoints(resourcePath.toStdString())) {
-      qDebug() << "Failed to load target points from:" << resourcePath;
+      ROS_WARN_STREAM("Failed to load target points from: " << resourcePath.toStdString());
       // 尝试相对路径
       if (!loadTargetPoints("/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/gbx_delivery_rqt/resources/2F_whole_finalpoint.csv")) {
-        qDebug() << "Failed to load target points from relative path";
+        ROS_ERROR_STREAM("Failed to load target points from relative path");
       }
     }
   } catch (const std::exception& e) {
-    qDebug() << "ROS initialization failed, but continuing with other functions";
+    ROS_WARN_STREAM("ROS initialization failed, but continuing with other functions: " << e.what());
   }
 
   updateTimer->start();
@@ -123,10 +122,10 @@ bool InformationHub::openSerialPort(const QString& portName)
 
   if (serial->open(QIODevice::ReadWrite)) {
     serial->setDataTerminalReady(true);
-    qDebug() << "Serial port opened successfully";
+    ROS_INFO_STREAM("Serial port opened successfully");
     return true;
   } else {
-    qDebug() << "Failed to open serial port!";
+    ROS_ERROR_STREAM("Failed to open serial port!");
     return false;
   }
 }
@@ -169,7 +168,7 @@ void InformationHub::sendDoorCommand(int boxIndex)
     memset(door_set_state, 0, sizeof(door_set_state));
     door_set_state[boxIndex] = 1;
     serial->write((char*)door_set_state, 6);
-    qDebug() << "Opening Box" << (boxIndex + 1);
+    ROS_INFO_STREAM("Opening Box " << (boxIndex + 1));
   }
 }
 
@@ -245,7 +244,7 @@ bool InformationHub::loadTargetPoints(const std::string& csvPath)
 {
   std::ifstream file(csvPath);
   if (!file.is_open()) {
-    qDebug() << "Failed to open CSV file:" << QString::fromStdString(csvPath);
+    ROS_ERROR_STREAM("Failed to open CSV file: " << csvPath);
     return false;
   }
 
@@ -272,13 +271,13 @@ bool InformationHub::loadTargetPoints(const std::string& csvPath)
         point.z = std::stod(tokens[3]);
         target_points_.push_back(point);
       } catch (const std::exception& e) {
-        qDebug() << "Error parsing point data:" << e.what();
+        ROS_ERROR_STREAM("Error parsing point data: " << e.what());
         continue;
       }
     }
   }
 
-  qDebug() << "Loaded" << target_points_.size() << "target points";
+  ROS_INFO_STREAM("Loaded " << target_points_.size() << " target points");
   return !target_points_.empty();
 }
 
@@ -337,10 +336,10 @@ void InformationHub::publishIndoorDeliveryOrder(
 
   // 发布消息
   indoor_delivery_pub_.publish(msg);
-  ROS_DEBUG_STREAM("Published IndoorDeliveryOrder: "
-                   << "CarNumber=" << carNumber
-                   << " RFID=" << rfid
-                   << " Area=" << area);
+  ROS_INFO_STREAM("Published IndoorDeliveryOrder: "
+                  << "CarNumber=" << carNumber
+                  << " RFID=" << rfid
+                  << " Area=" << area);
 }
 
 void InformationHub::publishOutputDelivery(
