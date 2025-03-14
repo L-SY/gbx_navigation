@@ -123,15 +123,25 @@ bool RegularGlobalPlanner::loadPointsFromCSV(const std::string& filename, int ty
 
     // 读取x
     std::getline(ss, value, ',');
+    // 清除前导和尾随空格
+    value.erase(0, value.find_first_not_of(" \t"));
+    value.erase(value.find_last_not_of(" \t") + 1);
     double x = std::stod(value);
 
     // 读取y
     std::getline(ss, value, ',');
+    // 清除前导和尾随空格
+    value.erase(0, value.find_first_not_of(" \t"));
+    value.erase(value.find_last_not_of(" \t") + 1);
     double y = std::stod(value);
 
     // 读取z（如果需要的话）
     std::getline(ss, value, ',');
+    // 清除前导和尾随空格
+    value.erase(0, value.find_first_not_of(" \t"));
+    value.erase(value.find_last_not_of(" \t") + 1);
     double z = std::stod(value);
+
 
     geometry_msgs::Point point;
     point.x = x;
@@ -362,8 +372,8 @@ void RegularGlobalPlanner::visualizeVerticesAndGraph() {
     vertices_marker.type = visualization_msgs::Marker::POINTS;
     vertices_marker.action = visualization_msgs::Marker::ADD;
     vertices_marker.pose.orientation.w = 1.0;
-    vertices_marker.scale.x = 0.3;  // 点的大小
-    vertices_marker.scale.y = 0.3;
+    vertices_marker.scale.x = 0.8;  // 点的大小
+    vertices_marker.scale.y = 0.8;
 
     // 设置不同类型的颜色
     switch (type) {
@@ -414,7 +424,7 @@ void RegularGlobalPlanner::visualizeVerticesAndGraph() {
   edges_marker.type = visualization_msgs::Marker::LINE_LIST;
   edges_marker.action = visualization_msgs::Marker::ADD;
   edges_marker.pose.orientation.w = 1.0;
-  edges_marker.scale.x = 0.1;  // 线的宽度
+  edges_marker.scale.x = 0.3;  // 线的宽度
   edges_marker.color.r = 0.5;  // 紫色边
   edges_marker.color.g = 0.0;
   edges_marker.color.b = 0.5;

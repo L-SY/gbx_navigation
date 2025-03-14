@@ -1,4 +1,5 @@
 base_global_planner: "regular_global_planner/RegularGlobalPlanner"
+#base_global_planner: "global_planner/GlobalPlanner"
 planner_frequency: 10.0
 planner_patience: 60
 

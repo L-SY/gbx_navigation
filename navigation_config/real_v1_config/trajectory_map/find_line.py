@@ -6,7 +6,7 @@ from scipy.spatial import KDTree
 from matplotlib.widgets import Button
 
 # 读取CSV文件
-file_path = './all_line.csv'  # 替换为您的文件路径
+file_path = './2F_whole_waypoint.csv'  # 替换为您的文件路径
 data = pd.read_csv(file_path)
 
 # 检查数据类型，确保 x 和 y 列为数值类型

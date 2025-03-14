@@ -6,7 +6,7 @@ local_path_topic: "/move_base/TebLocalPlannerROS/local_plan"
 velocity_cmd_topic: "/cmd_vel"
 
 story_trajectories:
-  - A: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl_C1W_3.csv"
+  - A: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/all_line.csv"
   - 2F_sl_C1W_back: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2F_sl_C1W_4.csv"
   - 2F_sl_dining: "/home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_config/trajectory/2f_sl_dining.csv"
 
