@@ -509,8 +509,13 @@ void MainWindow::handleBoxSelection(int box)
 
 void MainWindow::startWaitForObjectDetection()
 {
-  // TODO: Add real detection
-  QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
+  // 在寄件模式下，检测物品后直接进入目的地选择页面
+  if (currentMode == DELIVERY) {
+    QTimer::singleShot(1000, this, &MainWindow::switchToDestination);
+  } else {
+    // 其他模式可能的处理
+    QTimer::singleShot(1000, this, &MainWindow::switchToDoorClosed);
+  }
 }
 
 void MainWindow::handleDoorStateUpdate()
@@ -531,11 +536,16 @@ void MainWindow::handleDoorStateUpdate()
     switchToQRCodePage();
 
     selectedCabinetId = -1;
-  } else if ((currentMode == DELIVERY || currentMode == RETURN_BOX) &&
-             selectedCabinetId > 0 && states[selectedCabinetId] == 0) {
-    // 寄件或还箱模式下关门，切换到关门感谢页面
+  }
+  // 如果是还箱模式下关门，切换到关门感谢页面
+  else if (currentMode == RETURN_BOX && selectedCabinetId > 0 && states[selectedCabinetId] == 0) {
     switchToDoorClosed();
     selectedCabinetId = -1;
+  }
+  // 如果是寄件模式下关门，切换到目的地选择页面
+  else if (currentMode == DELIVERY && selectedCabinetId > 0 && states[selectedCabinetId] == 0) {
+    // 不要调用 switchToDoorClosed()，而是直接进入目的地选择页面
+    switchToDestination();
   }
 }
 
@@ -1124,6 +1134,13 @@ void MainWindow::switchToBoxOpen()
 
 void MainWindow::switchToDoorClosed()
 {
+  // 如果是寄件模式，不应该调用此函数
+  if (currentMode == DELIVERY) {
+    ROS_WARN_STREAM("Attempted to switch to door closed page in delivery mode, switching to destination page instead");
+    switchToDestination();
+    return;
+  }
+
   currentPage = DOOR_CLOSED_PAGE;
   ui->stackedWidget->setCurrentWidget(ui->doorClosedPage);
   returnTimer->start(); // 5秒后返回主页
