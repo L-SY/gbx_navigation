@@ -393,7 +393,27 @@ void MainWindow::setupQRCodePage()
     ui->stackedWidget->addWidget(qrCodePage);
   }
 
-  // 创建布局
+  // 检查是否已有布局
+  if (qrCodePage->layout()) {
+    // 已有布局，只需更新二维码图片
+    qrCodeLabel = qrCodePage->findChild<QLabel*>("qrCodeImageLabel");
+    if (qrCodeLabel) {
+      QPixmap qrPixmap("resources/images/qrcode.png");
+      if (qrPixmap.isNull()) {
+        // 尝试其他可能的路径
+        qrPixmap.load(":/images/qrcode.png");
+      }
+
+      if (!qrPixmap.isNull()) {
+        qrCodeLabel->setPixmap(qrPixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+      } else {
+        qrCodeLabel->setText("二维码图片加载失败");
+      }
+    }
+    return;
+  }
+
+  // 创建新布局
   QVBoxLayout* layout = new QVBoxLayout(qrCodePage);
 
   // 添加标题
@@ -404,6 +424,7 @@ void MainWindow::setupQRCodePage()
 
   // 添加二维码图片
   qrCodeLabel = new QLabel(qrCodePage);
+  qrCodeLabel->setObjectName("qrCodeImageLabel");
   qrCodeLabel->setAlignment(Qt::AlignCenter);
   QPixmap qrPixmap("resources/images/qrcode.png");
   if (qrPixmap.isNull()) {
