@@ -1,0 +1,61 @@
+GlobalPlanner:
+  allow_unknown: true
+  default_tolerance: 1.0
+  use_dijkstra: ture
+  use_quadratic: true
+  use_grid_path: false
+  lethal_cost: 253
+  neutral_cost: 66
+  cost_factor: 0.5
+  publish_potential: True
+
+RegularGlobalPlanner:
+  epsilon: 0.3  # distance threshold for final waypoint
+  waypoints_per_meter: 10  # number of waypoints per meter for the interpolation of the path
+  connection_radius: 6.8
+
+  csv_path_type1: /home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_1_config/trajectory_map/2F_whole_finalpoint.csv
+  csv_path_type2: /home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_1_config/trajectory_map/2F_whole_waypoint.csv
+  csv_path_type3: /home/vipbot/ros_ws/navigation_ws/src/gbx_navigation/navigation_config/real_v1_1_config/trajectory_map/2F_whole_cotch.csv
+
+DWAPlannerROS:
+  odom_topic: /ranger_base_node/odom
+  acc_lim_th: 2
+  acc_lim_x: 2
+  acc_lim_y: 0
+  max_vel_x: 1.0
+  min_vel_x: -1.0
+  max_vel_y: 0.0
+  min_vel_y: 0.0
+  max_vel_theta: 3.0
+  min_vel_theta: -3.0
+
+  max_vel_trans: 10
+  min_vel_trans: 0.05
+
+  sim_time: 3.0
+  sim_granularity: 0.025
+  vx_samples: 20
+  vy_samples: 0
+  vtheta_samples: 10
+  sim_period: 0.2
+
+  goal_distance_bias: 40.0
+  path_distance_bias: 0.5
+  occdist_scale: -1e-2
+  stop_time_buffer: 0.001
+  controller_frequency: 20.0
+  oscillation_reset_dist: 0.05
+  forward_point_distance: 0.325
+  scaling_speed: 1.2
+  max_scaling_factor: 0.05
+
+  xy_goal_tolerance: 0.5
+  yaw_goal_tolerance: 0.4
+  theta_stopped_vel: 0.1
+  trans_stopped_vel: 0.1
+
+  #  footprint_model:
+  #    type: "polygon"
+  #    vertices:  [[0.45,0.35], [0.45,-0.35], [-0.45, -0.35], [-0.45, 0.35]]
+  #    vertices:  [[0.3,0.25], [0.3,-0.25], [-0.3, -0.25], [-0.3, 0.25]] # for type "polygon"

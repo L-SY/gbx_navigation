@@ -1,0 +1,18 @@
+global_frame: map
+robot_base_frame: base_link
+
+update_frequency: 10.0
+publish_frequency: 10.0
+transform_tolerance: 0.25
+
+static_map: false
+rolling_window: true
+width: 8
+height: 8
+resolution: 0.1
+
+plugins:
+#  - { name: static,                  type: "costmap_2d::StaticLayer" }
+  - { name: obstacles_ouster,           type: "costmap_2d::ObstacleLayer" } # Let the ObstacleLayer in last
+  - { name: inflation,                 type: "costmap_2d::InflationLayer" }
+
