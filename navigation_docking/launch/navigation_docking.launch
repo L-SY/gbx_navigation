@@ -1,6 +1,5 @@
 <launch>
     <node name="navigation_docking" pkg="navigation_docking" type="navigation_docking_node" output="screen">
-        <remap from="tag_pose" to="/aruco_tag_pose" />
         <rosparam command="load" file="$(find navigation_docking)/config/config.yaml"/>
     </node>
 </launch>

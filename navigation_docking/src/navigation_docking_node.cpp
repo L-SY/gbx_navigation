@@ -42,7 +42,7 @@ public:
     pid_y_.init(pid_y_nh);
     pid_yaw_.init(pid_yaw_nh);
 
-    sub_ = nh_.subscribe("tag_pose", 1, &NavigationDocking::poseCB, this);
+    sub_ = nh_.subscribe("/aruco_pose", 1, &NavigationDocking::poseCB, this);
     pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_test", 1);
 
     timer_ = nh_.createTimer(ros::Duration(0.02), &NavigationDocking::controlLoop, this);
