@@ -34,9 +34,13 @@ public:
     pnh_.param("goal_yaw", goal_yaw_, 0.0);
 
     // PIDs (ros_control style)
-    pid_x_.initPid(1.0, 0.0, 0.0, 0.0, 0.0);
-    pid_y_.initPid(1.0, 0.0, 0.0, 0.0, 0.0);
-    pid_yaw_.initPid(1.0, 0.0, 0.0, 0.0, 0.0);
+    ros::NodeHandle pid_x_nh(pnh_, "pid_x");
+    ros::NodeHandle pid_y_nh(pnh_, "pid_y");
+    ros::NodeHandle pid_yaw_nh(pnh_, "pid_yaw");
+
+    pid_x_.init(pid_x_nh);
+    pid_y_.init(pid_y_nh);
+    pid_yaw_.init(pid_yaw_nh);
 
     sub_ = nh_.subscribe("tag_pose", 1, &NavigationDocking::poseCB, this);
     pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_test", 1);
