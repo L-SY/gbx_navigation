@@ -26,7 +26,7 @@ public:
   NavigationDocking(ros::NodeHandle& nh, ros::NodeHandle& pnh)
       : nh_(nh), pnh_(pnh), state_(ADJUST_YAW), seq_(0)
   {
-    // === Hardcoded ArUco camera parameters ===
+    // Hardcoded ArUco camera parameters
     camera_matrix_ = (cv::Mat_<double>(3, 3) <<
                           928.7065, 0.0,      810.2097,
                       0.0,      928.1129, 632.4180,
@@ -34,6 +34,10 @@ public:
     dist_coeffs_ = (cv::Mat_<double>(1, 5) <<
                         -0.0984, 0.0892, 0.0, 0.0, 0.0);
     marker_length_ = 0.10;
+
+    // Frame naming
+    parent_frame_ = "camera_frame";  // Change to your actual camera frame
+    child_frame_  = "docking_tag";
 
     // Control parameters
     pnh_.param("min_vel_xy", min_vel_xy_, 0.1);
@@ -66,40 +70,35 @@ public:
 
 private:
   void imageCallback(const sensor_msgs::ImageConstPtr& img_msg) {
-    // Convert
     cv::Mat img = cv_bridge::toCvShare(img_msg, "bgr8")->image;
 
-    // Detect
     std::vector<int> ids;
     std::vector<std::vector<cv::Point2f>> corners;
     cv::aruco::detectMarkers(img, dictionary_, corners, ids);
     if (ids.empty()) return;
 
-    // Estimate poses for all detected markers
     std::vector<cv::Vec3d> rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(corners, marker_length_, camera_matrix_, dist_coeffs_, rvecs, tvecs);
 
-    // Find our tag
     for (size_t i = 0; i < ids.size(); ++i) {
       if (ids[i] != tag_id_) continue;
 
-      // Populate PoseStamped
-      latest_pose_.header = img_msg->header;
-      latest_pose_.header.seq = seq_++;
-      latest_pose_.header.frame_id = img_msg->header.frame_id;
+      latest_pose_.header.stamp = ros::Time::now();
+      latest_pose_.header.seq   = seq_++;
+      latest_pose_.header.frame_id = parent_frame_;
+      // Remap axes: original Z->X (forward), X->Y (right), Y->Z (up)
       latest_pose_.pose.position.x =  tvecs[i][2];
-      latest_pose_.pose.position.y = -tvecs[i][0];
-      latest_pose_.pose.position.z =  tvecs[i][1];
+      latest_pose_.pose.position.y =  tvecs[i][0];
+      latest_pose_.pose.position.z = -tvecs[i][1];
 
-      // Rotation
-      cv::Mat R;
-      cv::Rodrigues(rvecs[i], R);
+      cv::Mat R; cv::Rodrigues(rvecs[i], R);
       tf2::Matrix3x3 mcv(
           R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2),
           R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2),
           R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2));
       tf2::Quaternion q; mcv.getRotation(q);
-      tf2::Quaternion fix; fix.setRPY(M_PI/2, 0, -M_PI/2);
+      // Adjust orientation so new X is forward
+      tf2::Quaternion fix; fix.setRPY(-M_PI/2, 0, M_PI/2);
       q = fix * q;
       latest_pose_.pose.orientation.x = q.x();
       latest_pose_.pose.orientation.y = q.y();
@@ -107,10 +106,11 @@ private:
       latest_pose_.pose.orientation.w = q.w();
 
       pub_pose_.publish(latest_pose_);
+
       geometry_msgs::TransformStamped tf_msg;
-      tf_msg.header = latest_pose_.header;
-      latest_pose_.header.frame_id = "camera_link";
-      tf_msg.child_frame_id = "docking_tag";
+      tf_msg.header.stamp = latest_pose_.header.stamp;
+      tf_msg.header.frame_id = parent_frame_;
+      tf_msg.child_frame_id  = child_frame_;
       tf_msg.transform.translation.x = latest_pose_.pose.position.x;
       tf_msg.transform.translation.y = latest_pose_.pose.position.y;
       tf_msg.transform.translation.z = latest_pose_.pose.position.z;
@@ -178,7 +178,7 @@ private:
   control_toolbox::Pid pid_x_, pid_y_, pid_yaw_;
   cv::Ptr<cv::aruco::Dictionary> dictionary_;
   cv::Mat camera_matrix_, dist_coeffs_;
-  std::string image_topic_;
+  std::string image_topic_, parent_frame_, child_frame_;
   int tag_id_;
   uint32_t seq_;
   double marker_length_;
