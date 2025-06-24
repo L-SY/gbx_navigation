@@ -167,27 +167,40 @@ private:
       double p_cmd = pid_yaw_.computeCommand(eyaw, ros::Duration(dt));
       cmd.angular.z = copysign(min_vel_yaw_, eyaw) + p_cmd;
       ROS_INFO("  [ADJUST_YAW] eyaw=%.3f  pid=%.3f  min_vel=%.3f  cmd.angular.z=%.3f",
-                eyaw, p_cmd, min_vel_yaw_, cmd.angular.z);
+               eyaw, p_cmd, min_vel_yaw_, cmd.angular.z);
 
-      if (fabs(eyaw) < err_thresh_yaw_ ||
-          (now - start_time_).toSec() > timeout_yaw_) {
-        ROS_INFO("  → Yaw adjustment done (|eyaw|=%.3f)", eyaw);
+      if (fabs(eyaw) < err_thresh_yaw_ * 2) {
+        yaw_stable_count_++;
+        ROS_DEBUG("    → yaw stable frame %d/%d", yaw_stable_count_, YAW_STABLE_FRAMES);
+      } else {
+        if (yaw_stable_count_ > 0) {
+          ROS_DEBUG("    → yaw disturbed, reset stable count");
+        }
+        yaw_stable_count_ = 0;
+      }
+
+      double elapsed = (now - start_time_).toSec();
+      // 连续 5 帧稳定 或 超时，则切状态
+      if (yaw_stable_count_ >= YAW_STABLE_FRAMES || elapsed > timeout_yaw_) {
+        ROS_INFO("  → Yaw adjustment done (eyaw=%.3f) after %d stable frames, elapsed=%.3f s. switching to ADJUST_XY",
+                 eyaw, yaw_stable_count_, elapsed);
         state_ = ADJUST_XY;
         start_time_ = now;
         pid_x_.reset();
         pid_y_.reset();
+        yaw_stable_count_ = 0;
       }
       break;
     }
     case ADJUST_XY: {
       double px = pid_x_.computeCommand(ex, ros::Duration(dt));
       double py = pid_y_.computeCommand(ey, ros::Duration(dt));
-      cmd.linear.x = copysign(min_vel_xy_, ex) + px;
+      cmd.linear.x = copysign(min_vel_xy_, ex) + px * 0.5;
       cmd.linear.y = copysign(min_vel_xy_, ey) + py;
       ROS_INFO("  [ADJUST_XY] ex=%.3f  ey=%.3f  px=%.3f  py=%.3f  cmd=(%.3f, %.3f)",
                 ex, ey, px, py, cmd.linear.x, cmd.linear.y);
 
-      if (fabs(ey) < err_thresh_xy_ ||
+      if (fabs(ey) < err_thresh_xy_ * 2 ||
           (now - start_time_).toSec() > timeout_xy_) {
         ROS_INFO("  → XY adjustment done (|ey|=%.3f)", ey);
         state_ = ADJUST_X;
@@ -197,6 +210,13 @@ private:
       break;
     }
     case ADJUST_X: {
+      if (ex < 0.0) {
+        ROS_INFO("  [ADJUST_X] ex=%.3f < 0 → skipping to FINE_ADJUST_Y", ex);
+        state_ = FINE_ADJUST_Y;
+        start_time_ = now;
+        pid_y_.reset();
+        break;
+      }
       double px    = pid_x_.computeCommand(ex, ros::Duration(dt));
       double py = pid_y_.computeCommand(ey, ros::Duration(dt));
       double pyaw  = 0.0;
@@ -207,7 +227,7 @@ private:
         yawCmd = copysign(min_vel_yaw_, eyaw) + pyaw;
       }
       cmd.linear.x    = copysign(min_vel_xy_, ex) + px;
-//      cmd.angular.z   = yawCmd;
+      cmd.angular.z   = yawCmd;
       pub_cmd_.publish(cmd);
       ROS_INFO("  [ADJUST_X] ex=%.3f  eyaw=%.3f  px=%.3f  pyaw=%.3f  cmd=(x=%.3f, z=%.3f)",
                 ex, eyaw, px, pyaw, cmd.linear.x, cmd.angular.z);
@@ -260,6 +280,8 @@ private:
   double timeout_xy_, timeout_yaw_;
   double goal_x_, goal_yaw_;
 
+  int yaw_stable_count_ = 0;
+  static constexpr int YAW_STABLE_FRAMES = 10;
   State state_;
   ros::Timer timer_;
   ros::Time start_time_, last_time_;
