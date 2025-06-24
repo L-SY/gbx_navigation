@@ -1,14 +1,17 @@
-//
 // Created by lsy on 25-6-24.
-//
 
 #include <ros/ros.h>
+#include <sensor_msgs/Image.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
+#include <cv_bridge/cv_bridge.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <control_toolbox/pid.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <opencv2/aruco.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
+#include <control_toolbox/pid.h>
 
 enum State {
   ADJUST_YAW,
@@ -21,9 +24,18 @@ enum State {
 class NavigationDocking {
 public:
   NavigationDocking(ros::NodeHandle& nh, ros::NodeHandle& pnh)
-      : nh_(nh), pnh_(pnh), state_(ADJUST_YAW)
+      : nh_(nh), pnh_(pnh), state_(ADJUST_YAW), seq_(0)
   {
-    // load parameters
+    // === Hardcoded ArUco camera parameters ===
+    camera_matrix_ = (cv::Mat_<double>(3, 3) <<
+                          928.7065, 0.0,      810.2097,
+                      0.0,      928.1129, 632.4180,
+                      0.0,      0.0,      1.0);
+    dist_coeffs_ = (cv::Mat_<double>(1, 5) <<
+                        -0.0984, 0.0892, 0.0, 0.0, 0.0);
+    marker_length_ = 0.10;
+
+    // Control parameters
     pnh_.param("min_vel_xy", min_vel_xy_, 0.1);
     pnh_.param("min_vel_yaw", min_vel_yaw_, 0.1);
     pnh_.param("error_threshold_xy", err_thresh_xy_, 0.05);
@@ -33,66 +45,79 @@ public:
     pnh_.param("goal_x", goal_x_, 0.0);
     pnh_.param("goal_yaw", goal_yaw_, 0.0);
 
-    // PIDs (ros_control style)
-    ros::NodeHandle pid_x_nh(pnh_, "pid_x");
-    ros::NodeHandle pid_y_nh(pnh_, "pid_y");
-    ros::NodeHandle pid_yaw_nh(pnh_, "pid_yaw");
+    // ArUco setup
+    tag_id_ = 0;
+    dictionary_ = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_5X5_100);
 
-    pid_x_.init(pid_x_nh);
-    pid_y_.init(pid_y_nh);
-    pid_yaw_.init(pid_yaw_nh);
+    // PIDs
+    pid_x_.init(ros::NodeHandle(pnh_, "pid_x"));
+    pid_y_.init(ros::NodeHandle(pnh_, "pid_y"));
+    pid_yaw_.init(ros::NodeHandle(pnh_, "pid_yaw"));
 
-    sub_ = nh_.subscribe("/aruco_pose", 1, &NavigationDocking::poseCB, this);
-    pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_test", 1);
+    // Topics
+    image_topic_ = "/hk_camera/agv/image_raw";
+    sub_image_ = nh_.subscribe(image_topic_, 1, &NavigationDocking::imageCallback, this);
+    pub_cmd_   = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_test", 1);
+    pub_pose_  = nh_.advertise<geometry_msgs::PoseStamped>("/aruco_tag_pose", 1);
 
     timer_ = nh_.createTimer(ros::Duration(0.02), &NavigationDocking::controlLoop, this);
-    start_time_ = ros::Time::now();
+    start_time_ = last_time_ = ros::Time::now();
   }
 
 private:
-  void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-    // transform axes: original frame z-> x, x-> y
-    tf2::Quaternion q_orig(
-        msg->pose.orientation.x,
-        msg->pose.orientation.y,
-        msg->pose.orientation.z,
-        msg->pose.orientation.w
-    );
+  void imageCallback(const sensor_msgs::ImageConstPtr& img_msg) {
+    // Convert
+    cv::Mat img = cv_bridge::toCvShare(img_msg, "bgr8")->image;
 
-    // 构造坐标轴重映射矩阵：new_x = -old_z, new_y = -old_x, new_z = old_y
-    // 保持右手坐标系
-    tf2::Matrix3x3 m;
-    m.setValue(
-        0,  0, -1,  // x_new = -z_old
-        -1,  0,  0,  // y_new = -x_old
-        0,  1,  0   // z_new =  y_old
-    );
+    // Detect
+    std::vector<int> ids;
+    std::vector<std::vector<cv::Point2f>> corners;
+    cv::aruco::detectMarkers(img, dictionary_, corners, ids);
+    if (ids.empty()) return;
 
-    // 从矩阵提取旋转四元数
-    tf2::Quaternion q_rot;
-    m.getRotation(q_rot);
+    // Estimate poses for all detected markers
+    std::vector<cv::Vec3d> rvecs, tvecs;
+    cv::aruco::estimatePoseSingleMarkers(corners, marker_length_, camera_matrix_, dist_coeffs_, rvecs, tvecs);
 
-    // 先应用重映射旋转，再乘以原始姿态
-    tf2::Quaternion q_new = q_rot * q_orig;
+    // Find our tag
+    for (size_t i = 0; i < ids.size(); ++i) {
+      if (ids[i] != tag_id_) continue;
 
-    latest_pose_.header = msg->header;
-    latest_pose_.pose.position.x = msg->pose.position.z;
-    latest_pose_.pose.position.y = -msg->pose.position.x;
-    latest_pose_.pose.position.z = 0;
-    latest_pose_.pose.orientation.x = q_new.x();
-    latest_pose_.pose.orientation.y = q_new.y();
-    latest_pose_.pose.orientation.z = q_new.z();
-    latest_pose_.pose.orientation.w = q_new.w();
+      // Populate PoseStamped
+      latest_pose_.header = img_msg->header;
+      latest_pose_.header.seq = seq_++;
+      latest_pose_.header.frame_id = img_msg->header.frame_id;
+      latest_pose_.pose.position.x =  tvecs[i][2];
+      latest_pose_.pose.position.y = -tvecs[i][0];
+      latest_pose_.pose.position.z =  tvecs[i][1];
 
-    // broadcast tf
-    geometry_msgs::TransformStamped tf_msg;
-    tf_msg.header = latest_pose_.header;
-    tf_msg.child_frame_id = "docking_tag";
-    tf_msg.transform.translation.x = latest_pose_.pose.position.x;
-    tf_msg.transform.translation.y = latest_pose_.pose.position.y;
-    tf_msg.transform.translation.z = 0;
-    tf_msg.transform.rotation = latest_pose_.pose.orientation;
-    br_.sendTransform(tf_msg);
+      // Rotation
+      cv::Mat R;
+      cv::Rodrigues(rvecs[i], R);
+      tf2::Matrix3x3 mcv(
+          R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2),
+          R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2),
+          R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2));
+      tf2::Quaternion q; mcv.getRotation(q);
+      tf2::Quaternion fix; fix.setRPY(M_PI/2, 0, -M_PI/2);
+      q = fix * q;
+      latest_pose_.pose.orientation.x = q.x();
+      latest_pose_.pose.orientation.y = q.y();
+      latest_pose_.pose.orientation.z = q.z();
+      latest_pose_.pose.orientation.w = q.w();
+
+      pub_pose_.publish(latest_pose_);
+      geometry_msgs::TransformStamped tf_msg;
+      tf_msg.header = latest_pose_.header;
+      latest_pose_.header.frame_id = "camera_link";
+      tf_msg.child_frame_id = "docking_tag";
+      tf_msg.transform.translation.x = latest_pose_.pose.position.x;
+      tf_msg.transform.translation.y = latest_pose_.pose.position.y;
+      tf_msg.transform.translation.z = latest_pose_.pose.position.z;
+      tf_msg.transform.rotation    = latest_pose_.pose.orientation;
+      br_.sendTransform(tf_msg);
+      break;
+    }
   }
 
   void controlLoop(const ros::TimerEvent&) {
@@ -101,36 +126,36 @@ private:
     double dt = (now - last_time_).toSec();
     last_time_ = now;
 
-    // compute errors in docking_tag frame
-    double roll, pitch, yaw;
-    tf2::Quaternion q(latest_pose_.pose.orientation.x,
-                      latest_pose_.pose.orientation.y,
-                      latest_pose_.pose.orientation.z,
-                      latest_pose_.pose.orientation.w);
-    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    tf2::Quaternion qq(
+        latest_pose_.pose.orientation.x,
+        latest_pose_.pose.orientation.y,
+        latest_pose_.pose.orientation.z,
+        latest_pose_.pose.orientation.w);
+    double roll, pitch, yaw; tf2::Matrix3x3(qq).getRPY(roll,pitch,yaw);
+
     double eyaw = yaw - goal_yaw_;
-    double ex = latest_pose_.pose.position.x - goal_x_;
-    double ey = latest_pose_.pose.position.y;
+    double ex   = latest_pose_.pose.position.x - goal_x_;
+    double ey   = latest_pose_.pose.position.y;
 
     geometry_msgs::Twist cmd;
     switch (state_) {
     case ADJUST_YAW:
       cmd.angular.z = copysign(min_vel_yaw_, eyaw) + pid_yaw_.computeCommand(eyaw, ros::Duration(dt));
       if (fabs(eyaw) < err_thresh_yaw_ || (now - start_time_).toSec() > timeout_yaw_) {
-        ROS_INFO("Yaw adjustment done"); state_ = ADJUST_XY; start_time_ = now; pid_x_.reset(); pid_y_.reset();
+        ROS_INFO("Yaw adj done"); state_ = ADJUST_XY; start_time_ = now; pid_x_.reset(); pid_y_.reset();
       }
       break;
     case ADJUST_XY:
       cmd.linear.x = copysign(min_vel_xy_, ex) + pid_x_.computeCommand(ex, ros::Duration(dt));
       cmd.linear.y = copysign(min_vel_xy_, ey) + pid_y_.computeCommand(ey, ros::Duration(dt));
       if (fabs(ey) < err_thresh_xy_ || (now - start_time_).toSec() > timeout_xy_) {
-        ROS_INFO("Y error within threshold or timeout, moving to X only"); state_ = ADJUST_X; start_time_ = now; pid_x_.reset();
+        ROS_INFO("XY adj done"); state_ = ADJUST_X; start_time_ = now; pid_x_.reset();
       }
       break;
     case ADJUST_X:
       cmd.linear.x = copysign(min_vel_xy_, ex) + pid_x_.computeCommand(ex, ros::Duration(dt));
       if (fabs(ex) < err_thresh_xy_ || (now - start_time_).toSec() > timeout_xy_) {
-        ROS_INFO("X adjustment done, fine adjust Y"); state_ = FINE_ADJUST_Y; start_time_ = now; pid_y_.reset();
+        ROS_INFO("X adj done"); state_ = FINE_ADJUST_Y; start_time_ = now; pid_y_.reset();
       }
       break;
     case FINE_ADJUST_Y:
@@ -139,19 +164,24 @@ private:
         ROS_INFO("Docking complete"); state_ = DONE;
       }
       break;
-    default:
-      break;
+    default: break;
     }
-    pub_.publish(cmd);
+    pub_cmd_.publish(cmd);
   }
 
   ros::NodeHandle nh_, pnh_;
-  ros::Subscriber sub_;
-  ros::Publisher pub_;
+  ros::Subscriber sub_image_;
+  ros::Publisher pub_cmd_, pub_pose_;
   tf2_ros::TransformBroadcaster br_;
   geometry_msgs::PoseStamped latest_pose_;
 
   control_toolbox::Pid pid_x_, pid_y_, pid_yaw_;
+  cv::Ptr<cv::aruco::Dictionary> dictionary_;
+  cv::Mat camera_matrix_, dist_coeffs_;
+  std::string image_topic_;
+  int tag_id_;
+  uint32_t seq_;
+  double marker_length_;
 
   double min_vel_xy_, min_vel_yaw_;
   double err_thresh_xy_, err_thresh_yaw_;

@@ -1,32 +1,38 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(navigation_docking)
 
+## 找到 ROS 必要组件
 find_package(catkin REQUIRED COMPONENTS
         roscpp
-        geometry_msgs
         tf2_ros
-        tf2_geometry_msgs
+        tf2
+        cv_bridge
+        image_transport
         control_toolbox
-        dynamic_reconfigure
 )
 
-generate_dynamic_reconfigure_options(
-        # no .cfg here; parameters loaded via yaml
-)
+## 找到系统 OpenCV
+find_package(OpenCV REQUIRED)
 
+## 声明 catkin 包含的库和 include 目录
 catkin_package(
-        CATKIN_DEPENDS roscpp geometry_msgs tf2_ros tf2_geometry_msgs control_toolbox dynamic_reconfigure
+#        INCLUDE_DIRS include
+        LIBRARIES navigation_docking
+        CATKIN_DEPENDS roscpp tf2_ros tf2 cv_bridge image_transport control_toolbox
 )
 
+## 编译选项
 include_directories(
+        include
         ${catkin_INCLUDE_DIRS}
+        ${OpenCV_INCLUDE_DIRS}          # ← 把 OpenCV 的头加进来
 )
 
-add_executable(navigation_docking_node src/navigation_docking_node.cpp)
-add_dependencies(navigation_docking_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(navigation_docking_node
+        src/navigation_docking_node.cpp
+)
+
 target_link_libraries(navigation_docking_node
         ${catkin_LIBRARIES}
-)
-install(TARGETS navigation_docking_node
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        ${OpenCV_LIBS}                   # ← 把 OpenCV 的库也链接进来
 )
