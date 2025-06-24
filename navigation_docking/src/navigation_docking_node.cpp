@@ -61,7 +61,7 @@ public:
     // Topics
     image_topic_ = "/hk_camera/agv/image_raw";
     sub_image_ = nh_.subscribe(image_topic_, 1, &NavigationDocking::imageCallback, this);
-    pub_cmd_   = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_test", 1);
+    pub_cmd_   = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
     pub_pose_  = nh_.advertise<geometry_msgs::PoseStamped>("/aruco_tag_pose", 1);
 
     timer_ = nh_.createTimer(ros::Duration(0.02), &NavigationDocking::controlLoop, this);
@@ -78,28 +78,44 @@ private:
     if (ids.empty()) return;
 
     std::vector<cv::Vec3d> rvecs, tvecs;
-    cv::aruco::estimatePoseSingleMarkers(corners, marker_length_, camera_matrix_, dist_coeffs_, rvecs, tvecs);
+    cv::aruco::estimatePoseSingleMarkers(
+        corners, marker_length_, camera_matrix_, dist_coeffs_, rvecs, tvecs);
 
     for (size_t i = 0; i < ids.size(); ++i) {
       if (ids[i] != tag_id_) continue;
 
-      latest_pose_.header.stamp = ros::Time::now();
-      latest_pose_.header.seq   = seq_++;
+      // 时间戳、帧信息
+      latest_pose_.header.stamp    = ros::Time::now();
+      latest_pose_.header.seq      = seq_++;
       latest_pose_.header.frame_id = parent_frame_;
-      // Remap axes: original Z->X (forward), X->Y (right), Y->Z (up)
-      latest_pose_.pose.position.x =  tvecs[i][2];
-      latest_pose_.pose.position.y =  tvecs[i][0];
-      latest_pose_.pose.position.z = -tvecs[i][1];
 
-      cv::Mat R; cv::Rodrigues(rvecs[i], R);
+      // 平移映射
+      double x =  tvecs[i][2];
+      double y =  tvecs[i][0];
+      double z = -tvecs[i][1];
+      latest_pose_.pose.position.x = x;
+      latest_pose_.pose.position.y = y;
+      latest_pose_.pose.position.z = z;
+
+      // 计算四元数
+      cv::Mat R;
+      cv::Rodrigues(rvecs[i], R);
       tf2::Matrix3x3 mcv(
           R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2),
           R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2),
           R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2));
-      tf2::Quaternion q; mcv.getRotation(q);
-      // Adjust orientation so new X is forward
-      tf2::Quaternion fix; fix.setRPY(-M_PI/2, 0, M_PI/2);
-      q = fix * q;
+      tf2::Quaternion q;
+      mcv.getRotation(q);
+
+      // 计算 RPY（弧度）
+      double roll, pitch, yaw;
+      tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+      // 打印出来
+//      ROS_INFO("Tag %d — position [x=%.3f, y=%.3f, z=%.3f], RPY [roll=%.3f, pitch=%.3f, yaw=%.3f]",
+//               ids[i], x, y, z, roll, pitch, yaw);
+
+      // 填回 orientation 并发布
       latest_pose_.pose.orientation.x = q.x();
       latest_pose_.pose.orientation.y = q.y();
       latest_pose_.pose.orientation.z = q.z();
@@ -107,21 +123,28 @@ private:
 
       pub_pose_.publish(latest_pose_);
 
+      // 发布 TF
       geometry_msgs::TransformStamped tf_msg;
-      tf_msg.header.stamp = latest_pose_.header.stamp;
+      tf_msg.header.stamp    = latest_pose_.header.stamp;
       tf_msg.header.frame_id = parent_frame_;
       tf_msg.child_frame_id  = child_frame_;
-      tf_msg.transform.translation.x = latest_pose_.pose.position.x;
-      tf_msg.transform.translation.y = latest_pose_.pose.position.y;
-      tf_msg.transform.translation.z = latest_pose_.pose.position.z;
+      tf_msg.transform.translation.x = x;
+      tf_msg.transform.translation.y = y;
+      tf_msg.transform.translation.z = z;
       tf_msg.transform.rotation    = latest_pose_.pose.orientation;
       br_.sendTransform(tf_msg);
+
       break;
     }
   }
 
   void controlLoop(const ros::TimerEvent&) {
-    if (state_ == DONE) return;
+    if (state_ == DONE) {
+      // state=DONE 时也要发一个全零命令一次，确保真停下
+      geometry_msgs::Twist stop_cmd{};
+      pub_cmd_.publish(stop_cmd);
+      return;
+    }
     ros::Time now = ros::Time::now();
     double dt = (now - last_time_).toSec();
     last_time_ = now;
@@ -133,38 +156,87 @@ private:
         latest_pose_.pose.orientation.w);
     double roll, pitch, yaw; tf2::Matrix3x3(qq).getRPY(roll,pitch,yaw);
 
-    double eyaw = yaw - goal_yaw_;
+//  for tf erro, use pitch to replace yaw!!
+    double eyaw = -pitch - goal_yaw_;
     double ex   = latest_pose_.pose.position.x - goal_x_;
-    double ey   = latest_pose_.pose.position.y;
+    double ey   = -latest_pose_.pose.position.y;
 
-    geometry_msgs::Twist cmd;
+    geometry_msgs::Twist cmd{};
     switch (state_) {
-    case ADJUST_YAW:
-      cmd.angular.z = copysign(min_vel_yaw_, eyaw) + pid_yaw_.computeCommand(eyaw, ros::Duration(dt));
-      if (fabs(eyaw) < err_thresh_yaw_ || (now - start_time_).toSec() > timeout_yaw_) {
-        ROS_INFO("Yaw adj done"); state_ = ADJUST_XY; start_time_ = now; pid_x_.reset(); pid_y_.reset();
+    case ADJUST_YAW: {
+      double p_cmd = pid_yaw_.computeCommand(eyaw, ros::Duration(dt));
+      cmd.angular.z = copysign(min_vel_yaw_, eyaw) + p_cmd;
+      ROS_INFO("  [ADJUST_YAW] eyaw=%.3f  pid=%.3f  min_vel=%.3f  cmd.angular.z=%.3f",
+                eyaw, p_cmd, min_vel_yaw_, cmd.angular.z);
+
+      if (fabs(eyaw) < err_thresh_yaw_ ||
+          (now - start_time_).toSec() > timeout_yaw_) {
+        ROS_INFO("  → Yaw adjustment done (|eyaw|=%.3f)", eyaw);
+        state_ = ADJUST_XY;
+        start_time_ = now;
+        pid_x_.reset();
+        pid_y_.reset();
       }
       break;
-    case ADJUST_XY:
-      cmd.linear.x = copysign(min_vel_xy_, ex) + pid_x_.computeCommand(ex, ros::Duration(dt));
-      cmd.linear.y = copysign(min_vel_xy_, ey) + pid_y_.computeCommand(ey, ros::Duration(dt));
-      if (fabs(ey) < err_thresh_xy_ || (now - start_time_).toSec() > timeout_xy_) {
-        ROS_INFO("XY adj done"); state_ = ADJUST_X; start_time_ = now; pid_x_.reset();
+    }
+    case ADJUST_XY: {
+      double px = pid_x_.computeCommand(ex, ros::Duration(dt));
+      double py = pid_y_.computeCommand(ey, ros::Duration(dt));
+      cmd.linear.x = copysign(min_vel_xy_, ex) + px;
+      cmd.linear.y = copysign(min_vel_xy_, ey) + py;
+      ROS_INFO("  [ADJUST_XY] ex=%.3f  ey=%.3f  px=%.3f  py=%.3f  cmd=(%.3f, %.3f)",
+                ex, ey, px, py, cmd.linear.x, cmd.linear.y);
+
+      if (fabs(ey) < err_thresh_xy_ ||
+          (now - start_time_).toSec() > timeout_xy_) {
+        ROS_INFO("  → XY adjustment done (|ey|=%.3f)", ey);
+        state_ = ADJUST_X;
+        start_time_ = now;
+        pid_x_.reset();
       }
       break;
-    case ADJUST_X:
-      cmd.linear.x = copysign(min_vel_xy_, ex) + pid_x_.computeCommand(ex, ros::Duration(dt));
-      if (fabs(ex) < err_thresh_xy_ || (now - start_time_).toSec() > timeout_xy_) {
-        ROS_INFO("X adj done"); state_ = FINE_ADJUST_Y; start_time_ = now; pid_y_.reset();
+    }
+    case ADJUST_X: {
+      double px    = pid_x_.computeCommand(ex, ros::Duration(dt));
+      double py = pid_y_.computeCommand(ey, ros::Duration(dt));
+      double pyaw  = 0.0;
+      double yawCmd = 0.0;
+
+      if (fabs(eyaw) >= 2*err_thresh_yaw_) {
+        double pyaw = pid_yaw_.computeCommand(eyaw, ros::Duration(dt));
+        yawCmd = copysign(min_vel_yaw_, eyaw) + pyaw;
+      }
+      cmd.linear.x    = copysign(min_vel_xy_, ex) + px;
+//      cmd.angular.z   = yawCmd;
+      pub_cmd_.publish(cmd);
+      ROS_INFO("  [ADJUST_X] ex=%.3f  eyaw=%.3f  px=%.3f  pyaw=%.3f  cmd=(x=%.3f, z=%.3f)",
+                ex, eyaw, px, pyaw, cmd.linear.x, cmd.angular.z);
+
+      if (fabs(ex) < err_thresh_xy_ ||
+          (now - start_time_).toSec() > timeout_xy_) {
+        ROS_INFO("  → X adjustment done (|ex|=%.3f)", ex);
+        state_ = FINE_ADJUST_Y;
+        start_time_ = now;
+        pid_y_.reset();
       }
       break;
-    case FINE_ADJUST_Y:
-      cmd.linear.y = copysign(min_vel_xy_, ey) + pid_y_.computeCommand(ey, ros::Duration(dt));
-      if (fabs(ey) < err_thresh_xy_ || (now - start_time_).toSec() > timeout_xy_) {
-        ROS_INFO("Docking complete"); state_ = DONE;
+    }
+    case FINE_ADJUST_Y: {
+      double py = pid_y_.computeCommand(ey, ros::Duration(dt));
+      cmd.linear.y = copysign(min_vel_xy_, ey) + py;
+      ROS_INFO("  [FINE_ADJUST_Y] ey=%.3f  py=%.3f  cmd.linear.y=%.3f",
+                ey, py, cmd.linear.y);
+
+      if (fabs(ey) < err_thresh_xy_ ||
+          (now - start_time_).toSec() > timeout_xy_) {
+        ROS_INFO("  → Fine Y adjustment done. Docking complete.");
+        state_ = DONE;
       }
       break;
-    default: break;
+    }
+    default:
+      ROS_WARN("  [UNKNOWN STATE] %d", state_);
+      break;
     }
     pub_cmd_.publish(cmd);
   }
