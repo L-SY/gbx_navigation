@@ -13,6 +13,8 @@
 #include <opencv2/calib3d.hpp>
 #include <control_toolbox/pid.h>
 
+#include "navigation_docking/uart_sender.h"
+
 enum State {
   ADJUST_YAW,
   ADJUST_XY,
@@ -47,6 +49,7 @@ public:
     pnh_.param("timeout_xy", timeout_xy_, 30.0);
     pnh_.param("timeout_yaw", timeout_yaw_, 30.0);
     pnh_.param("goal_x", goal_x_, 0.0);
+    pnh_.param("goal_y", goal_y_, 0.0);
     pnh_.param("goal_yaw", goal_yaw_, 0.0);
 
     // ArUco setup
@@ -69,6 +72,109 @@ public:
   }
 
 private:
+//  Should test!
+//  void imageCallback(const sensor_msgs::ImageConstPtr& img_msg) {
+//    // —— 优化 & 滤波状态（函数内部静态） ——
+//    static cv::Ptr<cv::aruco::Dictionary> dictionary =
+//        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_5X5_1000);
+//    static cv::Ptr<cv::aruco::DetectorParameters> detector_params = []{
+//      auto p = cv::aruco::DetectorParameters::create();
+//      p->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+//      return p;
+//    }();
+//    static double filt_x   = 0.0;
+//    static double filt_y   = 0.0;
+//    static double filt_z   = 0.0;
+//    static double filt_yaw = 0.0;
+//    const double alpha = 0.2;  // 低通滤波系数
+//
+//    // —— 1. 转 cv::Mat ——
+//    cv::Mat img = cv_bridge::toCvShare(img_msg, "bgr8")->image;
+//
+//    // —— 2. 检测 & refine ——
+//    std::vector<int> ids;
+//    std::vector<std::vector<cv::Point2f>> corners, rejected;
+//    cv::aruco::detectMarkers(img, dictionary, corners, ids, detector_params);
+//    if (ids.empty()) return;
+//
+//    // 亚像素级角点优化
+//    for (auto& c : corners) {
+//      cv::cornerSubPix(
+//          img, c,
+//          cv::Size(5,5), cv::Size(-1,-1),
+//          cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.1)
+//      );
+//    }
+//
+//    // 剔除误检并二次 refine
+//    cv::aruco::refineDetectedMarkers(
+//        img, cv::noArray(),
+//        corners, ids, rejected,
+//        camera_matrix, dist_coeffs,
+//        cv::noArray(), cv::aruco::CORNER_REFINE_SUBPIX
+//    );
+//
+//    // —— 3. 姿态估计 ——
+//    std::vector<cv::Vec3d> rvecs, tvecs;
+//    cv::aruco::estimatePoseSingleMarkers(
+//        corners, marker_length, camera_matrix, dist_coeffs, rvecs, tvecs
+//    );
+//
+//    // —— 4. 处理目标 ID 并发布 ——
+//    for (size_t i = 0; i < ids.size(); ++i) {
+//      if (ids[i] != tag_id) continue;
+//
+//      // 原始测量
+//      double raw_x =  tvecs[i][2];
+//      double raw_y =  tvecs[i][0];
+//      double raw_z = -tvecs[i][1];
+//
+//      // Rodrigues → 四元数 → RPY
+//      cv::Mat R;
+//      cv::Rodrigues(rvecs[i], R);
+//      tf2::Matrix3x3 m(
+//          R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2),
+//          R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2),
+//          R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2)
+//      );
+//      tf2::Quaternion q; m.getRotation(q);
+//      double roll, pitch, yaw; m.getRPY(roll, pitch, yaw);
+//
+//      // —— 5. 一阶低通滤波 ——
+//      filt_x   = alpha * raw_x   + (1 - alpha) * filt_x;
+//      filt_y   = alpha * raw_y   + (1 - alpha) * filt_y;
+//      filt_z   = alpha * raw_z   + (1 - alpha) * filt_z;
+//      filt_yaw = alpha * yaw     + (1 - alpha) * filt_yaw;
+//
+//      // —— 6. 发布 PoseStamped ——
+//      latest_pose_.header.stamp    = img_msg->header.stamp;
+//      latest_pose_.header.seq      = seq_++;
+//      latest_pose_.header.frame_id = parent_frame;
+//      latest_pose_.pose.position.x = filt_x;
+//      latest_pose_.pose.position.y = filt_y;
+//      latest_pose_.pose.position.z = filt_z;
+//      tf2::Quaternion qf;
+//      qf.setRPY(roll, pitch, filt_yaw);
+//      latest_pose_.pose.orientation.x = qf.x();
+//      latest_pose_.pose.orientation.y = qf.y();
+//      latest_pose_.pose.orientation.z = qf.z();
+//      latest_pose_.pose.orientation.w = qf.w();
+//      pub_pose_.publish(latest_pose_);
+//
+//      // —— 7. 发布 TF ——
+//      geometry_msgs::TransformStamped tf_msg;
+//      tf_msg.header.stamp    = latest_pose_.header.stamp;
+//      tf_msg.header.frame_id = parent_frame;
+//      tf_msg.child_frame_id  = child_frame;
+//      tf_msg.transform.translation.x = filt_x;
+//      tf_msg.transform.translation.y = filt_y;
+//      tf_msg.transform.translation.z = filt_z;
+//      tf_msg.transform.rotation    = latest_pose_.pose.orientation;
+//      br_.sendTransform(tf_msg);
+//
+//      break;  // 只处理第一个匹配的 tag
+//    }
+//  }
   void imageCallback(const sensor_msgs::ImageConstPtr& img_msg) {
     cv::Mat img = cv_bridge::toCvShare(img_msg, "bgr8")->image;
 
@@ -159,7 +265,7 @@ private:
 //  for tf erro, use pitch to replace yaw!!
     double eyaw = -pitch - goal_yaw_;
     double ex   = latest_pose_.pose.position.x - goal_x_;
-    double ey   = -latest_pose_.pose.position.y;
+    double ey   = -(latest_pose_.pose.position.y - goal_y_);
 
     geometry_msgs::Twist cmd{};
     switch (state_) {
@@ -189,6 +295,7 @@ private:
         pid_x_.reset();
         pid_y_.reset();
         yaw_stable_count_ = 0;
+        serial_hmi::sendOnce("/dev/ttyACM0", 115200, 0, 1);
       }
       break;
     }
@@ -200,7 +307,7 @@ private:
       ROS_INFO("  [ADJUST_XY] ex=%.3f  ey=%.3f  px=%.3f  py=%.3f  cmd=(%.3f, %.3f)",
                 ex, ey, px, py, cmd.linear.x, cmd.linear.y);
 
-      if (fabs(ey) < err_thresh_xy_ * 2 ||
+      if (fabs(ey) < err_thresh_xy_  ||
           (now - start_time_).toSec() > timeout_xy_) {
         ROS_INFO("  → XY adjustment done (|ey|=%.3f)", ey);
         state_ = ADJUST_X;
@@ -251,6 +358,8 @@ private:
           (now - start_time_).toSec() > timeout_xy_) {
         ROS_INFO("  → Fine Y adjustment done. Docking complete.");
         state_ = DONE;
+        geometry_msgs::Twist stop_cmd{};
+        pub_cmd_.publish(stop_cmd);
       }
       break;
     }
@@ -278,7 +387,7 @@ private:
   double min_vel_xy_, min_vel_yaw_;
   double err_thresh_xy_, err_thresh_yaw_;
   double timeout_xy_, timeout_yaw_;
-  double goal_x_, goal_yaw_;
+  double goal_x_, goal_y_, goal_yaw_;
 
   int yaw_stable_count_ = 0;
   static constexpr int YAW_STABLE_FRAMES = 10;

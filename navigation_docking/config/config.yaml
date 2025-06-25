@@ -1,11 +1,12 @@
 min_vel_xy: 0.025
 min_vel_yaw: 0.05
 goal_x: 0.27  # meters ahead of tag
+goal_y: -0.017
 goal_yaw: 0.0  # radians relative to tag frame
-error_threshold_xy: 0.01
+error_threshold_xy: 0.005
 error_threshold_yaw: 0.01
 timeout_xy: 500
-timeout_yaw: 5
+timeout_yaw: 3
 
 pid_x: { p: 0.3, i:  0.00, d: 0.0, i_clamp_max:  1.0, i_clamp_min: -1.0, antiwindup: false, publish_state: false }
 pid_y: { p: 0.2, i:  0.00, d: 0.0, i_clamp_max:  1.0, i_clamp_min: -1.0, antiwindup: false, publish_state: false }

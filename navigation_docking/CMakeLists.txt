@@ -16,7 +16,7 @@ find_package(OpenCV REQUIRED)
 
 ## 声明 catkin 包含的库和 include 目录
 catkin_package(
-#        INCLUDE_DIRS include
+        INCLUDE_DIRS include
         LIBRARIES navigation_docking
         CATKIN_DEPENDS roscpp tf2_ros tf2 cv_bridge image_transport control_toolbox
 )
