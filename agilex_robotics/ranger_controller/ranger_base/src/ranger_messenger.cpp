@@ -394,7 +394,8 @@ void RangerROSMessenger::TwistCmdCallback(
   // check for parking mode, only applicable to RangerMiniV2
   if (parking_mode_ && robot_type_ == RangerSubType::kRangerMiniV2) {
     return;
-  } else if (msg->linear.y != 0) {
+  }
+  else if (msg->linear.y != 0) {
     if (msg->linear.x == 0.0 && robot_type_ == RangerSubType::kRangerMiniV1) {
       motion_mode_ = MotionState::MOTION_MODE_SIDE_SLIP;
       robot_->SetMotionMode(MotionState::MOTION_MODE_SIDE_SLIP);
@@ -402,11 +403,12 @@ void RangerROSMessenger::TwistCmdCallback(
       motion_mode_ = MotionState::MOTION_MODE_PARALLEL;
       robot_->SetMotionMode(MotionState::MOTION_MODE_PARALLEL);
     }
-  } else {
+  }
+  else {
     steer_cmd = CalculateSteeringAngle(*msg, radius);
     // Use minimum turn radius to switch between dual ackerman and spinning mode
     if (radius < robot_params_.min_turn_radius) {
-       motion_mode_ = MotionState::MOTION_MODE_SIDE_SLIP;
+       motion_mode_ = MotionState::MOTION_MODE_SPINNING;
        robot_->SetMotionMode(MotionState::MOTION_MODE_SPINNING);
     } else {
       motion_mode_ = MotionState::MOTION_MODE_DUAL_ACKERMAN;
